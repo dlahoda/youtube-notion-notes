@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Added
+
+- Added a manual Notion smoke test in `./services/notion.py`.
+- Added the official Notion Python client dependency.
+
 ### Planning
 
 - Documented the future Notion export contract without implementing the integration.

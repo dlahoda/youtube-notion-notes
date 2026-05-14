@@ -2,7 +2,7 @@
 
 Small Python CLI for Milestone 1: turn one YouTube URL into a local transcript and a ready-to-paste GPT prompt. If OpenAI API config is present, it can also generate a markdown note.
 
-Notion export, n8n workflows, and web UI are intentionally not implemented yet.
+Full Notion export, n8n workflows, and web UI are intentionally not implemented yet. A small Notion smoke test exists for verifying database access.
 
 ## One-time setup: WSL/macOS/Linux
 
@@ -82,14 +82,34 @@ py -m pip install -r requirements-openai.txt
 - `OPENAI_API_KEY`: optional API key for markdown note generation
 - `OPENAI_MODEL`: optional model name, defaults to `gpt-4.1-mini`
 - `YOUTUBE_TRANSCRIPT_LANGUAGES`: optional comma-separated language preference list, defaults to `en`
-- `NOTION_API_KEY`: future Notion export API key, not used by the current CLI
-- `NOTION_DATABASE_ID`: future Notion export database id, not used by the current CLI
+- `NOTION_API_KEY`: required only for the manual Notion smoke test
+- `NOTION_DATABASE_ID`: required only for the manual Notion smoke test
 
-`OPENAI_API_KEY` belongs only to optional OpenAI markdown note generation. It is not required for future Notion export.
+`OPENAI_API_KEY` belongs only to optional OpenAI markdown note generation. It is not required for the Notion smoke test.
+
+## Manual Notion smoke test
+
+The smoke test is opt-in and does not change the default local CLI behavior. It creates one minimal page in the configured Notion database using properties only.
+
+Set `NOTION_API_KEY` and `NOTION_DATABASE_ID` in `.env`, then run:
+
+```bash
+python -m services.notion
+```
+
+The created page uses:
+
+- `Name`: `Notion smoke test`
+- `URL`: `https://www.youtube.com/watch?v=notion-smoke-test`
+- `Source`: `YouTube`
+- `Status`: `Draft`
+- `Tags`: `smoke-test`
+
+No markdown body blocks are appended yet.
 
 ## Future Notion export contract
 
-Notion export is planned but intentionally not implemented yet. The existing local/manual behavior remains the default.
+Full Notion export is planned but intentionally not implemented yet. The existing local/manual behavior remains the default.
 
 Required future Notion database properties:
 
@@ -124,4 +144,4 @@ The `--export` flag is documented as a future shape only and is not available in
 - Only videos with available YouTube transcripts/captions are supported.
 - Video titles are not fetched yet; output filenames use the video id unless `--output-name` is provided.
 - OpenAI mode is optional and intentionally simple.
-- No Notion export, n8n integration, queueing, or web UI exists in this milestone.
+- No full Notion export, n8n integration, queueing, or web UI exists in this milestone.

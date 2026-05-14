@@ -17,6 +17,10 @@ class NotionSmokeTestError(Exception):
     """Raised when the Notion smoke test cannot complete."""
 
 
+class NotionPageCreationError(Exception):
+    """Raised when a Notion page cannot be created."""
+
+
 def load_env_file(path: Path = Path(".env")) -> None:
     if not path.exists():
         return
@@ -36,48 +40,77 @@ def load_env_file(path: Path = Path(".env")) -> None:
 def required_env(name: str) -> str:
     value = os.getenv(name, "").strip()
     if not value:
-        raise NotionSmokeTestError(f"{name} is required for the Notion smoke test.")
+        raise NotionPageCreationError(f"{name} is required for Notion page creation.")
     return value
 
 
-def smoke_test_properties() -> dict[str, Any]:
+def _page_properties(
+    *,
+    title: str,
+    url: str,
+    tags: list[str] | None,
+    status: str,
+    source: str,
+) -> dict[str, Any]:
     return {
         "Name": {
             "title": [
                 {
                     "text": {
-                        "content": SMOKE_TEST_NAME,
+                        "content": title,
                     },
                 }
             ],
         },
         "URL": {
-            "url": SMOKE_TEST_URL,
+            "url": url,
         },
         "Tags": {
-            "multi_select": [{"name": tag} for tag in SMOKE_TEST_TAGS],
+            "multi_select": [{"name": tag} for tag in tags or []],
         },
         "Status": {
             "select": {
-                "name": SMOKE_TEST_STATUS,
+                "name": status,
             },
         },
         "Source": {
             "select": {
-                "name": SMOKE_TEST_SOURCE,
+                "name": source,
             },
         },
     }
 
 
-def create_smoke_test_page() -> str:
+def create_notion_page(
+    *,
+    title: str,
+    url: str,
+    tags: list[str] | None = None,
+    status: str = "Draft",
+    source: str = "YouTube",
+) -> str:
+    title = title.strip()
+    url = url.strip()
+    status = status.strip()
+    source = source.strip()
+    clean_tags = [tag.strip() for tag in tags or [] if tag.strip()]
+
+    if not title:
+        raise NotionPageCreationError("title is required.")
+    if not url:
+        raise NotionPageCreationError("url is required.")
+    if not status:
+        raise NotionPageCreationError("status is required.")
+    if not source:
+        raise NotionPageCreationError("source is required.")
+
     api_key = required_env("NOTION_API_KEY")
     database_id = required_env("NOTION_DATABASE_ID")
 
     try:
         from notion_client import Client
     except ImportError as exc:
-        raise NotionSmokeTestError(
+        raise NotionPageCreationError(
             "notion-client is not installed. Run: python -m pip install -r requirements.txt"
         ) from exc
 
@@ -86,16 +119,35 @@ def create_smoke_test_page() -> str:
     try:
         page = client.pages.create(
             parent={"database_id": database_id},
-            properties=smoke_test_properties(),
+            properties=_page_properties(
+                title=title,
+                url=url,
+                tags=clean_tags,
+                status=status,
+                source=source,
+            ),
         )
     except Exception as exc:
-        raise NotionSmokeTestError(f"Notion page creation failed: {exc}") from exc
+        raise NotionPageCreationError(f"Notion page creation failed: {exc}") from exc
 
     page_id = page.get("id")
     if not page_id:
-        raise NotionSmokeTestError("Notion page was created, but no page id was returned.")
+        raise NotionPageCreationError("Notion page was created, but no page id was returned.")
 
     return str(page_id)
+
+
+def create_smoke_test_page() -> str:
+    try:
+        return create_notion_page(
+            title=SMOKE_TEST_NAME,
+            url=SMOKE_TEST_URL,
+            tags=SMOKE_TEST_TAGS,
+            status=SMOKE_TEST_STATUS,
+            source=SMOKE_TEST_SOURCE,
+        )
+    except NotionPageCreationError as exc:
+        raise NotionSmokeTestError(str(exc)) from exc
 
 
 def main() -> int:

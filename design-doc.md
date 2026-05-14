@@ -273,6 +273,15 @@ NOTION_DATABASE_ID=...
 
 -   `YouTube`.
 
+## Notion property decisions
+
+- `Status` uses a regular Notion `select` property, not Notion's native Status property.
+- `Source` uses a regular Notion `select` property, not `rich_text`.
+- `Tags` uses a `multi_select` property.
+- `./services/notion.py` allows empty tags so it can stay a small reusable Notion adapter.
+- Higher-level pipeline/export code may require tags for YouTube notes later.
+- `Created` is managed by Notion as `created_time` and should not be set manually by the client.
+
 ## Future CLI shape
 
 Notion export має бути opt-in:

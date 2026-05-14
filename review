@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+git add -N .
+git diff --stat > review-stat.txt
+git diff > review.patch
+
+echo "Created review-stat.txt and review.patch"

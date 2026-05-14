@@ -35,3 +35,20 @@ After changes, explain:
 - how to run the CLI;
 - how to test it manually with one YouTube URL;
 - what limitations remain.
+
+## Communication and file references
+
+When describing files, always include the project-relative path from the repository root.
+
+Good examples:
+- `./review`
+- `./README.md`
+- `./services/transcript.py`
+- `./prompts/comprehensive_note.md`
+
+Avoid vague references like:
+- "the review file"
+- "the script"
+- "the prompt file"
+
+When showing file contents, put the project-relative path directly above the code block.

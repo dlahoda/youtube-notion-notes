@@ -215,33 +215,82 @@ Notion додає окремий шар складності.
 
 # 6. Milestone 2 — Notion export
 
-Ціль: створювати сторінку в Notion database.
+## Planning checkpoint — Notion export contract
+
+Ціль поточного planning checkpoint: зафіксувати контракт для майбутнього Notion export без реалізації інтеграції.
+
+На цьому етапі НЕ робимо:
+
+-   `services/notion.py`;
+
+-   `services/markdown_to_notion.py`;
+
+-   Notion SDK dependency;
+
+-   Notion API calls;
+
+-   n8n workflow;
+
+-   web UI.
+
+Існуюча локальна/manual поведінка залишається default.
 
 ## Потрібні `.env` змінні
 
 ```env
-OPENAI_API_KEY=...
 NOTION_API_KEY=...
 NOTION_DATABASE_ID=...
 
 ```
 
+`OPENAI_API_KEY` залишається optional і належить тільки до OpenAI note generation. Він не потрібен для future Notion export.
+
 ## Поля Notion database
 
-Базовий варіант:
+Обов'язковий контракт database:
 
 -   `Name` — title;
-    
+
 -   `URL` — YouTube link;
-    
+
 -   `Tags` — multi-select;
-    
--   `Status` — Draft / Unread / Read;
-    
--   `Source` — YouTube;
-    
+
+-   `Status` — select;
+
+-   `Source` — select;
+
 -   `Created` — created time.
-    
+
+Рекомендовані `Status` values:
+
+-   `Draft`;
+
+-   `Reviewed`;
+
+-   `Archived`.
+
+Рекомендований `Source` value для цього pipeline:
+
+-   `YouTube`.
+
+## Future CLI shape
+
+Notion export має бути opt-in:
+
+```bash
+python ingest.py "URL" --export notion
+
+```
+
+Local-only режим може бути явним, якщо це добре ляже в CLI:
+
+```bash
+python ingest.py "URL" --export local
+
+```
+
+На planning milestone цей flag тільки документується. Його не треба реалізовувати, поки немає Notion export implementation.
+
 
 ## Body сторінки
 

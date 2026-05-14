@@ -6,13 +6,13 @@ Later milestones may export to Notion and be wrapped by n8n, but do not implemen
 
 ## Current milestone
 
-Implement Milestone 1 only:
+Plan Milestone 2 only:
 
-- parse a YouTube URL;
-- fetch a transcript;
-- save raw transcript locally;
-- create a ready-to-paste GPT prompt;
-- optionally generate a markdown note if OpenAI API config is present.
+- clarify the future Notion database schema;
+- document the minimal opt-in CLI shape for future Notion export;
+- document required future Notion environment variables;
+- keep existing local/manual behavior as the default;
+- do not implement the Notion integration yet.
 
 ## Engineering rules
 
@@ -20,6 +20,7 @@ Implement Milestone 1 only:
 - Prefer boring, simple Python.
 - Do not add a web UI.
 - Do not implement Notion yet.
+- Do not add the Notion SDK until the integration milestone.
 - Do not implement n8n yet.
 - Do not add unnecessary dependencies.
 - Keep secrets out of git.

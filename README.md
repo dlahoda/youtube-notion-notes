@@ -4,21 +4,40 @@ Small Python CLI for Milestone 1: turn one YouTube URL into a local transcript a
 
 Notion export, n8n workflows, and web UI are intentionally not implemented yet.
 
-## Setup
+## One-time setup: WSL/macOS/Linux
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-python3 -m pip install -r requirements.txt
+python -m pip install -r requirements.txt
 cp .env.example .env
 ```
 
-The CLI works without editing `.env`. To enable automatic markdown note generation, set `OPENAI_API_KEY` in `.env`.
+## One-time setup: Windows PowerShell, only if Python is installed on Windows
 
-## Usage
+```powershell
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+py -m pip install -r requirements.txt
+Copy-Item .env.example .env
+```
+
+## Run after setup
+
+For normal usage, activate the existing virtual environment and run the CLI. You do not need to reinstall dependencies every time; run `python -m pip install -r requirements.txt` again only when `requirements.txt` changes.
+
+WSL/macOS/Linux:
 
 ```bash
-python3 ingest.py "https://www.youtube.com/watch?v=VIDEO_ID"
+source .venv/bin/activate
+python ingest.py "https://youtu.be/VIDEO_ID" --no-note
+```
+
+Windows PowerShell, if Python is installed on Windows:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+python ingest.py "https://youtu.be/VIDEO_ID" --no-note
 ```
 
 By default, files are written to:
@@ -30,24 +49,31 @@ By default, files are written to:
 Useful options:
 
 ```bash
-python3 ingest.py "https://youtu.be/VIDEO_ID" --languages en,uk
-python3 ingest.py "https://youtu.be/VIDEO_ID" --no-note
-python3 ingest.py "https://youtu.be/VIDEO_ID" --output-name my-video
+python ingest.py "https://youtu.be/VIDEO_ID" --languages en,uk
+python ingest.py "https://youtu.be/VIDEO_ID" --output-name my-video
 ```
 
-## Manual Testing
-
-Run the CLI with any YouTube video that has captions:
-
-```bash
-python3 ingest.py "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-```
-
-Expected result without an OpenAI key:
+Expected result without OpenAI mode:
 
 - a raw transcript text file in `output/transcripts/`
 - a ready-to-paste GPT prompt in `output/prompts/`
 - no markdown note in `output/notes/`
+
+## Optional OpenAI mode
+
+OpenAI mode is not required for manual-safe mode. Install it only if you want the CLI to generate markdown notes automatically, then set `OPENAI_API_KEY` in `.env`.
+
+WSL/macOS/Linux:
+
+```bash
+python -m pip install -r requirements-openai.txt
+```
+
+Windows PowerShell, only if Python is installed on Windows:
+
+```powershell
+py -m pip install -r requirements-openai.txt
+```
 
 ## Environment
 

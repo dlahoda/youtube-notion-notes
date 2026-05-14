@@ -82,6 +82,42 @@ py -m pip install -r requirements-openai.txt
 - `OPENAI_API_KEY`: optional API key for markdown note generation
 - `OPENAI_MODEL`: optional model name, defaults to `gpt-4.1-mini`
 - `YOUTUBE_TRANSCRIPT_LANGUAGES`: optional comma-separated language preference list, defaults to `en`
+- `NOTION_API_KEY`: future Notion export API key, not used by the current CLI
+- `NOTION_DATABASE_ID`: future Notion export database id, not used by the current CLI
+
+`OPENAI_API_KEY` belongs only to optional OpenAI markdown note generation. It is not required for future Notion export.
+
+## Future Notion export contract
+
+Notion export is planned but intentionally not implemented yet. The existing local/manual behavior remains the default.
+
+Required future Notion database properties:
+
+- `Name`: title
+- `URL`: url
+- `Tags`: multi_select
+- `Status`: select
+- `Source`: select
+- `Created`: created_time
+
+Recommended `Status` values:
+
+- `Draft`
+- `Reviewed`
+- `Archived`
+
+Recommended `Source` value for this pipeline:
+
+- `YouTube`
+
+Proposed future CLI shape:
+
+```bash
+python ingest.py "https://youtu.be/VIDEO_ID" --export notion
+python ingest.py "https://youtu.be/VIDEO_ID" --export local
+```
+
+The `--export` flag is documented as a future shape only and is not available in the current CLI.
 
 ## Limitations
 

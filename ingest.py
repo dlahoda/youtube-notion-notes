@@ -40,6 +40,12 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Skip optional OpenAI markdown note generation.",
     )
+    parser.add_argument(
+        "--export",
+        choices=("local", "notion"),
+        default="local",
+        help="Export target. Defaults to local-only output.",
+    )
     return parser.parse_args()
 
 
@@ -113,19 +119,46 @@ def main() -> int:
 
     if args.no_note:
         print("Markdown note skipped: --no-note was provided.")
+        if args.export == "notion":
+            print(
+                "Notion export skipped: --export notion requires a generated markdown note.",
+                file=sys.stderr,
+            )
+            return 1
         return 0
 
     try:
         note_text = generate_note_if_available(prompt_text)
     except NoteGenerationError as exc:
         print(f"Markdown note skipped: {exc}")
+        if args.export == "notion":
+            print(
+                "Notion export skipped: --export notion requires a generated markdown note.",
+                file=sys.stderr,
+            )
+            return 1
         return 0
 
     if note_text:
         write_text(note_path, note_text)
         print(f"Markdown note saved: {note_path}")
+        if args.export == "notion":
+            try:
+                from services.notion_export import export_markdown_note_to_notion
+
+                notion_page_id = export_markdown_note_to_notion(note_text, args.url)
+            except Exception as exc:
+                print(f"Notion export failed: {exc}", file=sys.stderr)
+                return 1
+            print(f"Notion page created: {notion_page_id}")
     else:
         print("Markdown note skipped: OPENAI_API_KEY is not configured.")
+        if args.export == "notion":
+            print(
+                "Notion export skipped: --export notion requires a generated markdown note.",
+                file=sys.stderr,
+            )
+            return 1
 
     return 0
 

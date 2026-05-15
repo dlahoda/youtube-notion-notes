@@ -1,8 +1,8 @@
 # YouTube Notion Notes
 
-Small Python CLI for Milestone 1: turn one YouTube URL into a local transcript and a ready-to-paste GPT prompt. If OpenAI API config is present, it can also generate a markdown note.
+Small Python CLI that turns one YouTube URL into a local transcript and a ready-to-paste GPT prompt. If OpenAI API config is present, it can also generate a markdown note.
 
-Full Notion export, n8n workflows, and web UI are intentionally not implemented yet. A small Notion smoke test exists for verifying database access.
+Notion export is opt-in after a markdown note is generated locally. n8n workflows and web UI are intentionally not implemented.
 
 ## One-time setup: WSL/macOS/Linux
 
@@ -51,6 +51,7 @@ Useful options:
 ```bash
 python ingest.py "https://youtu.be/VIDEO_ID" --languages en,uk
 python ingest.py "https://youtu.be/VIDEO_ID" --output-name my-video
+python ingest.py "https://youtu.be/VIDEO_ID" --export local
 ```
 
 Expected result without OpenAI mode:
@@ -77,15 +78,25 @@ py -m pip install -r requirements-openai.txt
 
 ## Environment
 
-`.env` is optional for Milestone 1.
+`.env` is optional for local/manual usage.
 
 - `OPENAI_API_KEY`: optional API key for markdown note generation
 - `OPENAI_MODEL`: optional model name, defaults to `gpt-4.1-mini`
 - `YOUTUBE_TRANSCRIPT_LANGUAGES`: optional comma-separated language preference list, defaults to `en`
-- `NOTION_API_KEY`: required only for the manual Notion smoke test
-- `NOTION_DATABASE_ID`: required only for the manual Notion smoke test
+- `NOTION_API_KEY`: required only for Notion export and the manual Notion smoke test
+- `NOTION_DATABASE_ID`: required only for Notion export and the manual Notion smoke test
 
 `OPENAI_API_KEY` belongs only to optional OpenAI markdown note generation. It is not required for the Notion smoke test.
+
+## Optional Notion export
+
+Default local behavior is unchanged. Notion export runs only when explicitly requested, and only after the markdown note has been generated and saved locally.
+
+```bash
+python ingest.py "https://youtu.be/VIDEO_ID" --export notion
+```
+
+Set `NOTION_API_KEY` and `NOTION_DATABASE_ID` in `.env` before using `--export notion`.
 
 ## Manual Notion smoke test
 
@@ -107,11 +118,11 @@ The created page uses:
 
 No markdown body blocks are appended yet.
 
-## Future Notion export contract
+## Notion export contract
 
-Full Notion export is planned but intentionally not implemented yet. The existing local/manual behavior remains the default.
+Notion export is available as an opt-in CLI mode. The existing local/manual behavior remains the default.
 
-Required future Notion database properties:
+Required Notion database properties:
 
 - `Name`: title
 - `URL`: url
@@ -130,20 +141,19 @@ Recommended `Source` value for this pipeline:
 
 - `YouTube`
 
-Proposed future CLI shape:
+CLI shape:
 
 ```bash
 python ingest.py "https://youtu.be/VIDEO_ID" --export notion
 python ingest.py "https://youtu.be/VIDEO_ID" --export local
 ```
 
-The `--export` flag is documented as a future shape only and is not available in the current CLI.
-
-Markdown note metadata convention for future export: the first H1 heading, formatted as `# Note title`, is the future Notion page `Name`; tags should be written as `Tags: tag one, tag two` with comma-separated tags.
+Markdown note metadata convention for export: the first H1 heading, formatted as `# Note title`, is the Notion page `Name`; tags should be written as `Tags: tag one, tag two` with comma-separated tags.
 
 ## Limitations
 
 - Only videos with available YouTube transcripts/captions are supported.
 - Video titles are not fetched yet; output filenames use the video id unless `--output-name` is provided.
 - OpenAI mode is optional and intentionally simple.
-- No full Notion export, n8n integration, queueing, or web UI exists in this milestone.
+- Notion export requires a generated markdown note; prompt-only/manual mode does not export.
+- No n8n integration, queueing, or web UI exists in this milestone.

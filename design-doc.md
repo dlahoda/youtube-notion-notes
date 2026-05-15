@@ -233,7 +233,23 @@ Notion додає окремий шар складності.
 
 -   web UI.
 
-Існуюча локальна/manual поведінка залишається default.
+## Status — complete
+
+Milestone 2 is implemented and smoke-tested.
+
+End-to-end smoke test passed:
+
+- `python ingest.py "YOUTUBE_URL" --export notion` successfully generated a markdown note and created a Notion page.
+- The Notion page received title, URL, tags, status, source, and converted markdown body blocks.
+- Default local/manual behavior remains unchanged when `--export notion` is omitted.
+
+Implemented pieces:
+
+- reusable Notion page creator in `./services/notion.py`;
+- markdown-to-Notion-blocks converter in `./services/markdown_to_notion.py`;
+- markdown note metadata extraction in `./services/note_metadata.py`;
+- internal Notion export orchestration in `./services/notion_export.py`;
+- opt-in CLI export via `--export notion` in `./ingest.py`.
 
 ## Потрібні `.env` змінні
 
@@ -282,7 +298,7 @@ NOTION_DATABASE_ID=...
 - Higher-level pipeline/export code may require tags for YouTube notes later.
 - `Created` is managed by Notion as `created_time` and should not be set manually by the client.
 
-## Future CLI shape
+## CLI shape
 
 Notion export має бути opt-in:
 
@@ -297,8 +313,6 @@ Local-only режим може бути явним, якщо це добре л�
 python ingest.py "URL" --export local
 
 ```
-
-CLI integration slice implemented: `--export notion` now runs the local pipeline first, saves the markdown note locally, then exports that generated markdown to Notion. Omitting `--export` remains local-only behavior.
 
 
 ## Body сторінки

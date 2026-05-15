@@ -10,7 +10,6 @@ from services.note_generator import (
     build_manual_prompt,
     generate_note_if_available,
 )
-from services.notion_export import export_markdown_note_to_notion
 from services.transcript import TranscriptError, fetch_transcript, parse_youtube_url
 
 
@@ -145,6 +144,8 @@ def main() -> int:
         print(f"Markdown note saved: {note_path}")
         if args.export == "notion":
             try:
+                from services.notion_export import export_markdown_note_to_notion
+
                 notion_page_id = export_markdown_note_to_notion(note_text, args.url)
             except Exception as exc:
                 print(f"Notion export failed: {exc}", file=sys.stderr)

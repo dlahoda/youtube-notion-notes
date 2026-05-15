@@ -4,11 +4,13 @@ import contextlib
 import io
 import sys
 import tempfile
+import types
 import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
 
 import ingest
+import services
 
 
 VIDEO_ID = "abc123def45"
@@ -40,10 +42,21 @@ class IngestCliTests(unittest.TestCase):
                 return "page-123"
 
             export_mock = Mock(side_effect=export_effect)
+            fake_notion_export_module = types.ModuleType("services.notion_export")
+            fake_notion_export_module.export_markdown_note_to_notion = export_mock
+            should_fake_notion_export = "--export" in extra_args and "notion" in extra_args and note_text
+            had_notion_export_attr = hasattr(services, "notion_export")
+            original_notion_export_attr = getattr(services, "notion_export", None)
 
             stdout = io.StringIO()
             stderr = io.StringIO()
             with (
+                patch.dict(
+                    sys.modules,
+                    {"services.notion_export": fake_notion_export_module},
+                )
+                if should_fake_notion_export
+                else contextlib.nullcontext(),
                 patch.object(sys, "argv", ["ingest.py", VIDEO_URL, *extra_args]),
                 patch.object(ingest, "TRANSCRIPT_DIR", temp_path / "transcripts"),
                 patch.object(ingest, "PROMPT_DIR", temp_path / "prompts"),
@@ -53,11 +66,16 @@ class IngestCliTests(unittest.TestCase):
                 patch.object(ingest, "fetch_transcript", return_value=transcript),
                 patch.object(ingest, "build_manual_prompt", return_value="prompt"),
                 patch.object(ingest, "generate_note_if_available", return_value=note_text),
-                patch.object(ingest, "export_markdown_note_to_notion", export_mock),
                 contextlib.redirect_stdout(stdout),
                 contextlib.redirect_stderr(stderr),
             ):
                 exit_code = ingest.main()
+
+            if should_fake_notion_export:
+                if had_notion_export_attr:
+                    services.notion_export = original_notion_export_attr
+                elif hasattr(services, "notion_export"):
+                    delattr(services, "notion_export")
 
             note_exists = note_path.exists()
             note_content = note_path.read_text(encoding="utf-8") if note_exists else ""
@@ -65,13 +83,26 @@ class IngestCliTests(unittest.TestCase):
             return exit_code, stdout.getvalue(), stderr.getvalue(), export_mock, note_exists, note_content
 
     def test_default_cli_behavior_does_not_call_notion_export(self) -> None:
-        exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest()
+        existing_notion_export_module = sys.modules.pop("services.notion_export", None)
+        had_notion_export_attr = hasattr(services, "notion_export")
+        original_notion_export_attr = getattr(services, "notion_export", None)
 
-        self.assertEqual(exit_code, 0)
-        self.assertIn("Markdown note saved:", stdout)
-        self.assertEqual(stderr, "")
-        self.assertTrue(note_exists)
-        export_mock.assert_not_called()
+        try:
+            exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest()
+
+            self.assertEqual(exit_code, 0)
+            self.assertIn("Markdown note saved:", stdout)
+            self.assertEqual(stderr, "")
+            self.assertTrue(note_exists)
+            self.assertNotIn("services.notion_export", sys.modules)
+            export_mock.assert_not_called()
+        finally:
+            if existing_notion_export_module is not None:
+                sys.modules["services.notion_export"] = existing_notion_export_module
+            if had_notion_export_attr:
+                services.notion_export = original_notion_export_attr
+            elif hasattr(services, "notion_export"):
+                delattr(services, "notion_export")
 
     def test_export_notion_passes_original_url_and_saved_markdown(self) -> None:
         note_text = "# Generated Note\n\nTags: cli\n\nBody"

@@ -96,15 +96,6 @@ def write_text(path: Path, content: str) -> None:
     path.write_text(content, encoding="utf-8")
 
 
-def notion_page_url(page_id: str) -> str | None:
-    compact_page_id = page_id.replace("-", "")
-    if len(compact_page_id) != 32:
-        return None
-    if any(char not in "0123456789abcdefABCDEF" for char in compact_page_id):
-        return None
-    return f"https://www.notion.so/{compact_page_id}"
-
-
 def result_contract(args: argparse.Namespace) -> dict[str, Any]:
     return {
         "ok": False,
@@ -114,7 +105,6 @@ def result_contract(args: argparse.Namespace) -> dict[str, Any]:
         "prompt_path": None,
         "note_path": None,
         "notion_page_id": None,
-        "notion_page_url": None,
     }
 
 
@@ -187,15 +177,16 @@ def run_pipeline(args: argparse.Namespace, *, human_output: bool) -> tuple[int, 
             try:
                 from services.notion_export import export_markdown_note_to_notion
 
-                notion_page_id = export_markdown_note_to_notion(note_text, args.url)
+                notion_page = export_markdown_note_to_notion(note_text, args.url)
             except Exception as exc:
                 result["stage"] = "notion_export"
                 result["error"] = str(exc)
                 log(f"Notion export failed: {exc}", error=True)
                 return 1, result
-            result["notion_page_id"] = notion_page_id
-            result["notion_page_url"] = notion_page_url(notion_page_id)
-            log(f"Notion page created: {notion_page_id}")
+            result["notion_page_id"] = notion_page.id
+            if notion_page.url:
+                result["notion_page_url"] = notion_page.url
+            log(f"Notion page created: {notion_page.id}")
     else:
         log("Markdown note skipped: OPENAI_API_KEY is not configured.")
         if args.export == "notion":

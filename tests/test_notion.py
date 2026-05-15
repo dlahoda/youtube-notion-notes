@@ -26,7 +26,11 @@ class NotionTests(unittest.TestCase):
             }
         ]
         fake_client = Mock()
-        fake_client.pages.create.return_value = {"id": "page-123"}
+        fake_client.pages.create.return_value = {
+            "id": "fake-page-id",
+            "url": "https://www.notion.so/Real-Canonical-Url-From-Api",
+            "public_url": "https://published.example/not-used",
+        }
         client_class = Mock(return_value=fake_client)
         fake_notion_client_module = types.SimpleNamespace(Client=client_class)
 
@@ -40,7 +44,7 @@ class NotionTests(unittest.TestCase):
             ),
             patch.dict(sys.modules, {"notion_client": fake_notion_client_module}),
         ):
-            page_id = create_notion_page(
+            page = create_notion_page(
                 title="Video Note",
                 url="https://youtu.be/example",
                 tags=["python", "note taking"],
@@ -49,7 +53,9 @@ class NotionTests(unittest.TestCase):
                 children=children,
             )
 
-        self.assertEqual(page_id, "page-123")
+        self.assertEqual(page.id, "fake-page-id")
+        self.assertEqual(page.url, "https://www.notion.so/Real-Canonical-Url-From-Api")
+        self.assertNotEqual(page.url, "https://published.example/not-used")
         client_class.assert_called_once_with(auth="secret")
         fake_client.pages.create.assert_called_once()
 

@@ -343,7 +343,7 @@ python ingest.py "URL" --export notion --output json
 
 ```
 
-In JSON output mode, stdout must contain only JSON. Success output includes `ok`, `url`, `export_mode`, created local paths, and Notion page details when export runs. Failure output includes `ok: false`, `stage`, and `error`.
+In JSON output mode, stdout must contain only JSON. Success output includes `ok`, `url`, `export_mode`, created local paths, and Notion page details when export runs. `notion_page_url` comes from the Notion API page response `url` field and is included only when that field is present. Failure output includes `ok: false`, `stage`, and `error`.
 
 Можливі режими:
 

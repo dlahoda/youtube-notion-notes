@@ -12,6 +12,7 @@ from unittest.mock import Mock, patch
 
 import ingest
 import services
+from services.notion import NotionPage
 
 
 VIDEO_ID = "abc123def45"
@@ -32,7 +33,7 @@ class IngestCliTests(unittest.TestCase):
             transcript = Mock()
             transcript.as_text.return_value = "[00:00] Transcript\n"
 
-            def export_effect(markdown: str, url: str) -> str:
+            def export_effect(markdown: str, url: str) -> NotionPage:
                 if assert_note_saved_before_export:
                     self.assertTrue(note_path.exists())
                     self.assertEqual(note_path.read_text(encoding="utf-8"), markdown)
@@ -40,7 +41,7 @@ class IngestCliTests(unittest.TestCase):
                     raise export_side_effect
                 if export_side_effect:
                     return export_side_effect(markdown, url)
-                return "page-123"
+                return NotionPage(id="page-123")
 
             export_mock = Mock(side_effect=export_effect)
             fake_notion_export_module = types.ModuleType("services.notion_export")
@@ -108,10 +109,10 @@ class IngestCliTests(unittest.TestCase):
     def test_export_notion_passes_original_url_and_saved_markdown(self) -> None:
         note_text = "# Generated Note\n\nTags: cli\n\nBody"
 
-        def assert_note_saved_before_export(markdown: str, url: str) -> str:
+        def assert_note_saved_before_export(markdown: str, url: str) -> NotionPage:
             self.assertEqual(markdown, note_text)
             self.assertEqual(url, VIDEO_URL)
-            return "page-123"
+            return NotionPage(id="page-123")
 
         exit_code, stdout, stderr, export_mock, note_exists, note_content = self.run_ingest(
             "--export",
@@ -204,14 +205,15 @@ class IngestCliTests(unittest.TestCase):
         export_mock.assert_not_called()
 
     def test_json_output_includes_notion_result_when_export_runs(self) -> None:
-        page_id = "12345678-1234-1234-1234-123456789abc"
+        page_id = "fake-page-id"
+        page_url = "https://www.notion.so/Real-Canonical-Url-From-Api"
 
         exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
             "--export",
             "notion",
             "--output",
             "json",
-            export_side_effect=lambda _markdown, _url: page_id,
+            export_side_effect=lambda _markdown, _url: NotionPage(id=page_id, url=page_url),
         )
 
         payload = json.loads(stdout)
@@ -222,7 +224,8 @@ class IngestCliTests(unittest.TestCase):
         self.assertEqual(payload["export_mode"], "notion")
         self.assertTrue(payload["note_path"].endswith(f"notes/{VIDEO_ID}.md"))
         self.assertEqual(payload["notion_page_id"], page_id)
-        self.assertEqual(payload["notion_page_url"], "https://www.notion.so/12345678123412341234123456789abc")
+        self.assertEqual(payload["notion_page_url"], page_url)
+        self.assertNotEqual(payload["notion_page_url"], "https://www.notion.so/fake-page-id")
         self.assertTrue(note_exists)
         self.assertNotIn("Notion page created:", stdout)
         export_mock.assert_called_once()

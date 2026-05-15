@@ -22,6 +22,15 @@ Include:
 
 Use markdown headings and bullet lists. Do not invent facts that are not supported by the transcript.
 
+Metadata conventions for future Notion export:
+
+- The first Markdown H1 heading is the note title.
+- The title must use this format: `# Note title`
+- This H1 title will later be used as the Notion page Name.
+- Tags must use this format: `Tags: tag one, tag two, tag three`
+- Tags are comma-separated.
+- Spaces inside a tag must be preserved.
+
 # Transcript
 
 {transcript}

@@ -333,6 +333,18 @@ python ingest.py "URL" --export local
 
 Ціль: зробити так, щоб Python-логіку можна було викликати з n8n.
 
+## CLI result contract
+
+First small slice: keep the existing human-readable CLI as the default, and add opt-in machine-readable output for automation:
+
+```bash
+python ingest.py "URL" --output json
+python ingest.py "URL" --export notion --output json
+
+```
+
+In JSON output mode, stdout must contain only JSON. Success output includes `ok`, `url`, `export_mode`, created local paths, and Notion page details when export runs. Failure output includes `ok: false`, `stage`, and `error`.
+
 Можливі режими:
 
 ```bash

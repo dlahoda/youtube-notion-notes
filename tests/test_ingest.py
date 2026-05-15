@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import contextlib
 import io
+import json
 import sys
 import tempfile
 import types
@@ -177,6 +178,75 @@ class IngestCliTests(unittest.TestCase):
         self.assertIn("Markdown note saved:", stdout)
         self.assertEqual(stderr, "")
         self.assertTrue(note_exists)
+        export_mock.assert_not_called()
+
+    def test_json_output_manual_fallback_writes_only_json_to_stdout(self) -> None:
+        exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
+            "--output",
+            "json",
+            note_text=None,
+        )
+
+        payload = json.loads(stdout)
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(stderr, "")
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["url"], VIDEO_URL)
+        self.assertEqual(payload["export_mode"], "local")
+        self.assertTrue(payload["transcript_path"].endswith(f"transcripts/{VIDEO_ID}.txt"))
+        self.assertTrue(payload["prompt_path"].endswith(f"prompts/{VIDEO_ID}_prompt.md"))
+        self.assertIsNone(payload["note_path"])
+        self.assertIsNone(payload["notion_page_id"])
+        self.assertFalse(note_exists)
+        self.assertNotIn("Transcript saved:", stdout)
+        self.assertNotIn("Markdown note skipped:", stdout)
+        export_mock.assert_not_called()
+
+    def test_json_output_includes_notion_result_when_export_runs(self) -> None:
+        page_id = "12345678-1234-1234-1234-123456789abc"
+
+        exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
+            "--export",
+            "notion",
+            "--output",
+            "json",
+            export_side_effect=lambda _markdown, _url: page_id,
+        )
+
+        payload = json.loads(stdout)
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(stderr, "")
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["export_mode"], "notion")
+        self.assertTrue(payload["note_path"].endswith(f"notes/{VIDEO_ID}.md"))
+        self.assertEqual(payload["notion_page_id"], page_id)
+        self.assertEqual(payload["notion_page_url"], "https://www.notion.so/12345678123412341234123456789abc")
+        self.assertTrue(note_exists)
+        self.assertNotIn("Notion page created:", stdout)
+        export_mock.assert_called_once()
+
+    def test_json_output_failure_contains_stage_and_error(self) -> None:
+        exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
+            "--export",
+            "notion",
+            "--output",
+            "json",
+            note_text=None,
+        )
+
+        payload = json.loads(stdout)
+
+        self.assertEqual(exit_code, 1)
+        self.assertEqual(stderr, "")
+        self.assertFalse(payload["ok"])
+        self.assertEqual(payload["stage"], "notion_export")
+        self.assertIn("--export notion requires a generated markdown note", payload["error"])
+        self.assertTrue(payload["transcript_path"].endswith(f"transcripts/{VIDEO_ID}.txt"))
+        self.assertTrue(payload["prompt_path"].endswith(f"prompts/{VIDEO_ID}_prompt.md"))
+        self.assertIsNone(payload["note_path"])
+        self.assertFalse(note_exists)
         export_mock.assert_not_called()
 
 

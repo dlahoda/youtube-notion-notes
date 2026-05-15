@@ -52,6 +52,7 @@ Useful options:
 python ingest.py "https://youtu.be/VIDEO_ID" --languages en,uk
 python ingest.py "https://youtu.be/VIDEO_ID" --output-name my-video
 python ingest.py "https://youtu.be/VIDEO_ID" --export local
+python ingest.py "https://youtu.be/VIDEO_ID" --output json
 ```
 
 Expected result without OpenAI mode:
@@ -97,6 +98,17 @@ python ingest.py "https://youtu.be/VIDEO_ID" --export notion
 ```
 
 Set `NOTION_API_KEY` and `NOTION_DATABASE_ID` in `.env` before using `--export notion`.
+
+## JSON result output
+
+For future automation, the CLI can emit a machine-readable JSON result. Human-readable behavior remains the default.
+
+```bash
+python ingest.py "https://youtu.be/VIDEO_ID" --output json
+python ingest.py "https://youtu.be/VIDEO_ID" --export notion --output json
+```
+
+In JSON output mode, stdout contains only JSON. On success, the payload includes `ok`, `url`, `export_mode`, local output paths when created, and Notion page details when export runs. On failure, the payload includes `ok: false`, `stage`, and `error`.
 
 ## Manual Notion smoke test
 

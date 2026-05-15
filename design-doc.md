@@ -298,7 +298,7 @@ python ingest.py "URL" --export local
 
 ```
 
-На planning milestone цей flag тільки документується. Його не треба реалізовувати, поки немає Notion export implementation.
+CLI integration slice implemented: `--export notion` now runs the local pipeline first, saves the markdown note locally, then exports that generated markdown to Notion. Omitting `--export` remains local-only behavior.
 
 
 ## Body сторінки

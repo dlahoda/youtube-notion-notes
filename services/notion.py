@@ -88,6 +88,7 @@ def create_notion_page(
     tags: list[str] | None = None,
     status: str = "Draft",
     source: str = "YouTube",
+    children: list[dict] | None = None,
 ) -> str:
     title = title.strip()
     url = url.strip()
@@ -117,15 +118,21 @@ def create_notion_page(
     client = Client(auth=api_key)
 
     try:
-        page = client.pages.create(
-            parent={"database_id": database_id},
-            properties=_page_properties(
+        page_payload: dict[str, Any] = {
+            "parent": {"database_id": database_id},
+            "properties": _page_properties(
                 title=title,
                 url=url,
                 tags=clean_tags,
                 status=status,
                 source=source,
             ),
+        }
+        if children:
+            page_payload["children"] = children
+
+        page = client.pages.create(
+            **page_payload,
         )
     except Exception as exc:
         raise NotionPageCreationError(f"Notion page creation failed: {exc}") from exc

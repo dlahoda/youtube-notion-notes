@@ -26,6 +26,7 @@ class IngestCliTests(unittest.TestCase):
         note_text: str | None = "# Generated Note\n\nTags: cli\n\nBody",
         export_side_effect=None,
         assert_note_saved_before_export: bool = False,
+        include_positional_url: bool = True,
     ) -> tuple[int, str, str, Mock, bool, str]:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
@@ -46,9 +47,19 @@ class IngestCliTests(unittest.TestCase):
             export_mock = Mock(side_effect=export_effect)
             fake_notion_export_module = types.ModuleType("services.notion_export")
             fake_notion_export_module.export_markdown_note_to_notion = export_mock
-            should_fake_notion_export = "--export" in extra_args and "notion" in extra_args and note_text
+            should_fake_notion_export = (
+                (
+                    ("--export" in extra_args and "notion" in extra_args)
+                    or self.args_include_input_json_export_notion(extra_args)
+                )
+                and note_text
+            )
             had_notion_export_attr = hasattr(services, "notion_export")
             original_notion_export_attr = getattr(services, "notion_export", None)
+            argv = ["ingest.py"]
+            if include_positional_url:
+                argv.append(VIDEO_URL)
+            argv.extend(extra_args)
 
             stdout = io.StringIO()
             stderr = io.StringIO()
@@ -59,7 +70,7 @@ class IngestCliTests(unittest.TestCase):
                 )
                 if should_fake_notion_export
                 else contextlib.nullcontext(),
-                patch.object(sys, "argv", ["ingest.py", VIDEO_URL, *extra_args]),
+                patch.object(sys, "argv", argv),
                 patch.object(ingest, "TRANSCRIPT_DIR", temp_path / "transcripts"),
                 patch.object(ingest, "PROMPT_DIR", temp_path / "prompts"),
                 patch.object(ingest, "NOTES_DIR", temp_path / "notes"),
@@ -83,6 +94,18 @@ class IngestCliTests(unittest.TestCase):
             note_content = note_path.read_text(encoding="utf-8") if note_exists else ""
 
             return exit_code, stdout.getvalue(), stderr.getvalue(), export_mock, note_exists, note_content
+
+    def args_include_input_json_export_notion(self, args: tuple[str, ...]) -> bool:
+        if "--input-json" not in args:
+            return False
+        input_json_index = args.index("--input-json") + 1
+        if input_json_index >= len(args):
+            return False
+        try:
+            payload = json.loads(args[input_json_index])
+        except json.JSONDecodeError:
+            return False
+        return isinstance(payload, dict) and payload.get("export") == "notion"
 
     def test_default_cli_behavior_does_not_call_notion_export(self) -> None:
         existing_notion_export_module = sys.modules.pop("services.notion_export", None)
@@ -249,6 +272,134 @@ class IngestCliTests(unittest.TestCase):
         self.assertTrue(payload["transcript_path"].endswith(f"transcripts/{VIDEO_ID}.txt"))
         self.assertTrue(payload["prompt_path"].endswith(f"prompts/{VIDEO_ID}_prompt.md"))
         self.assertIsNone(payload["note_path"])
+        self.assertFalse(note_exists)
+        export_mock.assert_not_called()
+
+    def test_positional_url_behavior_still_works(self) -> None:
+        exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest("--no-note")
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("Transcript saved:", stdout)
+        self.assertIn("GPT prompt saved:", stdout)
+        self.assertIn("Markdown note skipped: --no-note was provided.", stdout)
+        self.assertEqual(stderr, "")
+        self.assertFalse(note_exists)
+        export_mock.assert_not_called()
+
+    def test_input_json_with_url_works(self) -> None:
+        exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
+            "--input-json",
+            json.dumps({"url": VIDEO_URL}),
+            "--output",
+            "json",
+            note_text=None,
+            include_positional_url=False,
+        )
+
+        payload = json.loads(stdout)
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(stderr, "")
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["url"], VIDEO_URL)
+        self.assertEqual(payload["export_mode"], "local")
+        self.assertFalse(note_exists)
+        export_mock.assert_not_called()
+
+    def test_input_json_with_url_and_export_notion_works(self) -> None:
+        exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
+            "--input-json",
+            json.dumps({"url": VIDEO_URL, "export": "notion"}),
+            "--output",
+            "json",
+            include_positional_url=False,
+        )
+
+        payload = json.loads(stdout)
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(stderr, "")
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["url"], VIDEO_URL)
+        self.assertEqual(payload["export_mode"], "notion")
+        self.assertEqual(payload["notion_page_id"], "page-123")
+        self.assertTrue(note_exists)
+        export_mock.assert_called_once()
+
+    def test_invalid_input_json_fails_cleanly(self) -> None:
+        exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
+            "--input-json",
+            "{not json",
+            "--output",
+            "json",
+            include_positional_url=False,
+        )
+
+        payload = json.loads(stdout)
+
+        self.assertEqual(exit_code, 2)
+        self.assertEqual(stderr, "")
+        self.assertFalse(payload["ok"])
+        self.assertEqual(payload["stage"], "input")
+        self.assertIn("Invalid --input-json", payload["error"])
+        self.assertFalse(note_exists)
+        export_mock.assert_not_called()
+
+    def test_missing_url_in_input_json_fails_cleanly(self) -> None:
+        exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
+            "--input-json",
+            json.dumps({"export": "local"}),
+            "--output",
+            "json",
+            include_positional_url=False,
+        )
+
+        payload = json.loads(stdout)
+
+        self.assertEqual(exit_code, 2)
+        self.assertEqual(stderr, "")
+        self.assertFalse(payload["ok"])
+        self.assertEqual(payload["stage"], "input")
+        self.assertIn("required field 'url' is missing", payload["error"])
+        self.assertFalse(note_exists)
+        export_mock.assert_not_called()
+
+    def test_positional_url_plus_input_json_fails_cleanly(self) -> None:
+        exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
+            "--input-json",
+            json.dumps({"url": VIDEO_URL}),
+            "--output",
+            "json",
+        )
+
+        payload = json.loads(stdout)
+
+        self.assertEqual(exit_code, 2)
+        self.assertEqual(stderr, "")
+        self.assertFalse(payload["ok"])
+        self.assertEqual(payload["stage"], "input")
+        self.assertIn("either a positional URL or --input-json", payload["error"])
+        self.assertFalse(note_exists)
+        export_mock.assert_not_called()
+
+    def test_input_json_export_plus_export_flag_fails_cleanly(self) -> None:
+        exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
+            "--input-json",
+            json.dumps({"url": VIDEO_URL, "export": "notion"}),
+            "--export",
+            "local",
+            "--output",
+            "json",
+            include_positional_url=False,
+        )
+
+        payload = json.loads(stdout)
+
+        self.assertEqual(exit_code, 2)
+        self.assertEqual(stderr, "")
+        self.assertFalse(payload["ok"])
+        self.assertEqual(payload["stage"], "input")
+        self.assertIn("export either in --input-json or --export", payload["error"])
         self.assertFalse(note_exists)
         export_mock.assert_not_called()
 

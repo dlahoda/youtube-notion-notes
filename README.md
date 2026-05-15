@@ -101,14 +101,20 @@ Set `NOTION_API_KEY` and `NOTION_DATABASE_ID` in `.env` before using `--export n
 
 ## JSON result output
 
-For future automation, the CLI can emit a machine-readable JSON result. Human-readable behavior remains the default.
+For future automation, the CLI can accept structured JSON input and emit a machine-readable JSON result. Human-readable positional-URL behavior remains the default.
 
 ```bash
 python ingest.py "https://youtu.be/VIDEO_ID" --output json
 python ingest.py "https://youtu.be/VIDEO_ID" --export notion --output json
+python ingest.py --input-json '{"url":"https://youtu.be/VIDEO_ID"}' --output json
+python ingest.py --input-json '{"url":"https://youtu.be/VIDEO_ID","export":"notion"}' --output json
 ```
 
-In JSON output mode, stdout contains only JSON. On success, the payload includes `ok`, `url`, `export_mode`, local output paths when created, and Notion page details when export runs. `notion_page_url` is included only when the Notion API response includes its canonical `url` field. On failure, the payload includes `ok: false`, `stage`, and `error`.
+The `--input-json` payload must be a JSON object with a required `url` field and an optional `export` field. `export` accepts the same values as `--export`: `local` or `notion`.
+
+Do not combine a positional URL with `--input-json`. Do not provide `export` in both `--input-json` and `--export`.
+
+In JSON output mode, stdout contains only JSON. On success, the payload includes `ok`, `url`, `export_mode`, local output paths when created, and Notion page details when export runs. `notion_page_url` is included only when the Notion API response includes its canonical `url` field. On failure, including invalid JSON input, the payload includes `ok: false`, `stage`, and `error`.
 
 ## Manual Notion smoke test
 

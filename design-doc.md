@@ -345,21 +345,48 @@ python ingest.py "URL" --export notion --output json
 
 In JSON output mode, stdout must contain only JSON. Success output includes `ok`, `url`, `export_mode`, created local paths, and Notion page details when export runs. `notion_page_url` comes from the Notion API page response `url` field and is included only when that field is present. Failure output includes `ok: false`, `stage`, and `error`.
 
-Можливі режими:
+## CLI JSON input contract
+
+Second small slice: allow automation callers to pass a structured JSON payload instead of a positional URL:
+
+```bash
+python ingest.py --input-json '{"url":"https://www.youtube.com/watch?v=..."}' --output json
+python ingest.py --input-json '{"url":"https://www.youtube.com/watch?v=...","export":"notion"}' --output json
+
+```
+
+The `--input-json` payload is a JSON object with:
+
+- `url`: required YouTube URL string;
+- `export`: optional export target, with the same accepted values as `--export`: `local` or `notion`.
+
+Ambiguous input is rejected:
+
+- positional URL plus `--input-json`;
+- `export` inside `--input-json` plus `--export`.
+
+JSON output mode keeps stdout JSON-only for input errors:
+
+```json
+{
+  "ok": false,
+  "stage": "input",
+  "error": "..."
+}
+
+```
+
+Current supported modes:
 
 ```bash
 python ingest.py "URL"
+python ingest.py "URL" --export notion
+python ingest.py "URL" --output json
+python ingest.py --input-json '{"url":"..."}' --output json
 
 ```
 
-або:
-
-```bash
-python ingest.py --json '{"url":"..."}'
-
-```
-
-або маленький локальний HTTP wrapper:
+Later possible mode, not implemented yet:
 
 ```text
 POST /ingest
@@ -544,8 +571,29 @@ transcript → ready prompt file → user pastes into ChatGPT → saves result m
 Менше магії означає менше місць, де все ламається без пояснень.
 
 ----------
+# 13. Repository workflow
 
-# 13. Codex execution runbook
+Canonical repository: dlahoda/youtube-notion-notes
+
+Default branch: main.
+
+Repository access rule:
+
+- The repository is private.
+- Use the GitHub connector/integration for repository access.
+- Do not use web search to inspect repository contents.
+- If GitHub connector access is unavailable, ask the user for a branch, PR, diff, or uploaded files instead of searching the web.
+
+Working flow:
+
+- implementation happens locally through Codex/VS Code;
+- feature work is committed to feature branches;
+- pushed branches or PRs are reviewed through GitHub;
+- final integration uses squash merge into main;
+- assistant must not create commits, branches, PRs, or merge changes unless explicitly asked.
+----------
+
+# 14. Codex execution runbook
 
 ## Мета
 

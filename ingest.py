@@ -23,11 +23,27 @@ NOTES_DIR = OUTPUT_DIR / "notes"
 PROMPT_TEMPLATE_PATH = Path("prompts") / "comprehensive_note.md"
 
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
+class CliInputError(Exception):
+    def __init__(self, message: str, *, stage: str = "input") -> None:
+        super().__init__(message)
+        self.stage = stage
+
+
+class IngestArgumentParser(argparse.ArgumentParser):
+    def error(self, message: str) -> None:
+        raise CliInputError(message)
+
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = IngestArgumentParser(
         description="Fetch a YouTube transcript and create a ready-to-paste GPT prompt."
     )
-    parser.add_argument("url", help="YouTube URL to ingest")
+    parser.add_argument("url", nargs="?", help="YouTube URL to ingest")
+    parser.add_argument(
+        "--input-json",
+        default=None,
+        help='Structured JSON input payload, for example: {"url":"https://youtu.be/VIDEO_ID"}',
+    )
     parser.add_argument(
         "--languages",
         default=None,
@@ -52,10 +68,67 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--export",
         choices=("local", "notion"),
-        default="local",
+        default=None,
         help="Export target. Defaults to local-only output.",
     )
-    return parser.parse_args()
+    args = parser.parse_args(argv)
+    return resolve_cli_input(args)
+
+
+def input_error_result(message: str, *, stage: str = "input") -> dict[str, Any]:
+    return {
+        "ok": False,
+        "stage": stage,
+        "error": message,
+    }
+
+
+def requested_json_output(argv: list[str]) -> bool:
+    for index, arg in enumerate(argv):
+        if arg == "--output" and index + 1 < len(argv):
+            return argv[index + 1] == "json"
+        if arg.startswith("--output="):
+            return arg.split("=", 1)[1] == "json"
+    return False
+
+
+def resolve_cli_input(args: argparse.Namespace) -> argparse.Namespace:
+    payload: dict[str, Any] = {}
+
+    if args.input_json is not None:
+        if args.url:
+            raise CliInputError("Provide either a positional URL or --input-json, not both.")
+        try:
+            raw_payload = json.loads(args.input_json)
+        except json.JSONDecodeError as exc:
+            raise CliInputError(f"Invalid --input-json: {exc.msg}.") from exc
+
+        if not isinstance(raw_payload, dict):
+            raise CliInputError("Invalid --input-json: payload must be a JSON object.")
+        payload = raw_payload
+
+        if "url" not in payload or not payload["url"]:
+            raise CliInputError("Invalid --input-json: required field 'url' is missing.")
+        if not isinstance(payload["url"], str):
+            raise CliInputError("Invalid --input-json: field 'url' must be a string.")
+        args.url = payload["url"]
+
+        if "export" in payload:
+            if args.export is not None:
+                raise CliInputError("Provide export either in --input-json or --export, not both.")
+            if payload["export"] not in ("local", "notion"):
+                raise CliInputError(
+                    "Invalid --input-json: field 'export' must be 'local' or 'notion'."
+                )
+            args.export = payload["export"]
+
+    if not args.url:
+        raise CliInputError("A YouTube URL is required as a positional argument or in --input-json.")
+
+    if args.export is None:
+        args.export = "local"
+
+    return args
 
 
 def load_env_file(path: Path = Path(".env")) -> None:
@@ -202,7 +275,21 @@ def run_pipeline(args: argparse.Namespace, *, human_output: bool) -> tuple[int, 
 
 def main() -> int:
     load_env_file()
-    args = parse_args()
+    output_mode = "json" if requested_json_output(sys.argv[1:]) else "text"
+    try:
+        args = parse_args()
+    except CliInputError as exc:
+        if output_mode == "json":
+            print(
+                json.dumps(
+                    input_error_result(str(exc), stage=exc.stage),
+                    indent=2,
+                    sort_keys=True,
+                )
+            )
+        else:
+            print(f"Input error: {exc}", file=sys.stderr)
+        return 2
 
     if args.output == "json":
         stdout = sys.stdout

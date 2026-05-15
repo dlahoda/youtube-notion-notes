@@ -345,21 +345,48 @@ python ingest.py "URL" --export notion --output json
 
 In JSON output mode, stdout must contain only JSON. Success output includes `ok`, `url`, `export_mode`, created local paths, and Notion page details when export runs. `notion_page_url` comes from the Notion API page response `url` field and is included only when that field is present. Failure output includes `ok: false`, `stage`, and `error`.
 
-Можливі режими:
+## CLI JSON input contract
+
+Second small slice: allow automation callers to pass a structured JSON payload instead of a positional URL:
+
+```bash
+python ingest.py --input-json '{"url":"https://www.youtube.com/watch?v=..."}' --output json
+python ingest.py --input-json '{"url":"https://www.youtube.com/watch?v=...","export":"notion"}' --output json
+
+```
+
+The `--input-json` payload is a JSON object with:
+
+- `url`: required YouTube URL string;
+- `export`: optional export target, with the same accepted values as `--export`: `local` or `notion`.
+
+Ambiguous input is rejected:
+
+- positional URL plus `--input-json`;
+- `export` inside `--input-json` plus `--export`.
+
+JSON output mode keeps stdout JSON-only for input errors:
+
+```json
+{
+  "ok": false,
+  "stage": "input",
+  "error": "..."
+}
+
+```
+
+Current supported modes:
 
 ```bash
 python ingest.py "URL"
+python ingest.py "URL" --export notion
+python ingest.py "URL" --output json
+python ingest.py --input-json '{"url":"..."}' --output json
 
 ```
 
-або:
-
-```bash
-python ingest.py --json '{"url":"..."}'
-
-```
-
-або маленький локальний HTTP wrapper:
+Later possible mode, not implemented yet:
 
 ```text
 POST /ingest

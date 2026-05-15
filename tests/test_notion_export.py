@@ -4,6 +4,7 @@ import unittest
 from unittest.mock import patch
 
 from services.notion_export import export_markdown_note_to_notion
+from services.notion import NotionPage
 
 
 class NotionExportTests(unittest.TestCase):
@@ -13,11 +14,15 @@ class NotionExportTests(unittest.TestCase):
 
         with (
             patch("services.notion_export.markdown_to_blocks", return_value=blocks) as markdown_to_blocks,
-            patch("services.notion_export.create_notion_page", return_value="page-123") as create_notion_page,
+            patch(
+                "services.notion_export.create_notion_page",
+                return_value=NotionPage(id="page-123", url="https://www.notion.so/page-123"),
+            ) as create_notion_page,
         ):
-            page_id = export_markdown_note_to_notion(markdown, "https://youtu.be/example")
+            page = export_markdown_note_to_notion(markdown, "https://youtu.be/example")
 
-        self.assertEqual(page_id, "page-123")
+        self.assertEqual(page.id, "page-123")
+        self.assertEqual(page.url, "https://www.notion.so/page-123")
         markdown_to_blocks.assert_called_once_with(markdown)
         create_notion_page.assert_called_once_with(
             title="My Video Note",
@@ -31,15 +36,16 @@ class NotionExportTests(unittest.TestCase):
     def test_custom_status_is_passed_through(self) -> None:
         with (
             patch("services.notion_export.markdown_to_blocks", return_value=[]) as markdown_to_blocks,
-            patch("services.notion_export.create_notion_page", return_value="page-456") as create_notion_page,
+            patch("services.notion_export.create_notion_page", return_value=NotionPage(id="page-456")) as create_notion_page,
         ):
-            page_id = export_markdown_note_to_notion(
+            page = export_markdown_note_to_notion(
                 "# Reviewed Note",
                 "https://youtu.be/reviewed",
                 status="Reviewed",
             )
 
-        self.assertEqual(page_id, "page-456")
+        self.assertEqual(page.id, "page-456")
+        self.assertIsNone(page.url)
         markdown_to_blocks.assert_called_once_with("# Reviewed Note")
         create_notion_page.assert_called_once_with(
             title="Reviewed Note",

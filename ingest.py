@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
+import json
 import os
 import sys
 from pathlib import Path
+from typing import Any
 
 from services.note_generator import (
     NoteGenerationError,
@@ -34,6 +37,12 @@ def parse_args() -> argparse.Namespace:
         "--output-name",
         default=None,
         help="Optional filename stem. Defaults to the YouTube video id.",
+    )
+    parser.add_argument(
+        "--output",
+        choices=("text", "json"),
+        default="text",
+        help="Result output format. Defaults to human-readable text.",
     )
     parser.add_argument(
         "--no-note",
@@ -87,16 +96,33 @@ def write_text(path: Path, content: str) -> None:
     path.write_text(content, encoding="utf-8")
 
 
-def main() -> int:
-    load_env_file()
-    args = parse_args()
+def result_contract(args: argparse.Namespace) -> dict[str, Any]:
+    return {
+        "ok": False,
+        "url": args.url,
+        "export_mode": args.export,
+        "transcript_path": None,
+        "prompt_path": None,
+        "note_path": None,
+        "notion_page_id": None,
+    }
+
+
+def run_pipeline(args: argparse.Namespace, *, human_output: bool) -> tuple[int, dict[str, Any]]:
+    result = result_contract(args)
+
+    def log(message: str, *, error: bool = False) -> None:
+        if human_output:
+            print(message, file=sys.stderr if error else sys.stdout)
 
     try:
         video_id = parse_youtube_url(args.url)
         transcript = fetch_transcript(video_id, language_preferences(args.languages))
     except TranscriptError as exc:
-        print(f"Transcript error: {exc}", file=sys.stderr)
-        return 1
+        result["stage"] = "transcript"
+        result["error"] = str(exc)
+        log(f"Transcript error: {exc}", error=True)
+        return 1, result
 
     output_name = safe_output_name(args.output_name or video_id)
     transcript_path = TRANSCRIPT_DIR / f"{output_name}.txt"
@@ -113,54 +139,80 @@ def main() -> int:
 
     write_text(transcript_path, transcript_text)
     write_text(prompt_path, prompt_text)
+    result["transcript_path"] = str(transcript_path)
+    result["prompt_path"] = str(prompt_path)
 
-    print(f"Transcript saved: {transcript_path}")
-    print(f"GPT prompt saved: {prompt_path}")
+    log(f"Transcript saved: {transcript_path}")
+    log(f"GPT prompt saved: {prompt_path}")
 
     if args.no_note:
-        print("Markdown note skipped: --no-note was provided.")
+        log("Markdown note skipped: --no-note was provided.")
         if args.export == "notion":
-            print(
-                "Notion export skipped: --export notion requires a generated markdown note.",
-                file=sys.stderr,
-            )
-            return 1
-        return 0
+            message = "Notion export skipped: --export notion requires a generated markdown note."
+            result["stage"] = "notion_export"
+            result["error"] = message
+            log(message, error=True)
+            return 1, result
+        result["ok"] = True
+        return 0, result
 
     try:
         note_text = generate_note_if_available(prompt_text)
     except NoteGenerationError as exc:
-        print(f"Markdown note skipped: {exc}")
+        log(f"Markdown note skipped: {exc}")
         if args.export == "notion":
-            print(
-                "Notion export skipped: --export notion requires a generated markdown note.",
-                file=sys.stderr,
-            )
-            return 1
-        return 0
+            message = "Notion export skipped: --export notion requires a generated markdown note."
+            result["stage"] = "notion_export"
+            result["error"] = message
+            log(message, error=True)
+            return 1, result
+        result["ok"] = True
+        return 0, result
 
     if note_text:
         write_text(note_path, note_text)
-        print(f"Markdown note saved: {note_path}")
+        result["note_path"] = str(note_path)
+        log(f"Markdown note saved: {note_path}")
         if args.export == "notion":
             try:
                 from services.notion_export import export_markdown_note_to_notion
 
-                notion_page_id = export_markdown_note_to_notion(note_text, args.url)
+                notion_page = export_markdown_note_to_notion(note_text, args.url)
             except Exception as exc:
-                print(f"Notion export failed: {exc}", file=sys.stderr)
-                return 1
-            print(f"Notion page created: {notion_page_id}")
+                result["stage"] = "notion_export"
+                result["error"] = str(exc)
+                log(f"Notion export failed: {exc}", error=True)
+                return 1, result
+            result["notion_page_id"] = notion_page.id
+            if notion_page.url:
+                result["notion_page_url"] = notion_page.url
+            log(f"Notion page created: {notion_page.id}")
     else:
-        print("Markdown note skipped: OPENAI_API_KEY is not configured.")
+        log("Markdown note skipped: OPENAI_API_KEY is not configured.")
         if args.export == "notion":
-            print(
-                "Notion export skipped: --export notion requires a generated markdown note.",
-                file=sys.stderr,
-            )
-            return 1
+            message = "Notion export skipped: --export notion requires a generated markdown note."
+            result["stage"] = "notion_export"
+            result["error"] = message
+            log(message, error=True)
+            return 1, result
 
-    return 0
+    result["ok"] = True
+    return 0, result
+
+
+def main() -> int:
+    load_env_file()
+    args = parse_args()
+
+    if args.output == "json":
+        stdout = sys.stdout
+        with contextlib.redirect_stdout(sys.stderr):
+            exit_code, result = run_pipeline(args, human_output=False)
+        print(json.dumps(result, indent=2, sort_keys=True), file=stdout)
+        return exit_code
+
+    exit_code, _result = run_pipeline(args, human_output=True)
+    return exit_code
 
 
 if __name__ == "__main__":

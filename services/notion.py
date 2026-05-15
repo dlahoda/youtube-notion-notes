@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 import os
 import sys
 from pathlib import Path
@@ -19,6 +20,12 @@ class NotionSmokeTestError(Exception):
 
 class NotionPageCreationError(Exception):
     """Raised when a Notion page cannot be created."""
+
+
+@dataclass(frozen=True)
+class NotionPage:
+    id: str
+    url: str | None = None
 
 
 def load_env_file(path: Path = Path(".env")) -> None:
@@ -89,7 +96,7 @@ def create_notion_page(
     status: str = "Draft",
     source: str = "YouTube",
     children: list[dict] | None = None,
-) -> str:
+) -> NotionPage:
     title = title.strip()
     url = url.strip()
     status = status.strip()
@@ -141,18 +148,23 @@ def create_notion_page(
     if not page_id:
         raise NotionPageCreationError("Notion page was created, but no page id was returned.")
 
-    return str(page_id)
+    page_url = page.get("url")
+    return NotionPage(
+        id=str(page_id),
+        url=str(page_url) if page_url else None,
+    )
 
 
 def create_smoke_test_page() -> str:
     try:
-        return create_notion_page(
+        page = create_notion_page(
             title=SMOKE_TEST_NAME,
             url=SMOKE_TEST_URL,
             tags=SMOKE_TEST_TAGS,
             status=SMOKE_TEST_STATUS,
             source=SMOKE_TEST_SOURCE,
         )
+        return page.id
     except NotionPageCreationError as exc:
         raise NotionSmokeTestError(str(exc)) from exc
 

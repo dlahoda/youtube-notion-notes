@@ -139,6 +139,8 @@ python ingest.py "https://youtu.be/VIDEO_ID" --export local
 
 The `--export` flag is documented as a future shape only and is not available in the current CLI.
 
+Markdown note metadata convention for future export: the first H1 heading, formatted as `# Note title`, is the future Notion page `Name`; tags should be written as `Tags: tag one, tag two` with comma-separated tags.
+
 ## Limitations
 
 - Only videos with available YouTube transcripts/captions are supported.

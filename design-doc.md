@@ -305,6 +305,14 @@ python ingest.py "URL" --export local
 
 Конспект вставляється в тіло сторінки як Notion blocks.
 
+## Markdown note metadata convention
+
+-   The first Markdown H1 heading is treated as the note title.
+-   The note title must use `# Note title`.
+-   Tags are read from a comma-separated `Tags:` line.
+-   Spaces inside multi-word tags are preserved.
+-   The source URL is not parsed from markdown; it comes from the original CLI input.
+
 ----------
 
 # 7. Milestone 3 — підготовка до n8n

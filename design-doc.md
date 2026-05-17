@@ -333,6 +333,35 @@ python ingest.py "URL" --export local
 
 Ціль: зробити так, щоб Python-логіку можна було викликати з n8n.
 
+## Status — complete
+
+Milestone 3's local CLI automation contract is complete.
+
+Supported current CLI input modes:
+
+- positional URL;
+- `--input-json`;
+- `--input-json-file payload.json`;
+- `--input-json-file -` for stdin.
+
+Supported current export modes:
+
+- `local`;
+- `notion`.
+
+JSON output mode can be combined with supported input and export modes.
+
+JSON output mode keeps stdout JSON-only, including for input errors.
+
+JSON input supports only:
+
+- `url`;
+- `export`.
+
+Unknown JSON fields are rejected so automation typos do not get silently ignored.
+
+n8n orchestration and any HTTP wrapper are not implemented yet. They belong to later work, after this local CLI contract.
+
 ## CLI result contract
 
 First small slice: keep the existing human-readable CLI as the default, and add opt-in machine-readable output for automation:
@@ -399,19 +428,7 @@ JSON output mode keeps stdout JSON-only for input errors:
 
 ```
 
-Current supported modes:
-
-```bash
-python ingest.py "URL"
-python ingest.py "URL" --export notion
-python ingest.py "URL" --output json
-python ingest.py --input-json '{"url":"..."}' --output json
-python ingest.py --input-json-file payload.json --output json
-python ingest.py --input-json-file - --output json
-
-```
-
-Later possible mode, not implemented yet:
+Later possible HTTP wrapper mode, not implemented yet:
 
 ```text
 POST /ingest

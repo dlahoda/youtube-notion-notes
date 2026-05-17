@@ -48,13 +48,6 @@ class IngestCliTests(unittest.TestCase):
             export_mock = Mock(side_effect=export_effect)
             fake_notion_export_module = types.ModuleType("services.notion_export")
             fake_notion_export_module.export_markdown_note_to_notion = export_mock
-            should_fake_notion_export = (
-                (
-                    ("--export" in extra_args and "notion" in extra_args)
-                    or self.args_include_json_export_notion(extra_args, stdin_value=stdin_value)
-                )
-                and note_text
-            )
             had_notion_export_attr = hasattr(services, "notion_export")
             original_notion_export_attr = getattr(services, "notion_export", None)
             argv = ["ingest.py"]
@@ -68,9 +61,7 @@ class IngestCliTests(unittest.TestCase):
                 patch.dict(
                     sys.modules,
                     {"services.notion_export": fake_notion_export_module},
-                )
-                if should_fake_notion_export
-                else contextlib.nullcontext(),
+                ),
                 patch.object(sys, "argv", argv),
                 patch.object(sys, "stdin", io.StringIO(stdin_value)),
                 patch.object(ingest, "TRANSCRIPT_DIR", temp_path / "transcripts"),
@@ -86,47 +77,15 @@ class IngestCliTests(unittest.TestCase):
             ):
                 exit_code = ingest.main()
 
-            if should_fake_notion_export:
-                if had_notion_export_attr:
-                    services.notion_export = original_notion_export_attr
-                elif hasattr(services, "notion_export"):
-                    delattr(services, "notion_export")
+            if had_notion_export_attr:
+                services.notion_export = original_notion_export_attr
+            elif hasattr(services, "notion_export"):
+                delattr(services, "notion_export")
 
             note_exists = note_path.exists()
             note_content = note_path.read_text(encoding="utf-8") if note_exists else ""
 
             return exit_code, stdout.getvalue(), stderr.getvalue(), export_mock, note_exists, note_content
-
-    def args_include_json_export_notion(self, args: tuple[str, ...], *, stdin_value: str) -> bool:
-        if "--input-json" in args:
-            input_json_index = args.index("--input-json") + 1
-            if input_json_index >= len(args):
-                return False
-            return self.json_payload_exports_notion(args[input_json_index])
-
-        if "--input-json-file" not in args:
-            return False
-
-        input_json_file_index = args.index("--input-json-file") + 1
-        if input_json_file_index >= len(args):
-            return False
-
-        source = args[input_json_file_index]
-        if source == "-":
-            return self.json_payload_exports_notion(stdin_value)
-
-        try:
-            raw_payload = Path(source).read_text(encoding="utf-8")
-        except OSError:
-            return False
-        return self.json_payload_exports_notion(raw_payload)
-
-    def json_payload_exports_notion(self, raw_payload: str) -> bool:
-        try:
-            payload = json.loads(raw_payload)
-        except json.JSONDecodeError:
-            return False
-        return isinstance(payload, dict) and payload.get("export") == "notion"
 
     def test_default_cli_behavior_does_not_call_notion_export(self) -> None:
         existing_notion_export_module = sys.modules.pop("services.notion_export", None)

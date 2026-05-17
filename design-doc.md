@@ -365,6 +365,25 @@ Ambiguous input is rejected:
 - positional URL plus `--input-json`;
 - `export` inside `--input-json` plus `--export`.
 
+Third small slice: allow the same JSON payload contract to come from a file or stdin, so automation callers do not need fragile inline JSON shell quoting:
+
+```bash
+python ingest.py --input-json-file payload.json --output json
+python ingest.py --input-json-file - --output json
+
+```
+
+`--input-json-file -` reads the payload from stdin. The payload still uses the same fields:
+
+- `url`: required YouTube URL string;
+- `export`: optional export target, with the same accepted values as `--export`: `local` or `notion`.
+
+Additional ambiguous input is rejected:
+
+- positional URL plus `--input-json-file`;
+- `--input-json` plus `--input-json-file`;
+- `export` inside any JSON payload plus `--export`.
+
 JSON output mode keeps stdout JSON-only for input errors:
 
 ```json
@@ -383,6 +402,8 @@ python ingest.py "URL"
 python ingest.py "URL" --export notion
 python ingest.py "URL" --output json
 python ingest.py --input-json '{"url":"..."}' --output json
+python ingest.py --input-json-file payload.json --output json
+python ingest.py --input-json-file - --output json
 
 ```
 

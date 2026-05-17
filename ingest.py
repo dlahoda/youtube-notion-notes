@@ -45,6 +45,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help='Structured JSON input payload, for example: {"url":"https://youtu.be/VIDEO_ID"}',
     )
     parser.add_argument(
+        "--input-json-file",
+        default=None,
+        help="Path to a structured JSON input payload, or '-' to read it from stdin.",
+    )
+    parser.add_argument(
         "--languages",
         default=None,
         help="Comma-separated transcript language preferences, for example: en,uk",
@@ -92,38 +97,65 @@ def requested_json_output(argv: list[str]) -> bool:
     return False
 
 
+def load_json_payload(raw_json: str, *, source: str) -> dict[str, Any]:
+    try:
+        raw_payload = json.loads(raw_json)
+    except json.JSONDecodeError as exc:
+        raise CliInputError(f"Invalid {source}: {exc.msg}.") from exc
+
+    if not isinstance(raw_payload, dict):
+        raise CliInputError(f"Invalid {source}: payload must be a JSON object.")
+    return raw_payload
+
+
+def apply_json_payload(args: argparse.Namespace, payload: dict[str, Any], *, source: str) -> None:
+    if "url" not in payload or not payload["url"]:
+        raise CliInputError(f"Invalid {source}: required field 'url' is missing.")
+    if not isinstance(payload["url"], str):
+        raise CliInputError(f"Invalid {source}: field 'url' must be a string.")
+    args.url = payload["url"]
+
+    if "export" in payload:
+        if args.export is not None:
+            raise CliInputError("Provide export either in JSON input or --export, not both.")
+        if payload["export"] not in ("local", "notion"):
+            raise CliInputError(f"Invalid {source}: field 'export' must be 'local' or 'notion'.")
+        args.export = payload["export"]
+
+
+def read_json_payload_file(path_value: str) -> str:
+    if path_value == "-":
+        return sys.stdin.read()
+
+    path = Path(path_value)
+    try:
+        return path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise CliInputError(f"Unable to read --input-json-file '{path_value}': {exc.strerror}.") from exc
+
+
 def resolve_cli_input(args: argparse.Namespace) -> argparse.Namespace:
     payload: dict[str, Any] = {}
+
+    if args.input_json is not None and args.input_json_file is not None:
+        raise CliInputError("Provide either --input-json or --input-json-file, not both.")
 
     if args.input_json is not None:
         if args.url:
             raise CliInputError("Provide either a positional URL or --input-json, not both.")
-        try:
-            raw_payload = json.loads(args.input_json)
-        except json.JSONDecodeError as exc:
-            raise CliInputError(f"Invalid --input-json: {exc.msg}.") from exc
+        payload = load_json_payload(args.input_json, source="--input-json")
+        apply_json_payload(args, payload, source="--input-json")
 
-        if not isinstance(raw_payload, dict):
-            raise CliInputError("Invalid --input-json: payload must be a JSON object.")
-        payload = raw_payload
-
-        if "url" not in payload or not payload["url"]:
-            raise CliInputError("Invalid --input-json: required field 'url' is missing.")
-        if not isinstance(payload["url"], str):
-            raise CliInputError("Invalid --input-json: field 'url' must be a string.")
-        args.url = payload["url"]
-
-        if "export" in payload:
-            if args.export is not None:
-                raise CliInputError("Provide export either in --input-json or --export, not both.")
-            if payload["export"] not in ("local", "notion"):
-                raise CliInputError(
-                    "Invalid --input-json: field 'export' must be 'local' or 'notion'."
-                )
-            args.export = payload["export"]
+    if args.input_json_file is not None:
+        if args.url:
+            raise CliInputError("Provide either a positional URL or --input-json-file, not both.")
+        payload = load_json_payload(read_json_payload_file(args.input_json_file), source="--input-json-file")
+        apply_json_payload(args, payload, source="--input-json-file")
 
     if not args.url:
-        raise CliInputError("A YouTube URL is required as a positional argument or in --input-json.")
+        raise CliInputError(
+            "A YouTube URL is required as a positional argument, --input-json, or --input-json-file."
+        )
 
     if args.export is None:
         args.export = "local"

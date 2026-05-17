@@ -108,11 +108,22 @@ python ingest.py "https://youtu.be/VIDEO_ID" --output json
 python ingest.py "https://youtu.be/VIDEO_ID" --export notion --output json
 python ingest.py --input-json '{"url":"https://youtu.be/VIDEO_ID"}' --output json
 python ingest.py --input-json '{"url":"https://youtu.be/VIDEO_ID","export":"notion"}' --output json
+python ingest.py --input-json-file payload.json --output json
+printf '%s\n' '{"url":"https://youtu.be/VIDEO_ID"}' | python ingest.py --input-json-file - --output json
 ```
 
-The `--input-json` payload must be a JSON object with a required `url` field and an optional `export` field. `export` accepts the same values as `--export`: `local` or `notion`.
+`./payload.json`
 
-Do not combine a positional URL with `--input-json`. Do not provide `export` in both `--input-json` and `--export`.
+```json
+{
+  "url": "https://youtu.be/VIDEO_ID",
+  "export": "notion"
+}
+```
+
+The `--input-json` or `--input-json-file` payload must be a JSON object with a required `url` field and an optional `export` field. `export` accepts the same values as `--export`: `local` or `notion`.
+
+Do not combine a positional URL with `--input-json` or `--input-json-file`. Do not combine `--input-json` with `--input-json-file`. Do not provide `export` in both JSON input and `--export`.
 
 In JSON output mode, stdout contains only JSON. On success, the payload includes `ok`, `url`, `export_mode`, local output paths when created, and Notion page details when export runs. `notion_page_url` is included only when the Notion API response includes its canonical `url` field. On failure, including invalid JSON input, the payload includes `ok: false`, `stage`, and `error`.
 

@@ -1,0 +1,4 @@
+# Copy this file to .local.mk and replace the sample URL.
+# .local.mk is ignored by git and is for local developer shortcuts only.
+
+YNN_SAMPLE_URL := https://youtu.be/VIDEO_ID

@@ -116,6 +116,44 @@ Do not combine a positional URL with `--input-json`. Do not provide `export` in 
 
 In JSON output mode, stdout contains only JSON. On success, the payload includes `ok`, `url`, `export_mode`, local output paths when created, and Notion page details when export runs. `notion_page_url` is included only when the Notion API response includes its canonical `url` field. On failure, including invalid JSON input, the payload includes `ok: false`, `stage`, and `error`.
 
+## Local developer shortcuts
+
+The `make` targets are convenience commands for local development. They are not the main pipeline contract; the CLI examples above remain the canonical usage.
+
+To use a repeated local sample URL, copy the template and set `YNN_SAMPLE_URL`:
+
+```bash
+cp .local.mk.example .local.mk
+```
+
+`./.local.mk`:
+
+```make
+YNN_SAMPLE_URL := https://youtu.be/VIDEO_ID
+```
+
+`./.local.mk` is local-only config and should not be committed. Keeping the sample URL there avoids manually editing placeholder `VIDEO_ID` values in repeated commands.
+
+Run the test shortcut:
+
+```bash
+make test
+```
+
+Run the local ingest sample:
+
+```bash
+make ingest-sample
+```
+
+Run the Notion export sample:
+
+```bash
+make notion-sample
+```
+
+`make notion-sample` uses `--export notion`, so it requires the normal Notion/OpenAI prerequisites for a full generated-note export: a generated markdown note, `OPENAI_API_KEY`, `NOTION_API_KEY`, and `NOTION_DATABASE_ID`.
+
 ## Manual Notion smoke test
 
 The smoke test is opt-in and does not change the default local CLI behavior. It creates one minimal page in the configured Notion database using properties only.

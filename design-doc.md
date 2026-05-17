@@ -445,8 +445,28 @@ n8n тоді буде оркестратором, а не місцем, де ж�
 Це зменшує біль підтримки.
 
 ----------
+# 8. Milestone 4 — n8n integration contract and smoke workflow
 
-# 8. Вузькі місця
+Goal: define how n8n will call the existing local Python CLI without adding an HTTP server or queue.
+
+Preferred integration shape:
+
+- n8n uses an Execute Command-style node.
+- n8n passes a JSON payload to `python ingest.py --input-json-file - --output json`.
+- Python reads JSON from stdin.
+- Python writes machine-readable JSON to stdout only.
+- n8n branches on `ok: true` / `ok: false`.
+
+Non-goals:
+
+- no HTTP server;
+- no queue;
+- no new dependencies;
+- no Notion logic inside n8n;
+- no duplicated pipeline logic in n8n.
+
+----------
+# 9. Вузькі місця
 
 ## 1. YouTube transcript
 
@@ -506,7 +526,7 @@ Fallback:
 
 ----------
 
-# 9. Пропонований перший режим: manual-safe MVP
+# 10. Пропонований перший режим: manual-safe MVP
 
 Щоб не впертися в оплату API відразу, можна зробити два режими.
 
@@ -528,7 +548,7 @@ transcript → ready prompt file → user pastes into ChatGPT → saves result m
 
 ----------
 
-# 10. Наступний практичний крок
+# 11. Наступний практичний крок
 
 Зробити Milestone 1.
 
@@ -553,7 +573,7 @@ transcript → ready prompt file → user pastes into ChatGPT → saves result m
 
 ----------
 
-# 11. Відкриті рішення
+# 12. Відкриті рішення
 
 ## LLM mode для першої версії
 
@@ -604,7 +624,7 @@ transcript → ready prompt file → user pastes into ChatGPT → saves result m
 
 ----------
 
-# 12. Принцип дизайну
+# 13. Принцип дизайну
 
 Пайплайн має бути нудний.
 
@@ -613,7 +633,7 @@ transcript → ready prompt file → user pastes into ChatGPT → saves result m
 Менше магії означає менше місць, де все ламається без пояснень.
 
 ----------
-# 13. Repository workflow
+# 14. Repository workflow
 
 Canonical repository: dlahoda/youtube-notion-notes
 
@@ -635,7 +655,7 @@ Working flow:
 - assistant must not create commits, branches, PRs, or merge changes unless explicitly asked.
 ----------
 
-# 14. Codex execution runbook
+# 15. Codex execution runbook
 
 ## Мета
 

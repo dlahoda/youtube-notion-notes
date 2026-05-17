@@ -445,11 +445,14 @@ n8n тоді буде оркестратором, а не місцем, де ж�
 Це зменшує біль підтримки.
 
 ----------
+
 # 8. Milestone 4 — n8n integration contract and smoke workflow
 
 Goal: define how n8n will call the existing local Python CLI without adding an HTTP server or queue.
 
 Preferred integration shape:
+
+Deferred decision: the exact n8n stdin wiring will be verified during the first real n8n smoke test. If direct stdin input is awkward in the installed n8n version, keep the Python CLI contract unchanged and adapt only the n8n-side wrapper.
 
 - n8n uses an Execute Command-style node.
 - n8n passes a JSON payload to `python ingest.py --input-json-file - --output json`.
@@ -465,7 +468,32 @@ Non-goals:
 - no Notion logic inside n8n;
 - no duplicated pipeline logic in n8n.
 
+## Slice 1 — n8n smoke workflow contract
+
+Status: documentation-only planning slice.
+
+Scope:
+
+- add `./docs/n8n-smoke-workflow.md` as the manual build guide for the first n8n smoke workflow;
+- document the minimal node chain: manual trigger, payload setup, execute command, stdout JSON parsing, and `ok` branch;
+- record the canonical command: `python ingest.py --input-json-file - --output json`;
+- document the stdin JSON payload shape with required `url` and optional `export`;
+- confirm that stdout is JSON-only and n8n branches on `ok: true` / `ok: false`;
+- keep pipeline logic, Notion export, error staging, and JSON result formatting inside Python;
+- verify during the first real n8n UI smoke test whether the Execute Command-style node can pass JSON directly to stdin.
+
+Out of scope:
+
+- no runtime Python behavior changes;
+- no dependency changes;
+- no HTTP server;
+- no queue;
+- no Notion logic inside n8n;
+- no duplicated transcript, note generation, markdown conversion, or Notion export logic in n8n;
+- no exported n8n workflow JSON yet.
+
 ----------
+
 # 9. Вузькі місця
 
 ## 1. YouTube transcript

@@ -127,6 +127,8 @@ Do not combine a positional URL with `--input-json` or `--input-json-file`. Do n
 
 In JSON output mode, stdout contains only JSON. On success, the payload includes `ok`, `url`, `export_mode`, local output paths when created, and Notion page details when export runs. `notion_page_url` is included only when the Notion API response includes its canonical `url` field. On failure, including invalid JSON input, the payload includes `ok: false`, `stage`, and `error`.
 
+For the first n8n smoke workflow contract, see `./docs/n8n-smoke-workflow.md`. It documents the manual n8n node chain for calling `python ingest.py --input-json-file - --output json`, passing JSON through stdin, and branching on `ok: true` / `ok: false`.
+
 ## Local developer shortcuts
 
 The `make` targets are convenience commands for local development. They are not the main pipeline contract; the CLI examples above remain the canonical usage.

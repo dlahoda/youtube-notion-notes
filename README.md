@@ -121,7 +121,7 @@ printf '%s\n' '{"url":"https://youtu.be/VIDEO_ID"}' | python ingest.py --input-j
 }
 ```
 
-The `--input-json` or `--input-json-file` payload must be a JSON object with a required `url` field and an optional `export` field. `export` accepts the same values as `--export`: `local` or `notion`.
+The `--input-json` or `--input-json-file` payload must be a JSON object with only two supported fields: a required `url` field and an optional `export` field. `export` accepts the same values as `--export`: `local` or `notion`. Unknown fields are rejected so automation typos do not get silently ignored.
 
 Do not combine a positional URL with `--input-json` or `--input-json-file`. Do not combine `--input-json` with `--input-json-file`. Do not provide `export` in both JSON input and `--export`.
 

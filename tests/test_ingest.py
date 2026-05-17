@@ -286,6 +286,25 @@ class IngestCliTests(unittest.TestCase):
         self.assertFalse(note_exists)
         export_mock.assert_not_called()
 
+    def test_input_json_with_unknown_field_fails_cleanly_in_json_output(self) -> None:
+        exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
+            "--input-json",
+            json.dumps({"url": VIDEO_URL, "exprt": "notion"}),
+            "--output",
+            "json",
+            include_positional_url=False,
+        )
+
+        payload = json.loads(stdout)
+
+        self.assertEqual(exit_code, 2)
+        self.assertEqual(stderr, "")
+        self.assertFalse(payload["ok"])
+        self.assertEqual(payload["stage"], "input")
+        self.assertIn("Invalid --input-json: unsupported field 'exprt'.", payload["error"])
+        self.assertFalse(note_exists)
+        export_mock.assert_not_called()
+
     def test_input_json_with_url_and_export_notion_works(self) -> None:
         exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
             "--input-json",
@@ -327,6 +346,29 @@ class IngestCliTests(unittest.TestCase):
         self.assertTrue(payload["ok"])
         self.assertEqual(payload["url"], VIDEO_URL)
         self.assertEqual(payload["export_mode"], "local")
+        self.assertFalse(note_exists)
+        export_mock.assert_not_called()
+
+    def test_input_json_file_with_unknown_field_fails_cleanly_in_json_output(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            payload_path = Path(temp_dir) / "payload.json"
+            payload_path.write_text(json.dumps({"url": VIDEO_URL, "exprt": "notion"}), encoding="utf-8")
+
+            exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
+                "--input-json-file",
+                str(payload_path),
+                "--output",
+                "json",
+                include_positional_url=False,
+            )
+
+        payload = json.loads(stdout)
+
+        self.assertEqual(exit_code, 2)
+        self.assertEqual(stderr, "")
+        self.assertFalse(payload["ok"])
+        self.assertEqual(payload["stage"], "input")
+        self.assertIn("Invalid --input-json-file: unsupported field 'exprt'.", payload["error"])
         self.assertFalse(note_exists)
         export_mock.assert_not_called()
 

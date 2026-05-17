@@ -21,6 +21,7 @@ TRANSCRIPT_DIR = OUTPUT_DIR / "transcripts"
 PROMPT_DIR = OUTPUT_DIR / "prompts"
 NOTES_DIR = OUTPUT_DIR / "notes"
 PROMPT_TEMPLATE_PATH = Path("prompts") / "comprehensive_note.md"
+JSON_INPUT_FIELDS = {"url", "export"}
 
 
 class CliInputError(Exception):
@@ -109,6 +110,10 @@ def load_json_payload(raw_json: str, *, source: str) -> dict[str, Any]:
 
 
 def apply_json_payload(args: argparse.Namespace, payload: dict[str, Any], *, source: str) -> None:
+    unsupported_fields = sorted(set(payload) - JSON_INPUT_FIELDS)
+    if unsupported_fields:
+        raise CliInputError(f"Invalid {source}: unsupported field '{unsupported_fields[0]}'.")
+
     if "url" not in payload or not payload["url"]:
         raise CliInputError(f"Invalid {source}: required field 'url' is missing.")
     if not isinstance(payload["url"], str):

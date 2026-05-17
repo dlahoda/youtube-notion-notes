@@ -477,7 +477,7 @@ Status: documentation-only planning slice.
 Scope:
 
 - add `./docs/n8n-smoke-workflow.md` as the manual build guide for the first n8n smoke workflow;
-- document the minimal node chain: manual trigger, payload setup, execute command, stdout JSON parsing, and `ok` branch;
+- document the minimal node chain: manual trigger, execute command, stdout JSON parsing, and `ok` branch;
 - record the canonical command: `python ingest.py --input-json-file - --output json`;
 - document the stdin JSON payload shape with required `url` and optional `export`;
 - confirm that stdout is JSON-only and n8n branches on `ok: true` / `ok: false`;

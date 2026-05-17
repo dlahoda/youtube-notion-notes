@@ -452,6 +452,8 @@ Goal: define how n8n will call the existing local Python CLI without adding an H
 
 Preferred integration shape:
 
+Deferred decision: the exact n8n stdin wiring will be verified during the first real n8n smoke test. If direct stdin input is awkward in the installed n8n version, keep the Python CLI contract unchanged and adapt only the n8n-side wrapper.
+
 - n8n uses an Execute Command-style node.
 - n8n passes a JSON payload to `python ingest.py --input-json-file - --output json`.
 - Python reads JSON from stdin.

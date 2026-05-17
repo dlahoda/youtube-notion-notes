@@ -27,14 +27,15 @@ The smoke workflow should prove the handoff between n8n and `./ingest.py`. It sh
 Build the first workflow manually with a small node chain:
 
 1. Manual Trigger
-2. Set or Edit Fields node that creates the input payload
-3. Execute Command node that calls `./ingest.py` directly through the JSON stdin/stdout contract
-4. Code node that parses stdout with `JSON.parse`
-5. IF node that checks `ok`
-6. Success branch for `ok: true`
-7. Failure branch for `ok: false`
+2. Execute Command node that calls `./ingest.py` directly through the JSON stdin/stdout contract
+3. Code node that parses stdout with `JSON.parse`
+4. IF node that checks `ok`
+5. Success branch for `ok: true`
+6. Failure branch for `ok: false`
 
 The exact n8n node names may vary by version, but the workflow should stay this small. Do not create a real exported workflow JSON in this slice.
+
+For the first smoke test, the JSON payload may be hardcoded in the Execute Command shell pipe. A later workflow can add a Set or Edit Fields node upstream to construct the payload before calling `./ingest.py`.
 
 ## Real Smoke Test Result
 
@@ -79,6 +80,8 @@ Run the command from the repository root so relative output paths are created un
 ```bash
 cd /path/to/youtube-notion-notes && (printf '%s\n' '{"url":"https://youtu.be/VIDEO_ID"}' | python ./ingest.py --input-json-file - --output json || true)
 ```
+
+For this first smoke workflow, the `printf` payload is intentionally hardcoded so the node chain stays minimal: Trigger Manually to Execute Command to Code to IF to success/failure branches.
 
 The wrapper exists because n8n Execute Command can fail the node on a non-zero process exit before later Code and IF nodes can parse stdout and branch on `ok`.
 

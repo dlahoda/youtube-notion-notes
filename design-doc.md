@@ -360,6 +360,8 @@ The `--input-json` payload is a JSON object with:
 - `url`: required YouTube URL string;
 - `export`: optional export target, with the same accepted values as `--export`: `local` or `notion`.
 
+Unknown fields are rejected so automation typos do not get silently ignored.
+
 Ambiguous input is rejected:
 
 - positional URL plus `--input-json`;
@@ -377,6 +379,8 @@ python ingest.py --input-json-file - --output json
 
 - `url`: required YouTube URL string;
 - `export`: optional export target, with the same accepted values as `--export`: `local` or `notion`.
+
+Unknown fields are rejected for file and stdin payloads too.
 
 Additional ambiguous input is rejected:
 

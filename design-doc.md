@@ -452,13 +452,15 @@ Goal: define how n8n will call the existing local Python CLI without adding an H
 
 Preferred integration shape:
 
-Deferred decision: the exact n8n stdin wiring will be verified during the first real n8n smoke test. If direct stdin input is awkward in the installed n8n version, keep the Python CLI contract unchanged and adapt only the n8n-side wrapper.
+Validated decision: n8n should call `./ingest.py` directly through the JSON stdin/stdout contract. Exact direct stdin UI wiring remains unnecessary for now because a shell pipe wrapper works and preserves the same Python contract.
 
 - n8n uses an Execute Command-style node.
-- n8n passes a JSON payload to `python ingest.py --input-json-file - --output json`.
+- n8n passes a JSON payload to `python ./ingest.py --input-json-file - --output json`.
 - Python reads JSON from stdin.
 - Python writes machine-readable JSON to stdout only.
 - n8n branches on `ok: true` / `ok: false`.
+- n8n does not depend on `./Makefile` targets.
+- `./Makefile` remains a local developer convenience only.
 
 Non-goals:
 
@@ -475,7 +477,7 @@ Status: documentation-only planning slice.
 Scope:
 
 - add `./docs/n8n-smoke-workflow.md` as the manual build guide for the first n8n smoke workflow;
-- document the minimal node chain: manual trigger, payload setup, execute command, stdout JSON parsing, and `ok` branch;
+- document the minimal node chain: manual trigger, execute command, stdout JSON parsing, and `ok` branch;
 - record the canonical command: `python ingest.py --input-json-file - --output json`;
 - document the stdin JSON payload shape with required `url` and optional `export`;
 - confirm that stdout is JSON-only and n8n branches on `ok: true` / `ok: false`;
@@ -490,6 +492,39 @@ Out of scope:
 - no queue;
 - no Notion logic inside n8n;
 - no duplicated transcript, note generation, markdown conversion, or Notion export logic in n8n;
+- no exported n8n workflow JSON yet.
+
+## Slice 2 — real local n8n smoke test
+
+Status: complete.
+
+Validated with n8n 2.20.9:
+
+- local n8n can run the Execute Command node when started with `NODES_EXCLUDE='[]' npx n8n`;
+- Execute Command can run a local command from the workflow;
+- n8n can call `./ingest.py` through stdin JSON and stdout JSON;
+- a Code node can parse stdout with `JSON.parse($json.stdout)`;
+- an IF node can branch on `ok === true`;
+- success payloads route to the success branch;
+- failure payloads with `ok: false` route to the false branch after parsing.
+
+Durable decisions:
+
+- n8n should not depend on `./Makefile`;
+- `./Makefile` remains local dev convenience only;
+- direct `./ingest.py` JSON stdin/stdout remains the integration boundary;
+- exact direct stdin UI wiring remains unnecessary for now because the shell pipe wrapper works;
+- if `./ingest.py` emits valid JSON with `ok: false` but exits non-zero, the n8n-side shell wrapper may normalize the shell exit code so the workflow can branch on parsed JSON `ok`;
+- invalid or missing stdout JSON should still be treated as a workflow error, because broad `|| true` can mask infrastructure failures.
+
+Out of scope remains unchanged:
+
+- no runtime Python behavior changes;
+- no dependency changes;
+- no HTTP server;
+- no queue;
+- no Notion logic inside n8n;
+- no duplicated pipeline logic in n8n;
 - no exported n8n workflow JSON yet.
 
 ----------

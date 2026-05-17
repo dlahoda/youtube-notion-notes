@@ -27,14 +27,36 @@ The smoke workflow should prove the handoff between n8n and `./ingest.py`. It sh
 Build the first workflow manually with a small node chain:
 
 1. Manual Trigger
-2. Set or Edit Fields node that creates the input payload
-3. Execute Command node that runs `python ingest.py --input-json-file - --output json`
-4. JSON parsing step for stdout
-5. IF node that checks `ok`
-6. Success branch for `ok: true`
-7. Failure branch for `ok: false`
+2. Execute Command node that calls `./ingest.py` directly through the JSON stdin/stdout contract
+3. Code node that parses stdout with `JSON.parse`
+4. IF node that checks `ok`
+5. Success branch for `ok: true`
+6. Failure branch for `ok: false`
 
 The exact n8n node names may vary by version, but the workflow should stay this small. Do not create a real exported workflow JSON in this slice.
+
+For the first smoke test, the JSON payload may be hardcoded in the Execute Command shell pipe. A later workflow can add a Set or Edit Fields node upstream to construct the payload before calling `./ingest.py`.
+
+## Real Smoke Test Result
+
+Validated with n8n 2.20.9:
+
+- The Execute Command node exists, but it was excluded/hidden by default in this local n8n setup.
+- Starting n8n with `NODES_EXCLUDE='[]' npx n8n` made Execute Command available.
+- Execute Command successfully ran a local command from the workflow.
+- The command returned stdout containing JSON from `./ingest.py`.
+- A Code node successfully parsed stdout with `JSON.parse($json.stdout)`.
+- An IF node successfully branched on `ok === true` for success.
+- A failure payload produced `ok: false` and routed to the false branch after parsing.
+- Using `make n8n-json-bad-sample` caused n8n to fail early because `make` propagated the non-zero process exit before the workflow could branch on parsed JSON.
+
+Decisions from the smoke test:
+
+- n8n should call `./ingest.py` directly through the JSON stdin/stdout contract.
+- n8n should not depend on `./Makefile` targets as the automation contract.
+- `./Makefile` remains only a local developer convenience.
+- If `./ingest.py` emits valid JSON with `ok: false` but exits non-zero, the n8n-side shell wrapper may normalize the shell exit code so the workflow can branch on parsed JSON `ok`.
+- Broad `|| true` can mask infrastructure failures, so invalid or missing stdout JSON should still be treated as a workflow error.
 
 ## Command Contract
 
@@ -48,18 +70,29 @@ Contract:
 
 - `--input-json-file -` means `./ingest.py` reads the request JSON from stdin.
 - `--output json` means stdout must contain only one JSON result object.
-- n8n should pass the JSON payload to stdin, not as shell-escaped inline JSON.
+- n8n should use the JSON stdin/stdout contract rather than `./Makefile` targets.
 - n8n should parse stdout as JSON before branching.
 
-### n8n stdin verification note
+### Recommended Execute Command
 
-The Python CLI contract is already settled, but the exact n8n wiring still needs to be verified in the UI.
+Run the command from the repository root so relative output paths are created under this project. In n8n, use the real repository path:
 
-During the first real n8n smoke test, confirm whether the Execute Command-style node can pass the JSON payload directly to stdin.
+```bash
+cd /path/to/youtube-notion-notes && (printf '%s\n' '{"url":"https://youtu.be/VIDEO_ID"}' | python ./ingest.py --input-json-file - --output json || true)
+```
 
-If direct stdin input is not supported or is awkward in the installed n8n version, keep the Python CLI contract unchanged and adjust only the n8n-side wrapper. For example, the workflow may use a small shell pipe or temporary payload file, as long as `./ingest.py` is still called through the supported JSON input contract and stdout remains JSON-only.
+For this first smoke workflow, the `printf` payload is intentionally hardcoded so the node chain stays minimal: Trigger Manually to Execute Command to Code to IF to success/failure branches.
 
-Run the command from the repository root so relative output paths are created under this project.
+The wrapper exists because n8n Execute Command can fail the node on a non-zero process exit before later Code and IF nodes can parse stdout and branch on `ok`.
+
+Keep the wrapper narrow:
+
+- use it only around the direct `./ingest.py` JSON contract;
+- parse stdout as JSON in the next node;
+- treat invalid or missing stdout JSON as a workflow error;
+- do not use `./Makefile` targets as the automation interface.
+
+Direct stdin UI wiring remains unnecessary for now because the shell pipe wrapper validates the same Python contract.
 
 ## JSON Payload Sent To Stdin
 
@@ -117,6 +150,19 @@ In JSON output mode, n8n should rely only on stdout JSON. Human-readable logs, p
 
 ## Branching In n8n
 
+Use a Code node to parse the Execute Command stdout:
+
+```javascript
+const raw = $json.stdout;
+return [{ json: JSON.parse(raw) }];
+```
+
+Then use an IF node condition:
+
+```text
+{{ $json.ok === true }}
+```
+
 After parsing stdout as JSON:
 
 - if `ok` is `true`, route to the success branch;
@@ -136,6 +182,8 @@ n8n should own orchestration only:
 - parse stdout JSON;
 - branch on `ok`;
 - send notifications or record a workflow-level audit event later, if needed.
+
+Do not store secrets in the workflow definition. Keep API keys and database IDs in the local environment used by `./ingest.py`.
 
 ## What Must Stay Inside Python
 
@@ -170,6 +218,9 @@ Manual review checklist:
 - stdout is valid JSON and contains no human-readable text outside the JSON object;
 - successful runs include `ok: true`;
 - failed runs include `ok: false`, `stage`, and `error`;
+- n8n parses stdout with a Code node before the IF node;
+- the IF node branches with `{{ $json.ok === true }}`;
+- workflow errors still surface when stdout is missing or not valid JSON;
 - local/manual behavior still works without n8n;
 - Notion export remains opt-in with `"export": "notion"`;
 - no secrets are placed in the n8n workflow definition or committed files.

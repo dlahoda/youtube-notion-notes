@@ -27,6 +27,7 @@ class IngestCliTests(unittest.TestCase):
         export_side_effect=None,
         assert_note_saved_before_export: bool = False,
         include_positional_url: bool = True,
+        stdin_value: str = "",
     ) -> tuple[int, str, str, Mock, bool, str]:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
@@ -50,7 +51,7 @@ class IngestCliTests(unittest.TestCase):
             should_fake_notion_export = (
                 (
                     ("--export" in extra_args and "notion" in extra_args)
-                    or self.args_include_input_json_export_notion(extra_args)
+                    or self.args_include_json_export_notion(extra_args, stdin_value=stdin_value)
                 )
                 and note_text
             )
@@ -71,6 +72,7 @@ class IngestCliTests(unittest.TestCase):
                 if should_fake_notion_export
                 else contextlib.nullcontext(),
                 patch.object(sys, "argv", argv),
+                patch.object(sys, "stdin", io.StringIO(stdin_value)),
                 patch.object(ingest, "TRANSCRIPT_DIR", temp_path / "transcripts"),
                 patch.object(ingest, "PROMPT_DIR", temp_path / "prompts"),
                 patch.object(ingest, "NOTES_DIR", temp_path / "notes"),
@@ -95,14 +97,33 @@ class IngestCliTests(unittest.TestCase):
 
             return exit_code, stdout.getvalue(), stderr.getvalue(), export_mock, note_exists, note_content
 
-    def args_include_input_json_export_notion(self, args: tuple[str, ...]) -> bool:
-        if "--input-json" not in args:
+    def args_include_json_export_notion(self, args: tuple[str, ...], *, stdin_value: str) -> bool:
+        if "--input-json" in args:
+            input_json_index = args.index("--input-json") + 1
+            if input_json_index >= len(args):
+                return False
+            return self.json_payload_exports_notion(args[input_json_index])
+
+        if "--input-json-file" not in args:
             return False
-        input_json_index = args.index("--input-json") + 1
-        if input_json_index >= len(args):
+
+        input_json_file_index = args.index("--input-json-file") + 1
+        if input_json_file_index >= len(args):
             return False
+
+        source = args[input_json_file_index]
+        if source == "-":
+            return self.json_payload_exports_notion(stdin_value)
+
         try:
-            payload = json.loads(args[input_json_index])
+            raw_payload = Path(source).read_text(encoding="utf-8")
+        except OSError:
+            return False
+        return self.json_payload_exports_notion(raw_payload)
+
+    def json_payload_exports_notion(self, raw_payload: str) -> bool:
+        try:
+            payload = json.loads(raw_payload)
         except json.JSONDecodeError:
             return False
         return isinstance(payload, dict) and payload.get("export") == "notion"
@@ -326,6 +347,167 @@ class IngestCliTests(unittest.TestCase):
         self.assertTrue(note_exists)
         export_mock.assert_called_once()
 
+    def test_input_json_file_with_url_works(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            payload_path = Path(temp_dir) / "payload.json"
+            payload_path.write_text(json.dumps({"url": VIDEO_URL}), encoding="utf-8")
+
+            exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
+                "--input-json-file",
+                str(payload_path),
+                "--output",
+                "json",
+                note_text=None,
+                include_positional_url=False,
+            )
+
+        payload = json.loads(stdout)
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(stderr, "")
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["url"], VIDEO_URL)
+        self.assertEqual(payload["export_mode"], "local")
+        self.assertFalse(note_exists)
+        export_mock.assert_not_called()
+
+    def test_input_json_file_with_url_and_export_notion_works(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            payload_path = Path(temp_dir) / "payload.json"
+            payload_path.write_text(json.dumps({"url": VIDEO_URL, "export": "notion"}), encoding="utf-8")
+
+            exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
+                "--input-json-file",
+                str(payload_path),
+                "--output",
+                "json",
+                include_positional_url=False,
+            )
+
+        payload = json.loads(stdout)
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(stderr, "")
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["url"], VIDEO_URL)
+        self.assertEqual(payload["export_mode"], "notion")
+        self.assertEqual(payload["notion_page_id"], "page-123")
+        self.assertTrue(note_exists)
+        export_mock.assert_called_once()
+
+    def test_input_json_file_dash_reads_from_stdin(self) -> None:
+        exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
+            "--input-json-file",
+            "-",
+            "--output",
+            "json",
+            note_text=None,
+            include_positional_url=False,
+            stdin_value=json.dumps({"url": VIDEO_URL}),
+        )
+
+        payload = json.loads(stdout)
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(stderr, "")
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["url"], VIDEO_URL)
+        self.assertEqual(payload["export_mode"], "local")
+        self.assertFalse(note_exists)
+        export_mock.assert_not_called()
+
+    def test_missing_input_json_file_fails_cleanly(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            missing_path = Path(temp_dir) / "missing.json"
+
+            exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
+                "--input-json-file",
+                str(missing_path),
+                "--output",
+                "json",
+                include_positional_url=False,
+            )
+
+        payload = json.loads(stdout)
+
+        self.assertEqual(exit_code, 2)
+        self.assertEqual(stderr, "")
+        self.assertFalse(payload["ok"])
+        self.assertEqual(payload["stage"], "input")
+        self.assertIn("Unable to read --input-json-file", payload["error"])
+        self.assertFalse(note_exists)
+        export_mock.assert_not_called()
+
+    def test_invalid_input_json_file_fails_cleanly(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            payload_path = Path(temp_dir) / "payload.json"
+            payload_path.write_text("{not json", encoding="utf-8")
+
+            exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
+                "--input-json-file",
+                str(payload_path),
+                "--output",
+                "json",
+                include_positional_url=False,
+            )
+
+        payload = json.loads(stdout)
+
+        self.assertEqual(exit_code, 2)
+        self.assertEqual(stderr, "")
+        self.assertFalse(payload["ok"])
+        self.assertEqual(payload["stage"], "input")
+        self.assertIn("Invalid --input-json-file", payload["error"])
+        self.assertFalse(note_exists)
+        export_mock.assert_not_called()
+
+    def test_positional_url_plus_input_json_file_fails_cleanly(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            payload_path = Path(temp_dir) / "payload.json"
+            payload_path.write_text(json.dumps({"url": VIDEO_URL}), encoding="utf-8")
+
+            exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
+                "--input-json-file",
+                str(payload_path),
+                "--output",
+                "json",
+            )
+
+        payload = json.loads(stdout)
+
+        self.assertEqual(exit_code, 2)
+        self.assertEqual(stderr, "")
+        self.assertFalse(payload["ok"])
+        self.assertEqual(payload["stage"], "input")
+        self.assertIn("either a positional URL or --input-json-file", payload["error"])
+        self.assertFalse(note_exists)
+        export_mock.assert_not_called()
+
+    def test_input_json_plus_input_json_file_fails_cleanly(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            payload_path = Path(temp_dir) / "payload.json"
+            payload_path.write_text(json.dumps({"url": VIDEO_URL}), encoding="utf-8")
+
+            exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
+                "--input-json",
+                json.dumps({"url": VIDEO_URL}),
+                "--input-json-file",
+                str(payload_path),
+                "--output",
+                "json",
+                include_positional_url=False,
+            )
+
+        payload = json.loads(stdout)
+
+        self.assertEqual(exit_code, 2)
+        self.assertEqual(stderr, "")
+        self.assertFalse(payload["ok"])
+        self.assertEqual(payload["stage"], "input")
+        self.assertIn("either --input-json or --input-json-file", payload["error"])
+        self.assertFalse(note_exists)
+        export_mock.assert_not_called()
+
     def test_invalid_input_json_fails_cleanly(self) -> None:
         exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
             "--input-json",
@@ -399,7 +581,32 @@ class IngestCliTests(unittest.TestCase):
         self.assertEqual(stderr, "")
         self.assertFalse(payload["ok"])
         self.assertEqual(payload["stage"], "input")
-        self.assertIn("export either in --input-json or --export", payload["error"])
+        self.assertIn("export either in JSON input or --export", payload["error"])
+        self.assertFalse(note_exists)
+        export_mock.assert_not_called()
+
+    def test_input_json_file_export_plus_export_flag_fails_cleanly(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            payload_path = Path(temp_dir) / "payload.json"
+            payload_path.write_text(json.dumps({"url": VIDEO_URL, "export": "notion"}), encoding="utf-8")
+
+            exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
+                "--input-json-file",
+                str(payload_path),
+                "--export",
+                "local",
+                "--output",
+                "json",
+                include_positional_url=False,
+            )
+
+        payload = json.loads(stdout)
+
+        self.assertEqual(exit_code, 2)
+        self.assertEqual(stderr, "")
+        self.assertFalse(payload["ok"])
+        self.assertEqual(payload["stage"], "input")
+        self.assertIn("export either in JSON input or --export", payload["error"])
         self.assertFalse(note_exists)
         export_mock.assert_not_called()
 

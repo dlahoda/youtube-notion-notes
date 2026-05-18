@@ -409,17 +409,16 @@ Optional future n8n expansion belongs in backlog unless local command execution 
 
 Detailed completed milestone and slice history lives in `./docs/archive/milestone-history.md`. That archive is historical context only and is not current source of truth.
 
-| Milestone | Status | Current meaning |
-| --- | --- | --- |
-| Milestone 1: Local note without Notion | Complete | The pipeline can turn a YouTube URL into local transcript and markdown note outputs. |
-| Milestone 2: Notion export | Complete; tagged `v0.2.0` | Notion export is opt-in and handled inside Python. |
-| Milestone 3: n8n preparation | Complete; tagged `v0.3.0` | The CLI supports JSON input/output contracts for automation. |
-| Milestone 4: n8n integration contract and smoke workflow | Complete; tagged `v0.4.0` | n8n integration is local-first through JSON stdin/stdout and a small wrapper. |
-| Milestone 5: Pipeline core refactor | Complete; tagged `v0.5.0` | Pipeline orchestration lives in `./services/pipeline.py` behind `PipelineRequest`. |
-| Milestone 6: Transcript fallback input | Complete; tagged `v0.6.0` | Human CLI usage supports local UTF-8 transcript files. |
-| Milestone 7: JSON transcript fallback input | Slice 1 complete | JSON input supports the same local transcript-file fallback. |
-| Milestone 8: Test suite maintenance | Slice 1 complete | Ingest CLI tests are split by responsibility without runtime behavior changes. |
+Completed milestones:
 
+- Milestone 1: Local note without Notion — complete. The pipeline can turn a YouTube URL into local transcript and markdown note outputs.
+- Milestone 2: Notion export — complete and tagged `v0.2.0`. Notion export is opt-in and handled inside Python.
+- Milestone 3: n8n preparation — complete and tagged `v0.3.0`. The CLI supports JSON input/output contracts for automation.
+- Milestone 4: n8n integration contract and smoke workflow — complete and tagged `v0.4.0`. n8n integration is local-first through JSON stdin/stdout and a small wrapper.
+- Milestone 5: Pipeline core refactor — complete and tagged `v0.5.0`. Pipeline orchestration lives in `./services/pipeline.py` behind `PipelineRequest`.
+- Milestone 6: Transcript fallback input — complete and tagged `v0.6.0`. Human CLI usage supports local UTF-8 transcript files.
+- Milestone 7: JSON transcript fallback input — Slice 1 complete. JSON input supports the same local transcript-file fallback.
+- Milestone 8: Test suite maintenance — Slice 1 complete. Ingest CLI tests are split by responsibility without runtime behavior changes.
 
 ---
 
@@ -487,20 +486,3 @@ Working flow:
 - pushed branches or PRs are reviewed through GitHub;
 - final integration uses squash merge into `main`;
 - assistant must not create commits, branches, PRs, or merge changes unless explicitly asked.
-
----
-
-# 12. Historical Setup Notes
-
-The old Codex execution runbook was useful for bootstrapping Milestone 1 from an empty repository.
-
-Current durable guidance:
-
-- work one milestone or slice at a time;
-- keep a git checkpoint before each large task;
-- obey `./AGENTS.md` and this design document;
-- keep changes small and reviewable;
-- show diffs and verification commands after implementation;
-- do not create commits, branches, PRs, or merges unless explicitly asked.
-
-The original empty-repo setup prompt is historical context only; Milestones 1-4 are already complete.

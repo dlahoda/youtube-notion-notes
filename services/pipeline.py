@@ -55,9 +55,12 @@ def write_text(path: Path, content: str) -> None:
 
 def read_transcript_file(path_value: str) -> str:
     try:
-        return Path(path_value).read_text(encoding="utf-8")
+        transcript_text = Path(path_value).read_text(encoding="utf-8")
     except OSError as exc:
         raise TranscriptError(f"Unable to read --transcript-file '{path_value}': {exc.strerror}.") from exc
+    if not transcript_text.strip():
+        raise TranscriptError(f"--transcript-file '{path_value}' is empty or contains only whitespace.")
+    return transcript_text
 
 
 def result_contract(request: PipelineRequest) -> dict[str, Any]:

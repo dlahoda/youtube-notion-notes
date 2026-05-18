@@ -165,6 +165,40 @@ class PipelineServiceTests(unittest.TestCase):
         self.assertFalse(snapshot["fetch_called"])
         export_mock.assert_not_called()
 
+    def test_empty_transcript_file_fails_during_transcript_stage(self) -> None:
+        exit_code, result, export_mock, snapshot = self.run_pipeline(
+            transcript_file_text="",
+        )
+
+        self.assertEqual(exit_code, 1)
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["stage"], "transcript")
+        self.assertIn("empty or contains only whitespace", result["error"])
+        self.assertFalse(snapshot["fetch_called"])
+        self.assertFalse(snapshot["prompt_called"])
+        self.assertFalse(snapshot["note_called"])
+        self.assertFalse(snapshot["transcript_exists"])
+        self.assertFalse(snapshot["prompt_exists"])
+        self.assertFalse(snapshot["note_exists"])
+        export_mock.assert_not_called()
+
+    def test_whitespace_only_transcript_file_fails_during_transcript_stage(self) -> None:
+        exit_code, result, export_mock, snapshot = self.run_pipeline(
+            transcript_file_text=" \n\t\n",
+        )
+
+        self.assertEqual(exit_code, 1)
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["stage"], "transcript")
+        self.assertIn("empty or contains only whitespace", result["error"])
+        self.assertFalse(snapshot["fetch_called"])
+        self.assertFalse(snapshot["prompt_called"])
+        self.assertFalse(snapshot["note_called"])
+        self.assertFalse(snapshot["transcript_exists"])
+        self.assertFalse(snapshot["prompt_exists"])
+        self.assertFalse(snapshot["note_exists"])
+        export_mock.assert_not_called()
+
     def test_transcript_file_mode_saves_manual_text_to_transcript_output_path(self) -> None:
         manual_text = "Manual transcript line one.\nManual transcript line two.\n"
 

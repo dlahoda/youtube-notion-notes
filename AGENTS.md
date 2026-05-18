@@ -8,6 +8,10 @@ Later milestones may export to Notion and be wrapped by n8n, but do not implemen
 
 Use `./design-doc.md` as the source of truth for the current milestone, slice boundaries, constraints, and durable decisions.
 
+Do not read every docs file by default. Start with `./design-doc.md`, then open only the smallest supporting document needed for the current task.
+
+Do not read `./docs/archive/*` by default. Archive docs are historical context only, not current source of truth. Open archive docs only when the user explicitly asks for historical context, or when current docs and code conflict and historical context is needed to explain why.
+
 ## Engineering rules
 
 - Keep changes small and reviewable.

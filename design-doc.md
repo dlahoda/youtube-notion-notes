@@ -13,6 +13,16 @@ This document should:
 - keep Notion as final storage, not the center of logic;
 - keep the LLM layer replaceable: OpenAI API, manual ChatGPT, or a future local model.
 
+## Project docs map
+
+Default reading:
+- ./design-doc.md — current source of truth, active contracts, current architecture, roadmap, and slice boundaries.
+- ./AGENTS.md — repo-local rules for AI/Codex work.
+
+Do not read every docs file by default. Start with ./design-doc.md and ./AGENTS.md, then open only the smallest supporting document needed for the current task.
+
+Archive docs, if present under ./docs/archive/, are historical context only. Do not read them by default. They are not current source of truth.
+
 ---
 
 # 1. Current Project State

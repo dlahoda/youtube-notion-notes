@@ -188,6 +188,97 @@ class IngestCliTests(unittest.TestCase):
             human_output=False,
         )
 
+    def test_main_converts_input_json_transcript_file_to_pipeline_request(self) -> None:
+        argv = [
+            "ingest.py",
+            "--input-json",
+            json.dumps(
+                {
+                    "url": VIDEO_URL,
+                    "transcript_file": "./manual-transcript.txt",
+                    "export": "local",
+                }
+            ),
+            "--no-note",
+            "--output",
+            "json",
+        ]
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        run_pipeline_mock = Mock(return_value=(0, {"ok": True}))
+
+        with (
+            patch.object(sys, "argv", argv),
+            patch.object(ingest, "load_env_file"),
+            patch.object(ingest, "run_pipeline", run_pipeline_mock),
+            contextlib.redirect_stdout(stdout),
+            contextlib.redirect_stderr(stderr),
+        ):
+            exit_code = ingest.main()
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(stderr.getvalue(), "")
+        self.assertEqual(json.loads(stdout.getvalue()), {"ok": True})
+        run_pipeline_mock.assert_called_once_with(
+            pipeline.PipelineRequest(
+                url=VIDEO_URL,
+                export_mode="local",
+                languages=None,
+                output_name=None,
+                no_note=True,
+                transcript_file="./manual-transcript.txt",
+            ),
+            human_output=False,
+        )
+
+    def test_main_converts_input_json_file_transcript_file_to_pipeline_request(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            payload_path = Path(temp_dir) / "payload.json"
+            payload_path.write_text(
+                json.dumps(
+                    {
+                        "url": VIDEO_URL,
+                        "transcript_file": "./manual-transcript.txt",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            argv = [
+                "ingest.py",
+                "--input-json-file",
+                str(payload_path),
+                "--no-note",
+                "--output",
+                "json",
+            ]
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+            run_pipeline_mock = Mock(return_value=(0, {"ok": True}))
+
+            with (
+                patch.object(sys, "argv", argv),
+                patch.object(ingest, "load_env_file"),
+                patch.object(ingest, "run_pipeline", run_pipeline_mock),
+                contextlib.redirect_stdout(stdout),
+                contextlib.redirect_stderr(stderr),
+            ):
+                exit_code = ingest.main()
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(stderr.getvalue(), "")
+        self.assertEqual(json.loads(stdout.getvalue()), {"ok": True})
+        run_pipeline_mock.assert_called_once_with(
+            pipeline.PipelineRequest(
+                url=VIDEO_URL,
+                export_mode="local",
+                languages=None,
+                output_name=None,
+                no_note=True,
+                transcript_file="./manual-transcript.txt",
+            ),
+            human_output=False,
+        )
+
     def test_export_notion_passes_original_url_and_saved_markdown(self) -> None:
         note_text = "# Generated Note\n\nTags: cli\n\nBody"
 
@@ -424,6 +515,44 @@ class IngestCliTests(unittest.TestCase):
         self.assertFalse(note_exists)
         export_mock.assert_not_called()
 
+    def test_input_json_with_non_string_transcript_file_fails_cleanly(self) -> None:
+        exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
+            "--input-json",
+            json.dumps({"url": VIDEO_URL, "transcript_file": 123}),
+            "--output",
+            "json",
+            include_positional_url=False,
+        )
+
+        payload = json.loads(stdout)
+
+        self.assertEqual(exit_code, 2)
+        self.assertEqual(stderr, "")
+        self.assertFalse(payload["ok"])
+        self.assertEqual(payload["stage"], "input")
+        self.assertIn("field 'transcript_file' must be a string", payload["error"])
+        self.assertFalse(note_exists)
+        export_mock.assert_not_called()
+
+    def test_input_json_with_empty_transcript_file_fails_cleanly(self) -> None:
+        exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
+            "--input-json",
+            json.dumps({"url": VIDEO_URL, "transcript_file": ""}),
+            "--output",
+            "json",
+            include_positional_url=False,
+        )
+
+        payload = json.loads(stdout)
+
+        self.assertEqual(exit_code, 2)
+        self.assertEqual(stderr, "")
+        self.assertFalse(payload["ok"])
+        self.assertEqual(payload["stage"], "input")
+        self.assertIn("field 'transcript_file' must not be empty", payload["error"])
+        self.assertFalse(note_exists)
+        export_mock.assert_not_called()
+
     def test_input_json_with_url_and_export_notion_works(self) -> None:
         exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
             "--input-json",
@@ -488,6 +617,58 @@ class IngestCliTests(unittest.TestCase):
         self.assertFalse(payload["ok"])
         self.assertEqual(payload["stage"], "input")
         self.assertIn("Invalid --input-json-file: unsupported field 'exprt'.", payload["error"])
+        self.assertFalse(note_exists)
+        export_mock.assert_not_called()
+
+    def test_input_json_file_with_non_string_transcript_file_fails_cleanly(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            payload_path = Path(temp_dir) / "payload.json"
+            payload_path.write_text(
+                json.dumps({"url": VIDEO_URL, "transcript_file": 123}),
+                encoding="utf-8",
+            )
+
+            exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
+                "--input-json-file",
+                str(payload_path),
+                "--output",
+                "json",
+                include_positional_url=False,
+            )
+
+        payload = json.loads(stdout)
+
+        self.assertEqual(exit_code, 2)
+        self.assertEqual(stderr, "")
+        self.assertFalse(payload["ok"])
+        self.assertEqual(payload["stage"], "input")
+        self.assertIn("field 'transcript_file' must be a string", payload["error"])
+        self.assertFalse(note_exists)
+        export_mock.assert_not_called()
+
+    def test_input_json_file_with_whitespace_transcript_file_fails_cleanly(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            payload_path = Path(temp_dir) / "payload.json"
+            payload_path.write_text(
+                json.dumps({"url": VIDEO_URL, "transcript_file": "   "}),
+                encoding="utf-8",
+            )
+
+            exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
+                "--input-json-file",
+                str(payload_path),
+                "--output",
+                "json",
+                include_positional_url=False,
+            )
+
+        payload = json.loads(stdout)
+
+        self.assertEqual(exit_code, 2)
+        self.assertEqual(stderr, "")
+        self.assertFalse(payload["ok"])
+        self.assertEqual(payload["stage"], "input")
+        self.assertIn("field 'transcript_file' must not be empty", payload["error"])
         self.assertFalse(note_exists)
         export_mock.assert_not_called()
 

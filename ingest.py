@@ -11,7 +11,7 @@ from typing import Any
 from services.pipeline import PipelineRequest, run_pipeline
 
 
-JSON_INPUT_FIELDS = {"url", "export"}
+JSON_INPUT_FIELDS = {"url", "transcript_file", "export"}
 
 
 class CliInputError(Exception):
@@ -122,6 +122,13 @@ def apply_json_payload(args: argparse.Namespace, payload: dict[str, Any], *, sou
             raise CliInputError(f"Invalid {source}: field 'export' must be 'local' or 'notion'.")
         args.export = payload["export"]
 
+    if "transcript_file" in payload:
+        if not isinstance(payload["transcript_file"], str):
+            raise CliInputError(f"Invalid {source}: field 'transcript_file' must be a string.")
+        if not payload["transcript_file"].strip():
+            raise CliInputError(f"Invalid {source}: field 'transcript_file' must not be empty.")
+        args.transcript_file = payload["transcript_file"]
+
 
 def read_json_payload_file(path_value: str) -> str:
     if path_value == "-":
@@ -137,6 +144,7 @@ def read_json_payload_file(path_value: str) -> str:
 def resolve_cli_input(args: argparse.Namespace) -> argparse.Namespace:
     payload: dict[str, Any] = {}
     positional_url = args.url
+    cli_transcript_file = args.transcript_file
 
     if args.input_json is not None and args.input_json_file is not None:
         raise CliInputError("Provide either --input-json or --input-json-file, not both.")
@@ -153,7 +161,7 @@ def resolve_cli_input(args: argparse.Namespace) -> argparse.Namespace:
         payload = load_json_payload(read_json_payload_file(args.input_json_file), source="--input-json-file")
         apply_json_payload(args, payload, source="--input-json-file")
 
-    if args.transcript_file and not positional_url:
+    if cli_transcript_file and not positional_url:
         raise CliInputError("A YouTube URL is required as a positional argument when using --transcript-file.")
 
     if not args.url:

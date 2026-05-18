@@ -517,6 +517,20 @@ Durable decisions:
 - if `./ingest.py` emits valid JSON with `ok: false` but exits non-zero, the n8n-side shell wrapper may normalize the shell exit code so the workflow can branch on parsed JSON `ok`;
 - invalid or missing stdout JSON should still be treated as a workflow error, because broad `|| true` can mask infrastructure failures.
 
+## Slice 3 — small n8n shell wrapper
+
+Status: complete.
+
+Scope:
+
+- add `./scripts/n8n-ingest.sh` as the small n8n-facing shell wrapper;
+- keep `./ingest.py` as the integration boundary through `--input-json-file - --output json`;
+- let n8n use `cd /path/to/youtube-notion-notes && sh ./scripts/n8n-ingest.sh`;
+- keep `./Makefile` as local developer convenience only;
+- validate that `./ingest.py` stdout is JSON before returning it to n8n;
+- allow n8n to continue when `./ingest.py` emits valid JSON with `ok: false`;
+- fail the wrapper when stdout is missing or invalid JSON.
+
 Out of scope remains unchanged:
 
 - no runtime Python behavior changes;

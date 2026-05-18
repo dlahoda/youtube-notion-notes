@@ -10,10 +10,10 @@ Build a minimal n8n workflow that:
 
 - receives or defines one YouTube URL;
 - sends a small JSON object to the local CLI through stdin;
-- runs the canonical command:
+- runs the n8n wrapper around the canonical command:
 
 ```bash
-python ingest.py --input-json-file - --output json
+cd /path/to/youtube-notion-notes && sh ./scripts/n8n-ingest.sh
 ```
 
 - parses the CLI stdout as JSON;
@@ -27,7 +27,7 @@ The smoke workflow should prove the handoff between n8n and `./ingest.py`. It sh
 Build the first workflow manually with a small node chain:
 
 1. Manual Trigger
-2. Execute Command node that calls `./ingest.py` directly through the JSON stdin/stdout contract
+2. Execute Command node that pipes or provides one JSON payload to `./scripts/n8n-ingest.sh`
 3. Code node that parses stdout with `JSON.parse`
 4. IF node that checks `ok`
 5. Success branch for `ok: true`
@@ -35,7 +35,7 @@ Build the first workflow manually with a small node chain:
 
 The exact n8n node names may vary by version, but the workflow should stay this small. Do not create a real exported workflow JSON in this slice.
 
-For the first smoke test, the JSON payload may be hardcoded in the Execute Command shell pipe. A later workflow can add a Set or Edit Fields node upstream to construct the payload before calling `./ingest.py`.
+For the first smoke test, the JSON payload may be hardcoded in the Execute Command shell pipe. A later workflow can add a Set or Edit Fields node upstream to construct the payload before calling `./scripts/n8n-ingest.sh`.
 
 ## Real Smoke Test Result
 
@@ -57,6 +57,7 @@ Decisions from the smoke test:
 - `./Makefile` remains only a local developer convenience.
 - If `./ingest.py` emits valid JSON with `ok: false` but exits non-zero, the n8n-side shell wrapper may normalize the shell exit code so the workflow can branch on parsed JSON `ok`.
 - Broad `|| true` can mask infrastructure failures, so invalid or missing stdout JSON should still be treated as a workflow error.
+- `./scripts/n8n-ingest.sh` keeps the n8n command short while preserving the `./ingest.py` JSON stdin/stdout contract.
 
 ## Command Contract
 
@@ -75,24 +76,29 @@ Contract:
 
 ### Recommended Execute Command
 
-Run the command from the repository root so relative output paths are created under this project. In n8n, use the real repository path:
+Run the wrapper from the repository root so relative output paths are created under this project. In n8n, use the real repository path and pipe or provide the JSON payload to wrapper stdin:
 
 ```bash
-cd /path/to/youtube-notion-notes && (printf '%s\n' '{"url":"https://youtu.be/VIDEO_ID"}' | python ./ingest.py --input-json-file - --output json || true)
+cd /path/to/youtube-notion-notes && printf '%s\n' '{"url":"https://youtu.be/VIDEO_ID"}' | sh ./scripts/n8n-ingest.sh
 ```
 
 For this first smoke workflow, the `printf` payload is intentionally hardcoded so the node chain stays minimal: Trigger Manually to Execute Command to Code to IF to success/failure branches.
 
-The wrapper exists because n8n Execute Command can fail the node on a non-zero process exit before later Code and IF nodes can parse stdout and branch on `ok`.
+The wrapper exists because n8n Execute Command can fail the node on a non-zero process exit before later Code and IF nodes can parse stdout and branch on `ok`. It keeps the command short while preserving the `./ingest.py` JSON stdin/stdout contract.
 
 Keep the wrapper narrow:
 
 - use it only around the direct `./ingest.py` JSON contract;
+- pass stdin to `python ./ingest.py --input-json-file - --output json`;
+- preserve valid stdout JSON from `./ingest.py`;
+- allow n8n to continue when `./ingest.py` emits valid JSON with `ok: false`;
 - parse stdout as JSON in the next node;
 - treat invalid or missing stdout JSON as a workflow error;
 - do not use `./Makefile` targets as the automation interface.
 
-Direct stdin UI wiring remains unnecessary for now because the shell pipe wrapper validates the same Python contract.
+The wrapper must not inspect transcript paths, Notion fields, tags, URLs, or pipeline internals. It only validates that stdout is JSON.
+
+Direct stdin UI wiring remains unnecessary for now because the shell pipe wrapper validates the same Python contract. `./Makefile` remains local developer convenience and is not the n8n automation contract.
 
 ## JSON Payload Sent To Stdin
 
@@ -207,10 +213,35 @@ From the repository root, verify the CLI contract before building the n8n workfl
 printf '%s\n' '{"url":"https://youtu.be/VIDEO_ID"}' | python ingest.py --input-json-file - --output json
 ```
 
+Verify the n8n wrapper success path with a real video that has an available transcript:
+
+```bash
+printf '%s\n' '{"url":"https://youtu.be/VIDEO_ID"}' | sh ./scripts/n8n-ingest.sh
+```
+
+Expected behavior: stdout is valid JSON, the wrapper exits `0`, and the parsed JSON contains `ok: true`.
+
+Verify the n8n wrapper failure branch with a bad URL:
+
+```bash
+printf '%s\n' '{"url":"not-a-youtube-url"}' | sh ./scripts/n8n-ingest.sh
+```
+
+Expected behavior: stdout is valid JSON, the wrapper exits `0`, and the parsed JSON contains `ok: false` with `stage` and `error`. This lets n8n continue to the Code node and route through the IF node's false branch.
+
 For Notion export, after the normal OpenAI and Notion environment variables are configured:
 
 ```bash
-printf '%s\n' '{"url":"https://youtu.be/VIDEO_ID","export":"notion"}' | python ingest.py --input-json-file - --output json
+printf '%s\n' '{"url":"https://youtu.be/VIDEO_ID","export":"notion"}' | sh ./scripts/n8n-ingest.sh
+```
+
+Review the Slice 3 changes before committing or tagging:
+
+```bash
+git status --short
+git diff --stat
+git diff -- docs/n8n-smoke-workflow.md design-doc.md
+git diff --no-index /dev/null scripts/n8n-ingest.sh
 ```
 
 Manual review checklist:

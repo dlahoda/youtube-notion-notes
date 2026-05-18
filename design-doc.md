@@ -492,7 +492,7 @@ Out of scope:
 - no queue;
 - no Notion logic inside n8n;
 - no duplicated transcript, note generation, markdown conversion, or Notion export logic in n8n;
-- no exported n8n workflow JSON yet.
+- exported n8n workflow JSON belongs to a later slice.
 
 ## Slice 2 — real local n8n smoke test
 
@@ -539,7 +539,21 @@ Out of scope remains unchanged:
 - no queue;
 - no Notion logic inside n8n;
 - no duplicated pipeline logic in n8n;
-- no exported n8n workflow JSON yet.
+- exported n8n workflow JSON belongs to a later slice.
+
+## Slice 4 — exported minimal n8n smoke workflow template
+
+Status: complete.
+
+Scope:
+
+- add sanitized `./docs/n8n-smoke-workflow.json` template;
+- keep the workflow minimal: Manual Trigger, Execute Command, Code, IF;
+- use `sh ./scripts/n8n-ingest.sh` through a placeholder repository path;
+- keep `./ingest.py` JSON stdin/stdout as the integration boundary;
+- avoid runtime Python changes;
+- avoid secrets, Notion API keys, database IDs, and personal local paths;
+- keep the template as manual smoke workflow documentation, not production automation.
 
 ----------
 

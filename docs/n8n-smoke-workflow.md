@@ -2,7 +2,7 @@
 
 This document describes the first small n8n smoke workflow for the YouTube Notion Notes pipeline.
 
-The goal is to prove that n8n can call the existing local Python CLI, pass one JSON payload through stdin, receive JSON-only stdout, and branch on the result. This is a contract and manual build guide only; it is not an exported n8n workflow.
+The goal is to prove that n8n can call the existing local Python CLI, pass one JSON payload through stdin, receive JSON-only stdout, and branch on the result. This is a contract, manual build guide, and exported smoke workflow template. It is not production automation.
 
 ## Goal
 
@@ -33,9 +33,29 @@ Build the first workflow manually with a small node chain:
 5. Success branch for `ok: true`
 6. Failure branch for `ok: false`
 
-The exact n8n node names may vary by version, but the workflow should stay this small. Do not create a real exported workflow JSON in this slice.
+The exact n8n node names may vary by version, but the workflow should stay this small.
 
 For the first smoke test, the JSON payload may be hardcoded in the Execute Command shell pipe. A later workflow can add a Set or Edit Fields node upstream to construct the payload before calling `./scripts/n8n-ingest.sh`.
+
+## Exported Smoke Template
+
+The repository includes a sanitized exported template at `./docs/n8n-smoke-workflow.json`.
+
+Use it only as a manual smoke workflow template. It is meant to recreate the minimal chain without rebuilding it from scratch:
+
+1. Manual Trigger
+2. Execute Command
+3. Code
+4. IF
+
+Before running the imported workflow, replace both placeholders in the Execute Command node:
+
+- replace `/path/to/youtube-notion-notes` with the local repository path on the n8n host;
+- replace `https://youtu.be/VIDEO_ID` with one real YouTube URL.
+
+The template keeps the direct `./ingest.py` JSON stdin/stdout contract as the integration boundary through `./scripts/n8n-ingest.sh`. It does not duplicate transcript fetching, note generation, markdown conversion, Notion export, or Notion credentials inside n8n.
+
+Exported workflow JSON should be committed only after sanitizing local paths and secrets. Do not commit values such as API keys, database IDs, or personal absolute paths.
 
 ## Real Smoke Test Result
 
@@ -235,13 +255,12 @@ For Notion export, after the normal OpenAI and Notion environment variables are 
 printf '%s\n' '{"url":"https://youtu.be/VIDEO_ID","export":"notion"}' | sh ./scripts/n8n-ingest.sh
 ```
 
-Review the Slice 3 changes before committing or tagging:
+Review the n8n smoke workflow files before committing or tagging:
 
 ```bash
 git status --short
 git diff --stat
-git diff -- docs/n8n-smoke-workflow.md design-doc.md
-git diff --no-index /dev/null scripts/n8n-ingest.sh
+git diff -- docs/n8n-smoke-workflow.md docs/n8n-smoke-workflow.json design-doc.md
 ```
 
 Manual review checklist:
@@ -258,7 +277,7 @@ Manual review checklist:
 
 ## Known Limitations
 
-- This document is a manual workflow contract, not an exported n8n workflow JSON.
+- `./docs/n8n-smoke-workflow.json` is a manual smoke workflow template, not production automation.
 - The workflow assumes n8n can run a local command in the project environment.
 - The workflow assumes dependencies are already installed for `./ingest.py`.
 - Videos still require available YouTube transcripts or captions.

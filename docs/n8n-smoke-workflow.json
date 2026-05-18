@@ -1,0 +1,101 @@
+{
+  "name": "YouTube Notion Notes Smoke Template",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "command": "cd /path/to/youtube-notion-notes && printf '%s\\n' '{\"url\":\"https://youtu.be/VIDEO_ID\"}' | sh ./scripts/n8n-ingest.sh"
+      },
+      "id": "execute-n8n-ingest-wrapper",
+      "name": "Execute n8n ingest wrapper",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $json.stdout;\nreturn [{ json: JSON.parse(raw) }];"
+      },
+      "id": "parse-cli-json-stdout",
+      "name": "Parse CLI JSON stdout",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.ok === true }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "branch-on-ok",
+      "name": "IF ok is true",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        720,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Execute n8n ingest wrapper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute n8n ingest wrapper": {
+      "main": [
+        [
+          {
+            "node": "Parse CLI JSON stdout",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse CLI JSON stdout": {
+      "main": [
+        [
+          {
+            "node": "IF ok is true",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "active": false,
+  "staticData": null,
+  "pinData": {}
+}

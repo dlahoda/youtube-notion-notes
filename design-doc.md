@@ -555,6 +555,35 @@ Scope:
 - avoid secrets, Notion API keys, database IDs, and personal local paths;
 - keep the template as manual smoke workflow documentation, not production automation.
 
+## Milestone 4 status
+
+Milestone 4 is complete enough for the local MVP.
+
+The project now has:
+
+- a validated JSON stdin/stdout integration contract between n8n and `./ingest.py`;
+- a real local n8n smoke test;
+- a small n8n-facing shell wrapper;
+- a sanitized exported smoke workflow template;
+- a clear separation between orchestration in n8n and pipeline logic in Python.
+
+The current design intentionally stays local-first and avoids additional infrastructure such as HTTP services, queues, or external workflow state.
+
+Remaining future work is optional and belongs to later milestones or experiments, not to the Milestone 4 MVP boundary.
+
+## Possible future extensions
+
+Possible future extensions may include:
+
+- constructing payloads through upstream n8n nodes instead of hardcoded smoke payloads;
+- notification or audit branches in n8n;
+- scheduled or automatic triggers;
+- improved retry/reporting behavior;
+- alternative transcript providers;
+- hosted or remote execution models.
+
+These are intentionally outside the current local MVP scope.
+
 ----------
 
 # 9. Вузькі місця

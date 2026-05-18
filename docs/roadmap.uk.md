@@ -33,21 +33,31 @@ Milestone 3 завершено і позначено тегом `v0.3.0`: CLI о
 
 Milestone 4 завершено і позначено тегом `v0.4.0`: перевірено локальний n8n smoke workflow, додано wrapper `./scripts/n8n-ingest.sh` і шаблон workflow. n8n не містить бізнес-логіки пайплайна.
 
+Milestone 5 завершено і позначено тегом `v0.5.0`: orchestration-логіку винесено з `./ingest.py` у `./services/pipeline.py`, а CLI та JSON-контракт лишилися стабільними.
+
+Milestone 6 завершено і позначено тегом `v0.6.0`: додано fallback input із локального transcript-файлу.
+
 ## Milestone 5: pipeline core refactor
 
-Наступний крок: зробити `./ingest.py` тоншим.
+Milestone завершено: `./ingest.py` став тоншим, а orchestration-логіка пайплайна живе в `./services/pipeline.py`.
 
-Поточна поведінка має залишитися тією самою: CLI, JSON-контракт, локальний output, Notion export і n8n wrapper не повинні змінити зовнішню форму. Внутрішня orchestration-логіка має переїхати з `./ingest.py` у окремий Python service module.
+Зовнішня поведінка збережена: CLI, JSON-контракт, локальний output, Notion export і n8n wrapper не змінили форму.
 
-Це підготує код до наступних input modes без додавання нових CLI-фіч у цьому milestone.
+Цей refactor підготував код до наступних input modes без додавання нових CLI-фіч у Milestone 5.
 
 ## Milestone 6: transcript fallback input
 
-Після refactor планується fallback для випадків, коли YouTube transcript недоступний або його не хочеться брати автоматично.
+Milestone завершено: додано `--transcript-file` для fallback-сценарію, коли YouTube transcript недоступний або його не хочеться брати автоматично.
 
-Очікувана ідея: користувач дає transcript із локального файлу, а пайплайн далі використовує той самий шлях генерації нотатки, локального збереження та опційного Notion export.
+Режим працює для звичайного CLI з positional YouTube URL. YouTube URL досі обовʼязковий і лишається source metadata, а transcript читається з локального UTF-8 файлу.
 
-Whisper, альтернативні transcript providers і long-video chunking поки не входять у цей milestone.
+Empty або whitespace-only transcript files відхиляються на transcript stage до запису transcript, prompt, note або Notion output files. Якщо файл має non-whitespace content, transcript text зберігається без змін.
+
+JSON/n8n transcript input, URL-less transcript mode, Whisper, alternative transcript providers і long-video chunking не входили в Milestone 6.
+
+## Milestone 7: next slice TBD
+
+Наступний milestone ще не вибрано. Майбутні варіанти лишаються в backlog.
 
 ## Майбутній backlog
 

@@ -35,6 +35,7 @@ Current roadmap:
 - Milestone 5 is complete and tagged `v0.5.0`: pipeline core refactor.
 - Milestone 6 is complete and tagged `v0.6.0`: transcript fallback input.
 - Milestone 7 Slice 1 is complete: JSON transcript-file fallback input.
+- Milestone 8 Slice 1 is complete: ingest CLI tests split by responsibility.
 
 ---
 
@@ -772,7 +773,40 @@ Out of scope:
 
 ---
 
-# 12. Future Options and Backlog
+# 12. Milestone 8: Test Suite Maintenance
+
+## Status
+
+Milestone 8 Slice 1 is complete.
+
+## Goal
+
+Keep the test suite easy to read as the CLI contract grows, without changing runtime behavior.
+
+## Slice 1: Split Ingest CLI Tests by Responsibility
+
+Status: complete.
+
+Scope:
+
+- split the former `./tests/test_ingest.py` coverage into focused ingest test modules;
+- add `./tests/test_ingest_input.py` for JSON input parsing, input validation, ambiguity checks, transcript-file input mapping, and `PipelineRequest` mapping with `run_pipeline` mocked directly;
+- add `./tests/test_ingest_cli.py` for broader `ingest.main()` CLI behavior with pipeline dependencies mocked;
+- keep `./tests/test_pipeline.py` focused on service-level pipeline behavior;
+- preserve existing ingest behavior coverage without changing `./ingest.py`, `./services/pipeline.py`, or `./scripts/n8n-ingest.sh`.
+
+Out of scope:
+
+- no runtime refactor;
+- no pytest migration;
+- no new dependencies;
+- no Notion behavior changes;
+- no n8n behavior changes;
+- no design-doc decomposition.
+
+---
+
+# 13. Future Options and Backlog
 
 These items are optional later backlog if the local MVP needs them.
 
@@ -806,7 +840,7 @@ These items are optional later backlog if the local MVP needs them.
 
 ---
 
-# 13. Design Principle
+# 14. Design Principle
 
 The pipeline should be boring.
 
@@ -816,7 +850,7 @@ Less magic means fewer places where things break without explanation.
 
 ---
 
-# 14. Repository Workflow
+# 15. Repository Workflow
 
 Canonical repository: `dlahoda/youtube-notion-notes`
 
@@ -839,7 +873,7 @@ Working flow:
 
 ---
 
-# 15. Historical Setup Notes
+# 16. Historical Setup Notes
 
 The old Codex execution runbook was useful for bootstrapping Milestone 1 from an empty repository.
 

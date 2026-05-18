@@ -545,11 +545,15 @@ Future n8n expansion is optional backlog work, not part of the Milestone 4 MVP b
 
 ## Status
 
-In progress.
+Complete.
+
+Milestone 5 is complete enough for the local MVP. Pipeline orchestration now lives in `./services/pipeline.py`, the pipeline accepts `PipelineRequest` instead of `argparse.Namespace`, and focused service-level tests cover the pipeline boundary.
 
 Slice 1 is complete: pipeline orchestration moved from `./ingest.py` to `./services/pipeline.py` without changing the CLI or JSON stdin/stdout contract.
 
 Slice 2 is complete: `./services/pipeline.py` now accepts a small internal `PipelineRequest` object instead of `argparse.Namespace`, while `./ingest.py` keeps CLI parsing and JSON input handling.
+
+Slice 3 is complete: focused service-level tests now cover `./services/pipeline.py` directly through `PipelineRequest` and `run_pipeline`.
 
 ## Goal
 
@@ -580,16 +584,6 @@ Scope:
 - keep CLI parsing, JSON input handling, environment loading, and `main` in `./ingest.py`;
 - update tests to patch `./services/pipeline.py` targets where pipeline dependencies are mocked.
 
-Out of scope:
-
-- no new CLI features;
-- no transcript fallback;
-- no long-video chunking;
-- no HTTP server;
-- no queue;
-- no n8n workflow changes;
-- no Notion behavior changes.
-
 ## Slice 2: Introduce PipelineRequest Contract
 
 Status: complete.
@@ -601,13 +595,17 @@ Scope:
 - keep CLI parsing, JSON input handling, and conversion into `PipelineRequest` in `./ingest.py`;
 - keep result JSON keys, human-readable output, and n8n wrapper behavior unchanged.
 
-Out of scope:
+## Slice 3: Add Focused Pipeline Service Tests
 
-- no transcript fallback yet;
-- no long-video chunking;
-- no new CLI features;
-- no n8n workflow changes;
-- no Notion behavior changes.
+Status: complete.
+
+Scope:
+
+- add `./tests/test_pipeline.py`;
+- test `./services/pipeline.py` directly through `PipelineRequest` and `run_pipeline`;
+- mock transcript parsing/fetching, manual prompt construction, optional note generation, and Notion export at the `./services/pipeline.py` boundary;
+- use temporary output roots by patching `TRANSCRIPT_DIR`, `PROMPT_DIR`, and `NOTES_DIR`;
+- cover manual/local fallback, Notion export rejection without a generated note, local generated-note output, and Notion export result details.
 
 ## Target Shape
 

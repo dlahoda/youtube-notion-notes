@@ -25,6 +25,9 @@ Do not read every docs file by default. Start with ./design-doc.md and ./AGENTS.
 Current decisions:
 - ./docs/decisions.md — durable architecture decisions; read when changing contracts, module boundaries, integration shape, or project-level behavior.
 
+Optional ideas:
+- ./docs/ideas.md — future ideas and optional backlog items; not current scope unless explicitly promoted into ./design-doc.md.
+
 Archive docs, if present under ./docs/archive/, are historical context only. Do not read them by default. They are not current source of truth.
 
 Historical reference:
@@ -119,6 +122,7 @@ youtube-notion-notes/
     n8n-ingest.sh
   docs/
     decisions.md
+    ideas.md
     n8n-smoke-workflow.md
     n8n-smoke-workflow.json
     archive/
@@ -429,7 +433,9 @@ Completed milestones:
 
 # 9. Future Options and Backlog
 
-These items are optional later backlog if the local MVP needs them.
+Future ideas and optional backlog items live in `./docs/ideas.md`.
+
+Those ideas are not current scope, active contracts, or implementation instructions unless they are explicitly promoted back into `./design-doc.md`.
 
 ## Known Limitations
 
@@ -454,16 +460,12 @@ Current summary:
 
 ## Future Options
 
-- long-video chunking and map-reduce note generation;
-- constructing payloads through upstream n8n nodes instead of hardcoded smoke payloads;
-- n8n notification or audit branches;
-- scheduled n8n triggers;
-- improved retry and reporting behavior;
-- broader transcript input modes;
-- alternative transcript providers;
-- Whisper or local transcription;
-- hosted or remote execution model;
-- optional HTTP wrapper if local command execution stops being enough.
+Backlog themes currently parked in `./docs/ideas.md` include:
+
+- long-video handling;
+- n8n orchestration improvements;
+- transcript input and provider expansion;
+- hosted, remote, or HTTP execution options.
 
 ---
 

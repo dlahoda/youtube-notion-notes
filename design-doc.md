@@ -33,7 +33,7 @@ Current roadmap:
 - Milestone 3 is complete and tagged `v0.3.0`: local CLI automation contract.
 - Milestone 4 is complete and tagged `v0.4.0`: n8n integration contract and smoke workflow.
 - Milestone 5 is complete and tagged `v0.5.0`: pipeline core refactor.
-- Milestone 6 is in progress: transcript fallback input.
+- Milestone 6 is complete and tagged `v0.6.0`: transcript fallback input.
 
 ---
 
@@ -641,13 +641,17 @@ Scope:
 
 # 10. Milestone 6: Transcript Fallback Input
 
+## Status
+
+Milestone 6 is complete for the local MVP and tagged `v0.6.0`.
+
 ## Goal
 
 Allow the pipeline to use a manually provided transcript when YouTube transcript fetching fails or is not desirable.
 
 This supports the known transcript bottleneck: automatic YouTube captions can be missing, blocked, malformed, or unstable.
 
-## Possible Shape
+## Implemented Shape
 
 - accept transcript text from a local file;
 - keep YouTube URL as source metadata;
@@ -677,11 +681,29 @@ Out of scope:
 - no `--source-url`, `--source-title`, or `--source-type`;
 - no Whisper, alternative transcript provider, or long-video chunking.
 
+## Slice 2: Empty Manual Transcript File Validation
+
+Status: complete.
+
+Scope:
+
+- reject `--transcript-file` input when the file is empty or contains only whitespace;
+- fail during the transcript stage before writing transcript, prompt, note, or Notion output files;
+- preserve existing behavior for missing or unreadable transcript files;
+- preserve transcript text unchanged when the file contains non-whitespace content.
+
+Out of scope:
+
+- no JSON input payload contract changes;
+- no `./scripts/n8n-ingest.sh` changes;
+- no URL-less transcript-to-note mode;
+- no new source metadata options.
+
 ## Non-Goals
 
-- no Whisper or local transcription yet;
-- no alternative transcript provider yet;
-- no long-video chunking yet.
+- no Whisper or local transcription;
+- no alternative transcript provider;
+- no long-video chunking.
 
 ---
 
@@ -691,7 +713,7 @@ These items are optional later backlog if the local MVP needs them.
 
 ## Known Limitations
 
-- YouTube transcript fetching is the most fragile part. Automatic captions can be missing, blocked, malformed, or unstable, so Milestone 6 adds an explicit local transcript file fallback.
+- YouTube transcript fetching is the most fragile part. Automatic captions can be missing, blocked, malformed, or unstable, so Milestone 6 added an explicit local transcript file fallback.
 - Long transcripts may not fit into one LLM request. Chunking and map-reduce summarization are not implemented.
 - Notion is not a pure markdown editor. Markdown is converted into basic Notion blocks, and complex typography is intentionally deferred.
 - OpenAI API billing is separate from a ChatGPT subscription. Manual mode remains the fallback when API usage is unavailable or unwanted.

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import argparse
 import os
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -19,6 +19,15 @@ TRANSCRIPT_DIR = OUTPUT_DIR / "transcripts"
 PROMPT_DIR = OUTPUT_DIR / "prompts"
 NOTES_DIR = OUTPUT_DIR / "notes"
 PROMPT_TEMPLATE_PATH = Path("prompts") / "comprehensive_note.md"
+
+
+@dataclass(frozen=True)
+class PipelineRequest:
+    url: str
+    export_mode: str
+    languages: str | None
+    output_name: str | None
+    no_note: bool
 
 
 def language_preferences(cli_value: str | None) -> list[str]:
@@ -43,11 +52,11 @@ def write_text(path: Path, content: str) -> None:
     path.write_text(content, encoding="utf-8")
 
 
-def result_contract(args: argparse.Namespace) -> dict[str, Any]:
+def result_contract(request: PipelineRequest) -> dict[str, Any]:
     return {
         "ok": False,
-        "url": args.url,
-        "export_mode": args.export,
+        "url": request.url,
+        "export_mode": request.export_mode,
         "transcript_path": None,
         "prompt_path": None,
         "note_path": None,
@@ -55,23 +64,23 @@ def result_contract(args: argparse.Namespace) -> dict[str, Any]:
     }
 
 
-def run_pipeline(args: argparse.Namespace, *, human_output: bool) -> tuple[int, dict[str, Any]]:
-    result = result_contract(args)
+def run_pipeline(request: PipelineRequest, *, human_output: bool) -> tuple[int, dict[str, Any]]:
+    result = result_contract(request)
 
     def log(message: str, *, error: bool = False) -> None:
         if human_output:
             print(message, file=sys.stderr if error else sys.stdout)
 
     try:
-        video_id = parse_youtube_url(args.url)
-        transcript = fetch_transcript(video_id, language_preferences(args.languages))
+        video_id = parse_youtube_url(request.url)
+        transcript = fetch_transcript(video_id, language_preferences(request.languages))
     except TranscriptError as exc:
         result["stage"] = "transcript"
         result["error"] = str(exc)
         log(f"Transcript error: {exc}", error=True)
         return 1, result
 
-    output_name = safe_output_name(args.output_name or video_id)
+    output_name = safe_output_name(request.output_name or video_id)
     transcript_path = TRANSCRIPT_DIR / f"{output_name}.txt"
     prompt_path = PROMPT_DIR / f"{output_name}_prompt.md"
     note_path = NOTES_DIR / f"{output_name}.md"
@@ -79,7 +88,7 @@ def run_pipeline(args: argparse.Namespace, *, human_output: bool) -> tuple[int, 
     transcript_text = transcript.as_text()
     prompt_text = build_manual_prompt(
         template_path=PROMPT_TEMPLATE_PATH,
-        video_url=args.url,
+        video_url=request.url,
         video_id=video_id,
         transcript=transcript_text,
     )
@@ -92,9 +101,9 @@ def run_pipeline(args: argparse.Namespace, *, human_output: bool) -> tuple[int, 
     log(f"Transcript saved: {transcript_path}")
     log(f"GPT prompt saved: {prompt_path}")
 
-    if args.no_note:
+    if request.no_note:
         log("Markdown note skipped: --no-note was provided.")
-        if args.export == "notion":
+        if request.export_mode == "notion":
             message = "Notion export skipped: --export notion requires a generated markdown note."
             result["stage"] = "notion_export"
             result["error"] = message
@@ -107,7 +116,7 @@ def run_pipeline(args: argparse.Namespace, *, human_output: bool) -> tuple[int, 
         note_text = generate_note_if_available(prompt_text)
     except NoteGenerationError as exc:
         log(f"Markdown note skipped: {exc}")
-        if args.export == "notion":
+        if request.export_mode == "notion":
             message = "Notion export skipped: --export notion requires a generated markdown note."
             result["stage"] = "notion_export"
             result["error"] = message
@@ -120,11 +129,11 @@ def run_pipeline(args: argparse.Namespace, *, human_output: bool) -> tuple[int, 
         write_text(note_path, note_text)
         result["note_path"] = str(note_path)
         log(f"Markdown note saved: {note_path}")
-        if args.export == "notion":
+        if request.export_mode == "notion":
             try:
                 from services.notion_export import export_markdown_note_to_notion
 
-                notion_page = export_markdown_note_to_notion(note_text, args.url)
+                notion_page = export_markdown_note_to_notion(note_text, request.url)
             except Exception as exc:
                 result["stage"] = "notion_export"
                 result["error"] = str(exc)
@@ -136,7 +145,7 @@ def run_pipeline(args: argparse.Namespace, *, human_output: bool) -> tuple[int, 
             log(f"Notion page created: {notion_page.id}")
     else:
         log("Markdown note skipped: OPENAI_API_KEY is not configured.")
-        if args.export == "notion":
+        if request.export_mode == "notion":
             message = "Notion export skipped: --export notion requires a generated markdown note."
             result["stage"] = "notion_export"
             result["error"] = message

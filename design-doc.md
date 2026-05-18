@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Keep this document as the canonical technical source of truth for the current project state, roadmap, slice boundaries, and durable project decisions.
+Keep this document as the canonical technical source of truth for the current project state, active contracts, roadmap, slice boundaries, and project map.
 
 This document should:
 
@@ -12,6 +12,7 @@ This document should:
 - call out risks and bottlenecks;
 - keep Notion as final storage, not the center of logic;
 - keep the LLM layer replaceable: OpenAI API, manual ChatGPT, or a future local model.
+- point to durable project decisions that live in `./docs/decisions.md`.
 
 ## Project docs map
 
@@ -20,6 +21,9 @@ Default reading:
 - ./AGENTS.md — repo-local rules for AI/Codex work.
 
 Do not read every docs file by default. Start with ./design-doc.md and ./AGENTS.md, then open only the smallest supporting document needed for the current task.
+
+Current decisions:
+- ./docs/decisions.md — durable architecture decisions; read when changing contracts, module boundaries, integration shape, or project-level behavior.
 
 Archive docs, if present under ./docs/archive/, are historical context only. Do not read them by default. They are not current source of truth.
 
@@ -114,6 +118,7 @@ youtube-notion-notes/
   scripts/
     n8n-ingest.sh
   docs/
+    decisions.md
     n8n-smoke-workflow.md
     n8n-smoke-workflow.json
     archive/
@@ -347,7 +352,7 @@ Required Notion database contract:
 - `Source`: select;
 - `Created`: created time.
 
-Current Notion property decisions:
+Current Notion database details:
 
 - `Status` uses a regular Notion `select` property, not Notion native Status;
 - `Source` uses a regular Notion `select` property, not `rich_text`;
@@ -435,11 +440,17 @@ These items are optional later backlog if the local MVP needs them.
 
 ## Current Design Decisions
 
-- Support both manual GPT bridge mode and optional OpenAI API mode.
-- Treat manual mode as a simple, durable fallback rather than a failure path.
-- Keep future local model support possible, but do not implement it yet.
-- Keep the note shape in `./prompts/comprehensive_note.md`: title, source URL, overview, key ideas, detailed notes, memorable phrasing, practical takeaways, and tags.
-- Use Notion status values `Draft`, `Reviewed`, and `Archived`.
+Durable project decisions live in `./docs/decisions.md`.
+
+Current summary:
+
+- Python owns pipeline logic; n8n orchestrates only.
+- JSON stdin/stdout is the current automation boundary.
+- Notion export stays inside Python.
+- Manual transcript-file input still requires a source YouTube URL.
+- Manual GPT bridge mode remains a durable fallback.
+- Future local model support remains possible but is not implemented yet.
+- Markdown-to-Notion conversion stays intentionally simple.
 
 ## Future Options
 

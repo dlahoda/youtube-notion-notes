@@ -56,3 +56,9 @@ Avoid vague references like:
 - "the prompt file"
 
 When showing file contents, put the project-relative path directly above the code block.
+
+## Decision policy
+
+- You may make small local implementation decisions when they do not change public behavior, CLI contracts, file formats, or module boundaries.
+- Do not make project-level design decisions unless they are covered by ./design-doc.md or the current task.
+- If you need to make a project-level decision not covered by ./design-doc.md or the requested task, stop and explain the decision needed instead of guessing.

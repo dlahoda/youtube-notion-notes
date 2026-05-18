@@ -534,6 +534,25 @@ class IngestCliTests(unittest.TestCase):
         self.assertFalse(note_exists)
         export_mock.assert_not_called()
 
+    def test_input_json_with_empty_transcript_file_fails_cleanly(self) -> None:
+        exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
+            "--input-json",
+            json.dumps({"url": VIDEO_URL, "transcript_file": ""}),
+            "--output",
+            "json",
+            include_positional_url=False,
+        )
+
+        payload = json.loads(stdout)
+
+        self.assertEqual(exit_code, 2)
+        self.assertEqual(stderr, "")
+        self.assertFalse(payload["ok"])
+        self.assertEqual(payload["stage"], "input")
+        self.assertIn("field 'transcript_file' must not be empty", payload["error"])
+        self.assertFalse(note_exists)
+        export_mock.assert_not_called()
+
     def test_input_json_with_url_and_export_notion_works(self) -> None:
         exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
             "--input-json",
@@ -624,6 +643,32 @@ class IngestCliTests(unittest.TestCase):
         self.assertFalse(payload["ok"])
         self.assertEqual(payload["stage"], "input")
         self.assertIn("field 'transcript_file' must be a string", payload["error"])
+        self.assertFalse(note_exists)
+        export_mock.assert_not_called()
+
+    def test_input_json_file_with_whitespace_transcript_file_fails_cleanly(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            payload_path = Path(temp_dir) / "payload.json"
+            payload_path.write_text(
+                json.dumps({"url": VIDEO_URL, "transcript_file": "   "}),
+                encoding="utf-8",
+            )
+
+            exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
+                "--input-json-file",
+                str(payload_path),
+                "--output",
+                "json",
+                include_positional_url=False,
+            )
+
+        payload = json.loads(stdout)
+
+        self.assertEqual(exit_code, 2)
+        self.assertEqual(stderr, "")
+        self.assertFalse(payload["ok"])
+        self.assertEqual(payload["stage"], "input")
+        self.assertIn("field 'transcript_file' must not be empty", payload["error"])
         self.assertFalse(note_exists)
         export_mock.assert_not_called()
 

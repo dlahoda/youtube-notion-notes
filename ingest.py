@@ -125,6 +125,8 @@ def apply_json_payload(args: argparse.Namespace, payload: dict[str, Any], *, sou
     if "transcript_file" in payload:
         if not isinstance(payload["transcript_file"], str):
             raise CliInputError(f"Invalid {source}: field 'transcript_file' must be a string.")
+        if not payload["transcript_file"].strip():
+            raise CliInputError(f"Invalid {source}: field 'transcript_file' must not be empty.")
         args.transcript_file = payload["transcript_file"]
 
 

@@ -116,6 +116,7 @@ python ingest.py "https://youtu.be/VIDEO_ID" --output json
 python ingest.py "https://youtu.be/VIDEO_ID" --export notion --output json
 python ingest.py --input-json '{"url":"https://youtu.be/VIDEO_ID"}' --output json
 python ingest.py --input-json '{"url":"https://youtu.be/VIDEO_ID","export":"notion"}' --output json
+python ingest.py --input-json '{"url":"https://youtu.be/VIDEO_ID","transcript_file":"./manual-transcript.txt"}' --output json
 python ingest.py --input-json-file payload.json --output json
 printf '%s\n' '{"url":"https://youtu.be/VIDEO_ID"}' | python ingest.py --input-json-file - --output json
 ```
@@ -125,13 +126,14 @@ printf '%s\n' '{"url":"https://youtu.be/VIDEO_ID"}' | python ingest.py --input-j
 ```json
 {
   "url": "https://youtu.be/VIDEO_ID",
+  "transcript_file": "./manual-transcript.txt",
   "export": "notion"
 }
 ```
 
-The `--input-json` or `--input-json-file` payload must be a JSON object with only two supported fields: a required `url` field and an optional `export` field. `export` accepts the same values as `--export`: `local` or `notion`. Unknown fields are rejected so automation typos do not get silently ignored.
+The `--input-json` or `--input-json-file` payload must be a JSON object with only these supported fields: a required `url` field, an optional `transcript_file` field, and an optional `export` field. `transcript_file` must be a string path to a UTF-8 transcript file and uses the same transcript-stage validation as `--transcript-file`. `export` accepts the same values as `--export`: `local` or `notion`. Unknown fields are rejected so automation typos do not get silently ignored.
 
-Do not combine a positional URL with `--input-json` or `--input-json-file`. Do not combine `--input-json` with `--input-json-file`. Do not provide `export` in both JSON input and `--export`.
+Do not combine a positional URL with `--input-json` or `--input-json-file`. Do not combine `--input-json` with `--input-json-file`. Do not provide `export` in both JSON input and `--export`. When using JSON input, put `transcript_file` in the payload; the `--transcript-file` flag remains for positional URL mode.
 
 In JSON output mode, stdout contains only JSON. On success, the payload includes `ok`, `url`, `export_mode`, local output paths when created, and Notion page details when export runs. `notion_page_url` is included only when the Notion API response includes its canonical `url` field. On failure, including invalid JSON input, the payload includes `ok: false`, `stage`, and `error`.
 

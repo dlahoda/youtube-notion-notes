@@ -34,6 +34,7 @@ Current roadmap:
 - Milestone 4 is complete and tagged `v0.4.0`: n8n integration contract and smoke workflow.
 - Milestone 5 is complete and tagged `v0.5.0`: pipeline core refactor.
 - Milestone 6 is complete and tagged `v0.6.0`: transcript fallback input.
+- Milestone 7 Slice 1 is complete: JSON transcript-file fallback input.
 
 ---
 
@@ -331,9 +332,10 @@ JSON output mode can be combined with supported input and export modes.
 
 JSON output mode keeps stdout JSON-only, including for input errors.
 
-JSON input supports only:
+Current JSON input supports only:
 
 - `url`;
+- `transcript_file`;
 - `export`.
 
 Unknown JSON fields are rejected so automation typos do not get silently ignored.
@@ -358,11 +360,13 @@ The second small slice allowed automation callers to pass a structured JSON payl
 ```bash
 python ingest.py --input-json '{"url":"https://www.youtube.com/watch?v=..."}' --output json
 python ingest.py --input-json '{"url":"https://www.youtube.com/watch?v=...","export":"notion"}' --output json
+python ingest.py --input-json '{"url":"https://www.youtube.com/watch?v=...","transcript_file":"./manual-transcript.txt"}' --output json
 ```
 
 The `--input-json` payload is a JSON object with:
 
 - `url`: required YouTube URL string;
+- `transcript_file`: optional UTF-8 local transcript file path string;
 - `export`: optional export target, with the same accepted values as `--export`: `local` or `notion`.
 
 Unknown fields are rejected so automation typos do not get silently ignored.
@@ -382,6 +386,7 @@ python ingest.py --input-json-file - --output json
 `--input-json-file -` reads the payload from stdin. The payload still uses the same fields:
 
 - `url`: required YouTube URL string;
+- `transcript_file`: optional UTF-8 local transcript file path string;
 - `export`: optional export target, with the same accepted values as `--export`: `local` or `notion`.
 
 Unknown fields are rejected for file and stdin payloads too.
@@ -672,10 +677,10 @@ Scope:
 - build the GPT prompt with the same prompt template and the original YouTube URL;
 - reuse existing optional OpenAI note generation, local markdown output, and Notion export behavior.
 
-Out of scope:
+Historical out of scope for this slice:
 
-- no changes to the JSON input payload contract;
-- no `transcript_file` field in `--input-json` or `--input-json-file`;
+- no changes to the JSON input payload contract in Milestone 6 Slice 1;
+- no `transcript_file` field in `--input-json` or `--input-json-file` until the later Milestone 7 JSON contract extension;
 - no changes to `./scripts/n8n-ingest.sh`;
 - no URL-less transcript-to-note mode;
 - no `--source-url`, `--source-title`, or `--source-type`;
@@ -692,9 +697,9 @@ Scope:
 - preserve existing behavior for missing or unreadable transcript files;
 - preserve transcript text unchanged when the file contains non-whitespace content.
 
-Out of scope:
+Historical out of scope for this slice:
 
-- no JSON input payload contract changes;
+- no JSON input payload contract changes in Milestone 6 Slice 2;
 - no `./scripts/n8n-ingest.sh` changes;
 - no URL-less transcript-to-note mode;
 - no new source metadata options.
@@ -707,7 +712,67 @@ Out of scope:
 
 ---
 
-# 11. Future Options and Backlog
+# 11. Milestone 7: JSON Transcript Fallback Input
+
+## Status
+
+Milestone 7 Slice 1 is complete for the local MVP.
+
+## Goal
+
+Allow automation callers to use the existing manual transcript-file fallback through the JSON input contract.
+
+This keeps n8n and other automation paths aligned with the normal positional CLI path without adding new transcript sources or changing the pipeline core.
+
+## Slice 1: Allow `transcript_file` in JSON Input
+
+Status: complete.
+
+Scope:
+
+- add `transcript_file` as an optional supported field for `--input-json`;
+- add `transcript_file` as an optional supported field for `--input-json-file`, including stdin via `--input-json-file -`;
+- keep `url` required in every JSON payload;
+- require `transcript_file` to be a string when provided;
+- keep rejecting unknown JSON fields;
+- pass JSON `transcript_file` into `PipelineRequest.transcript_file`;
+- reuse existing transcript-stage file reading and validation in `./services/pipeline.py`;
+- preserve JSON stdout-only behavior;
+- keep existing positional URL plus `--transcript-file` behavior unchanged;
+- keep `./scripts/n8n-ingest.sh` unchanged.
+
+Supported JSON shape:
+
+```json
+{
+  "url": "https://youtu.be/VIDEO_ID",
+  "transcript_file": "./manual-transcript.txt",
+  "export": "local"
+}
+```
+
+Out of scope:
+
+- no URL-less transcript mode;
+- no inline transcript text in JSON;
+- no transcript from stdin;
+- no `source_url`, `source_title`, or `source_type` metadata;
+- no Whisper;
+- no alternative transcript providers;
+- no long-video chunking;
+- no n8n workflow changes;
+- no HTTP wrapper;
+- no new dependencies.
+
+## Non-Goals
+
+- do not expand the n8n workflow contract beyond the existing JSON stdin/stdout boundary;
+- do not add new transcript acquisition behavior beyond local UTF-8 transcript files;
+- do not change Notion export behavior.
+
+---
+
+# 12. Future Options and Backlog
 
 These items are optional later backlog if the local MVP needs them.
 
@@ -741,7 +806,7 @@ These items are optional later backlog if the local MVP needs them.
 
 ---
 
-# 12. Design Principle
+# 13. Design Principle
 
 The pipeline should be boring.
 
@@ -751,7 +816,7 @@ Less magic means fewer places where things break without explanation.
 
 ---
 
-# 13. Repository Workflow
+# 14. Repository Workflow
 
 Canonical repository: `dlahoda/youtube-notion-notes`
 
@@ -774,7 +839,7 @@ Working flow:
 
 ---
 
-# 14. Historical Setup Notes
+# 15. Historical Setup Notes
 
 The old Codex execution runbook was useful for bootstrapping Milestone 1 from an empty repository.
 

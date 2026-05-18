@@ -4,15 +4,9 @@ Build a small Python CLI tool that turns a YouTube URL into a local transcript a
 
 Later milestones may export to Notion and be wrapped by n8n, but do not implement those unless explicitly requested.
 
-## Current milestone
+## Current working mode
 
-Plan Milestone 2 only:
-
-- clarify the future Notion database schema;
-- document the minimal opt-in CLI shape for future Notion export;
-- document required future Notion environment variables;
-- keep existing local/manual behavior as the default;
-- do not implement the Notion integration yet.
+Use `./design-doc.md` as the source of truth for the current milestone, slice boundaries, constraints, and durable decisions.
 
 ## Engineering rules
 
@@ -26,6 +20,15 @@ Plan Milestone 2 only:
 - Keep secrets out of git.
 - Use `.env.example` for required environment variables.
 - Add README instructions for setup and usage.
+
+## Design document maintenance
+
+- Treat explicit user-request constraints as active task boundaries, even when they are not repeated in `./design-doc.md`.
+- In `./design-doc.md`, milestone-level `Out of scope` and non-goals sections apply to every slice within that milestone.
+- Do not copy the same `Out of scope` block into each slice when it is already defined at the milestone level.
+- Use slice-level `Out of scope` only for constraints, exceptions, or clarifications specific to that slice.
+- When a later slice changes milestone state, update stale milestone-level or earlier-slice wording where practical, especially `yet` and `not yet` statements.
+- Keep each slice focused on status, scope, decisions, and slice-specific notes.
 
 ## Verification
 

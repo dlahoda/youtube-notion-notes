@@ -1,9 +1,14 @@
 -include .local.mk
 
-.PHONY: test ingest-sample notion-sample require-sample-url require-notion-env
+.PHONY: test sync-main ingest-sample notion-sample require-sample-url require-notion-env
 
 test:
 	@bash ./scripts/test.sh
+
+sync-main:
+	git switch main
+	git pull --ff-only
+	git status
 
 require-sample-url:
 	@test -n "$(YNN_SAMPLE_URL)" || (echo "Missing YNN_SAMPLE_URL. Create .local.mk from .local.mk.example"; exit 1)

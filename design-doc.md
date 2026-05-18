@@ -3,13 +3,13 @@
 
 ## ASK
 
-Ти хочеш перенести проєкт із простого чату в робочий документ, бо тут уже з’являється дизайн пайплайну, архітектура, рішення по API, майбутній n8n і місце для поступових правок.
+Тримати цей документ як source of truth для поточного стану, roadmap, slice boundaries, і durable decisions проєкту.
 
 ## DO
 
--   Зафіксувати ціль MVP.
+-   Зафіксувати поточний стан MVP.
     
--   Відділити першу локальну Python-версію від майбутнього n8n.
+-   Відділити Python pipeline logic від n8n orchestration.
     
 -   Описати пайплайн як систему, а не як випадковий скрипт.
     
@@ -22,37 +22,34 @@
 
 ----------
 
-# 1. Ціль MVP
+# 1. Current project state
 
 Зробити локальний Python-пайплайн, який бере YouTube link і створює готову нотатку для читання та збереження.
 
-Бажаний фінальний сценарій:
+Поточний локальний сценарій:
 
 ```bash
 python ingest.py "https://www.youtube.com/watch?v=..."
+python ingest.py "https://www.youtube.com/watch?v=..." --export notion
 
 ```
 
-Результат:
+Поточний roadmap:
 
--   transcript витягнуто;
-    
--   конспект згенеровано;
-    
--   markdown backup збережено локально;
-    
--   Notion page створено в конкретній database;
-    
--   title, URL, tags, status і body заповнені.
-    
+- Milestone 1 — complete: local transcript and markdown note.
+- Milestone 2 — complete, tagged `v0.2.0`: opt-in Notion export.
+- Milestone 3 — complete, tagged `v0.3.0`: local CLI automation contract.
+- Milestone 4 — complete, tagged `v0.4.0`: n8n integration contract and smoke workflow.
+- Milestone 5 — next: pipeline core refactor.
+- Milestone 6 — later: transcript fallback input.
 
 ----------
 
-# 2. Не-цілі на старті
+# 2. MVP boundaries
 
-Це важливо, щоб MVP не розпух.
+Це важливо, щоб pipeline не розпух.
 
-Поки що НЕ робимо:
+Поза поточним local-first MVP:
 
 -   ідеальний markdown editor;
     
@@ -68,10 +65,10 @@ python ingest.py "https://www.youtube.com/watch?v=..."
     
 -   красивий UI;
     
--   n8n workflow на першому етапі.
+-   production-grade hosted workflow.
     
 
-Перший етап має відповідати на одне питання:
+Поточний MVP відповідає на одне питання:
 
 > Чи можемо ми стабільно перетворити YouTube link на якісний markdown-конспект?
 
@@ -86,8 +83,8 @@ YouTube URL
 → clean transcript
 → generate note
 → save local markdown backup
-→ create Notion page
-→ append Notion blocks
+→ optionally create Notion page
+→ optionally append Notion blocks
 
 ```
 
@@ -106,7 +103,6 @@ YouTube URL
 ```text
 youtube-notion-notes/
   ingest.py
-  config.py
   prompts/
     comprehensive_note.md
   services/
@@ -114,8 +110,16 @@ youtube-notion-notes/
     note_generator.py
     notion.py
     markdown_to_notion.py
+    note_metadata.py
+    notion_export.py
+  scripts/
+    n8n-ingest.sh
+  docs/
+    n8n-smoke-workflow.md
+    n8n-smoke-workflow.json
   output/
     transcripts/
+    prompts/
     notes/
   .env
   requirements.txt
@@ -128,7 +132,9 @@ youtube-notion-notes/
 
 Головний entry point.
 
-Керує пайплайном, але не містить усю бізнес-логіку всередині себе.
+Поки що керує CLI, input modes, output modes, і частиною pipeline orchestration.
+
+Milestone 5 має зробити цей файл тоншим без зміни поведінки.
 
 ### `services/transcript.py`
 
@@ -155,7 +161,7 @@ youtube-notion-notes/
 
 Перетворює markdown у базові Notion blocks.
 
-На старті підтримує тільки прості речі:
+Підтримує тільки прості речі:
 
 -   headings;
     
@@ -168,11 +174,25 @@ youtube-notion-notes/
 -   quotes;
     
 -   code blocks.
+
+### `services/note_metadata.py`
+
+Витягує metadata з markdown note для Notion export.
+
+### `services/notion_export.py`
+
+Оркеструє Notion export поверх `./services/notion.py`, `./services/markdown_to_notion.py`, і metadata extraction.
+
+### `./scripts/n8n-ingest.sh`
+
+Малий wrapper для n8n, який викликає `./ingest.py` через JSON stdin/stdout contract і перевіряє, що stdout є валідним JSON.
     
 
 ----------
 
 # 5. Milestone 1 — локальний конспект без Notion
+
+## Status — complete
 
 Ціль: довести, що transcript → note працює.
 
@@ -209,33 +229,15 @@ output/notes/video-title.md
 
 Notion додає окремий шар складності.
 
-Спершу треба переконатися, що “м’ясорубка” дає нормальний конспект.
+Цей milestone окремо довів, що “м’ясорубка” дає нормальний локальний конспект перед додаванням Notion.
 
 ----------
 
 # 6. Milestone 2 — Notion export
 
-## Planning checkpoint — Notion export contract
-
-Ціль поточного planning checkpoint: зафіксувати контракт для майбутнього Notion export без реалізації інтеграції.
-
-На цьому етапі НЕ робимо:
-
--   `services/notion.py`;
-
--   `services/markdown_to_notion.py`;
-
--   Notion SDK dependency;
-
--   Notion API calls;
-
--   n8n workflow;
-
--   web UI.
-
 ## Status — complete
 
-Milestone 2 is implemented and smoke-tested.
+Milestone 2 is implemented, smoke-tested, and tagged `v0.2.0`.
 
 End-to-end smoke test passed:
 
@@ -259,7 +261,7 @@ NOTION_DATABASE_ID=...
 
 ```
 
-`OPENAI_API_KEY` залишається optional і належить тільки до OpenAI note generation. Він не потрібен для future Notion export.
+`OPENAI_API_KEY` залишається optional і належить тільки до OpenAI note generation. Він не потрібен для Notion export.
 
 ## Поля Notion database
 
@@ -307,7 +309,7 @@ python ingest.py "URL" --export notion
 
 ```
 
-Local-only режим може бути явним, якщо це добре ляже в CLI:
+Local-only режим може бути явним:
 
 ```bash
 python ingest.py "URL" --export local
@@ -335,7 +337,7 @@ python ingest.py "URL" --export local
 
 ## Status — complete
 
-Milestone 3's local CLI automation contract is complete.
+Milestone 3's local CLI automation contract is complete and tagged `v0.3.0`.
 
 Supported current CLI input modes:
 
@@ -360,7 +362,7 @@ JSON input supports only:
 
 Unknown JSON fields are rejected so automation typos do not get silently ignored.
 
-n8n orchestration and any HTTP wrapper are not implemented yet. They belong to later work, after this local CLI contract.
+n8n orchestration was validated in Milestone 4. Any HTTP wrapper remains optional future work.
 
 ## CLI result contract
 
@@ -428,15 +430,7 @@ JSON output mode keeps stdout JSON-only for input errors:
 
 ```
 
-Later possible HTTP wrapper mode, not implemented yet:
-
-```text
-POST /ingest
-{
-  "url": "https://www.youtube.com/watch?v=..."
-}
-
-```
+An HTTP wrapper is intentionally not part of the current local-first design. Keep it in the future backlog unless local command execution stops being enough.
 
 ## Чому це важливо
 
@@ -557,7 +551,7 @@ Scope:
 
 ## Milestone 4 status
 
-Milestone 4 is complete enough for the local MVP.
+Milestone 4 is complete enough for the local MVP and tagged `v0.4.0`.
 
 The project now has:
 
@@ -569,20 +563,7 @@ The project now has:
 
 The current design intentionally stays local-first and avoids additional infrastructure such as HTTP services, queues, or external workflow state.
 
-Remaining future work is optional and belongs to later milestones or experiments, not to the Milestone 4 MVP boundary.
-
-## Possible future extensions
-
-Possible future extensions may include:
-
-- constructing payloads through upstream n8n nodes instead of hardcoded smoke payloads;
-- notification or audit branches in n8n;
-- scheduled or automatic triggers;
-- improved retry/reporting behavior;
-- alternative transcript providers;
-- hosted or remote execution models.
-
-These are intentionally outside the current local MVP scope.
+Future n8n expansion is optional backlog work, not part of the Milestone 4 MVP boundary.
 
 ----------
 
@@ -657,13 +638,27 @@ Non-goals:
 
 # 11. Future options / backlog
 
-These options are intentionally not part of Milestone 5 or Milestone 6.
+These items are intentionally outside Milestone 5. Transcript fallback input is already planned as Milestone 6; the rest is optional later backlog if the local MVP needs it.
 
-They may become later milestones or experiments if the local MVP needs them.
+Known limitations:
+
+- YouTube transcript fetching is the most fragile part. Automatic captions can be missing, blocked, malformed, or unstable.
+- Long transcripts may not fit into one LLM request. Chunking and map-reduce summarization are not implemented.
+- Notion is not a pure markdown editor. Markdown is converted into basic Notion blocks, and complex typography is intentionally deferred.
+- OpenAI API billing is separate from a ChatGPT subscription. Manual mode remains the fallback when API usage is unavailable or unwanted.
+
+Current design decisions:
+
+- Support both manual GPT bridge mode and optional OpenAI API mode.
+- Treat manual mode as a simple, durable fallback rather than a failure path.
+- Keep future local model support possible, but do not implement it yet.
+- Keep the note shape in `./prompts/comprehensive_note.md`: title, source URL, overview, key ideas, detailed notes, memorable phrasing, practical takeaways, and tags.
+- Use Notion status values `Draft`, `Reviewed`, and `Archived`.
 
 Future options:
 
 - long-video chunking and map-reduce note generation;
+- constructing payloads through upstream n8n nodes instead of hardcoded smoke payloads;
 - n8n notification or audit branches;
 - scheduled n8n triggers;
 - improved retry and reporting behavior;
@@ -674,166 +669,7 @@ Future options:
 
 ----------
 
-
-# 12. Вузькі місця
-
-## 1. YouTube transcript
-
-Найкрихкіша частина.
-
-Автоматичні субтитри можуть бути відсутні, закриті, дивно розмічені або зламані через зміни YouTube.
-
-Fallback:
-
--   manual paste transcript;
-    
--   інший transcript provider;
-    
--   whisper/local transcription у майбутньому.
-    
-
-## 2. Довгі відео
-
-Довгі transcript можуть не влазити в один LLM-запит.
-
-Fallback:
-
--   chunking;
-    
--   map-reduce summary;
-    
--   спершу short MVP для відео до певної довжини.
-    
-
-## 3. Markdown → Notion
-
-Notion не є markdown editor у чистому вигляді.
-
-Треба конвертувати markdown у blocks.
-
-Fallback:
-
--   на старті вставляти простішу структуру;
-    
--   складну типографіку відкласти.
-    
-
-## 4. API billing
-
-OpenAI API окремий від ChatGPT subscription.
-
-Fallback:
-
--   manual mode;
-    
--   локальна модель;
-    
--   cheap model для першого проходу;
-    
--   GPT тільки для фінального polish.
-    
-
-----------
-
-# 13. Пропонований перший режим: manual-safe MVP
-
-Щоб не впертися в оплату API відразу, можна зробити два режими.
-
-## Mode A — full auto
-
-```text
-transcript → OpenAI API → markdown note
-
-```
-
-## Mode B — manual GPT bridge
-
-```text
-transcript → ready prompt file → user pastes into ChatGPT → saves result manually or through script
-
-```
-
-Це не ідеальна автоматизація, але дає backup-режим без API billing.
-
-----------
-
-# 14. Наступний практичний крок
-
-Зробити Milestone 1.
-
-Мінімальний результат:
-
--   `requirements.txt`;
-    
--   `.env.example`;
-    
--   `ingest.py`;
-    
--   `services/transcript.py`;
-    
--   `services/note_generator.py`;
-    
--   `prompts/comprehensive_note.md`;
-    
--   локальний markdown output.
-    
-
-Після цього можна додавати Notion.
-
-----------
-
-# 15. Відкриті рішення
-
-## LLM mode для першої версії
-
-Варіанти:
-
-1.  OpenAI API одразу.
-    
-2.  Manual ChatGPT bridge спочатку.
-    
-3.  Підтримати обидва режими з самого початку.
-    
-
-Рекомендація: підтримати обидва, але зробити manual mode простим fallback.
-
-## Формат конспекту
-
-Можна взяти наявний стиль з твого “Comprehensive Note” чату.
-
-Бажаний output:
-
--   title;
-    
--   source URL;
-    
--   short overview;
-    
--   key ideas;
-    
--   detailed notes;
-    
--   quotes or memorable phrasing;
-    
--   practical takeaways;
-    
--   tags.
-    
-
-## Notion page status
-
-Рекомендація:
-
--   `Draft` — створено автоматом, ще не читав;
-    
--   `Reviewed` — прочитав і підчистив;
-    
--   `Archived` — залишив для історії.
-    
-
-----------
-
-# 16. Принцип дизайну
+# 12. Принцип дизайну
 
 Пайплайн має бути нудний.
 
@@ -842,7 +678,8 @@ transcript → ready prompt file → user pastes into ChatGPT → saves result m
 Менше магії означає менше місць, де все ламається без пояснень.
 
 ----------
-# 17. Repository workflow
+
+# 13. Repository workflow
 
 Canonical repository: dlahoda/youtube-notion-notes
 
@@ -862,148 +699,20 @@ Working flow:
 - pushed branches or PRs are reviewed through GitHub;
 - final integration uses squash merge into main;
 - assistant must not create commits, branches, PRs, or merge changes unless explicitly asked.
-----------
-
-# 18. Codex execution runbook
-
-## Мета
-
-Провести першу реалізацію через Codex маленькими контрольованими кроками.
-
-Codex не має будувати весь проєкт одразу.
-
-Він має робити один milestone за раз.
 
 ----------
 
-## Step 0 — створити репозиторій
+# 14. Historical setup notes
 
-Почати з порожньої папки:
+The old Codex execution runbook was useful for bootstrapping Milestone 1 from an empty repository.
 
-```bash
-mkdir youtube-notion-notes
-cd youtube-notion-notes
-git init
+Current durable guidance:
 
-```
+- work one milestone or slice at a time;
+- keep a git checkpoint before each large task;
+- obey `./AGENTS.md` and this design document;
+- keep changes small and reviewable;
+- show diffs and verification commands after implementation;
+- do not create commits, branches, PRs, or merges unless explicitly asked.
 
-Перший commit може бути порожній або тільки з README.
-
-Головна ідея: перед кожним великим Codex-завданням мати git checkpoint.
-
-----------
-
-## Step 1 — додати `AGENTS.md`
-
-`AGENTS.md` — це інструкції для Codex у межах конкретної репи.
-
-Мінімальний зміст:
-
-```md
-# AGENTS.md
-
-## Project goal
-
-Build a small Python CLI tool that turns a YouTube URL into a local transcript and a markdown note.
-
-Later milestones may export to Notion and be wrapped by n8n, but do not implement those unless explicitly requested.
-
-## Current milestone
-
-Implement Milestone 1 only:
-
-- parse a YouTube URL;
-- fetch a transcript;
-- save raw transcript locally;
-- create a ready-to-paste GPT prompt;
-- optionally generate a markdown note if OpenAI API config is present.
-
-## Engineering rules
-
-- Keep changes small and reviewable.
-- Prefer boring, simple Python.
-- Do not add a web UI.
-- Do not implement Notion yet.
-- Do not implement n8n yet.
-- Do not add unnecessary dependencies.
-- Keep secrets out of git.
-- Use `.env.example` for required environment variables.
-- Add README instructions for setup and usage.
-
-## Verification
-
-After changes, explain:
-
-- what files were created or changed;
-- how to install dependencies;
-- how to run the CLI;
-- how to test it manually with one YouTube URL;
-- what limitations remain.
-
-```
-
-----------
-
-## Step 2 — перший Codex prompt
-
-Дати Codex вузьке завдання:
-
-```text
-Read AGENTS.md and implement Milestone 1 only.
-
-Create the initial Python CLI project structure.
-
-Requirements:
-- `ingest.py` is the CLI entry point.
-- `services/transcript.py` handles YouTube URL parsing and transcript fetching.
-- `services/note_generator.py` supports manual mode and optional OpenAI mode.
-- `prompts/comprehensive_note.md` contains the note-generation prompt template.
-- `requirements.txt`, `.env.example`, and `README.md` are included.
-- Raw transcript files are saved to `output/transcripts/`.
-- Ready-to-paste GPT prompt files are saved to `output/prompts/`.
-- Markdown notes are saved to `output/notes/` only when note generation is available.
-
-Constraints:
-- Do not implement Notion.
-- Do not implement n8n.
-- Do not add a web UI.
-- Keep dependencies minimal.
-- Add basic error handling.
-
-After implementing, show me the diff and the exact commands to verify it.
-
-```
-
-----------
-
-## Step 3 — review before accepting
-
-Before accepting Codex changes, check:
-
--   Does it obey the milestone boundary?
-    
--   Did it avoid Notion/n8n?
-    
--   Did it avoid secrets in git?
-    
--   Does README show exact commands?
-    
--   Can the CLI run with no OpenAI API key?
-    
--   Are output folders ignored or safe?
-    
-
-----------
-
-## Step 4 — git checkpoint
-
-After the first working version:
-
-```bash
-git status
-git add .
-git commit -m "Implement local transcript MVP"
-
-```
-
-Only after this checkpoint should the project move toward Notion export.
+The original empty-repo setup prompt is historical context only; Milestones 1-4 are already complete.

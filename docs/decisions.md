@@ -2,7 +2,7 @@
 
 This document records durable architecture and product decisions for the project.
 
-Read this when changing contracts, module boundaries, integration shape, or project-level behavior. Keep milestone status, slice history, and backlog planning in `./design-doc.md` or `./docs/archive/*` instead.
+Read this when changing contracts, module boundaries, integration shape, or project-level behavior. Keep milestone status and active backlog planning in `./design-doc.md`. Keep completed slice history in `./docs/archive/*`.
 
 ---
 

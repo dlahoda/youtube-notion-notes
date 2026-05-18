@@ -32,8 +32,8 @@ Current roadmap:
 - Milestone 2 is complete and tagged `v0.2.0`: opt-in Notion export.
 - Milestone 3 is complete and tagged `v0.3.0`: local CLI automation contract.
 - Milestone 4 is complete and tagged `v0.4.0`: n8n integration contract and smoke workflow.
-- Milestone 5 is in progress: pipeline core refactor.
-- Milestone 6 is later: transcript fallback input.
+- Milestone 5 is complete and tagged `v0.5.0`: pipeline core refactor.
+- Milestone 6 is in progress: transcript fallback input.
 
 ---
 
@@ -571,7 +571,7 @@ Before this milestone, `./ingest.py` owned too many responsibilities:
 - JSON result shaping;
 - error staging.
 
-Milestone 5 should make the internals easier to extend before adding new input modes such as transcript-file fallback.
+Milestone 5 made the internals easier to extend before adding new input modes such as transcript-file fallback.
 
 ## Slice 1: Extract Pipeline Orchestration
 
@@ -621,7 +621,7 @@ Scope:
 ## Non-Goals
 
 - no new CLI features;
-- no transcript fallback yet;
+- no transcript fallback in Milestone 5;
 - no long-video chunking;
 - no HTTP server;
 - no queue;
@@ -653,6 +653,30 @@ This supports the known transcript bottleneck: automatic YouTube captions can be
 - keep YouTube URL as source metadata;
 - reuse the same prompt generation, optional note generation, local markdown output, and Notion export path.
 
+## Slice 1: Explicit Local Transcript File Input for Normal CLI Path
+
+Status: complete.
+
+Scope:
+
+- add `--transcript-file PATH` to `./ingest.py` for positional-URL CLI usage;
+- keep the positional YouTube URL required when using `--transcript-file`;
+- keep the YouTube URL as source metadata;
+- still parse the YouTube URL to get `video_id` and default output naming;
+- when `--transcript-file` is provided, read UTF-8 transcript text from that file instead of calling YouTube transcript fetching;
+- write the manual transcript text to `./output/transcripts/` using the existing output naming behavior;
+- build the GPT prompt with the same prompt template and the original YouTube URL;
+- reuse existing optional OpenAI note generation, local markdown output, and Notion export behavior.
+
+Out of scope:
+
+- no changes to the JSON input payload contract;
+- no `transcript_file` field in `--input-json` or `--input-json-file`;
+- no changes to `./scripts/n8n-ingest.sh`;
+- no URL-less transcript-to-note mode;
+- no `--source-url`, `--source-title`, or `--source-type`;
+- no Whisper, alternative transcript provider, or long-video chunking.
+
 ## Non-Goals
 
 - no Whisper or local transcription yet;
@@ -663,11 +687,11 @@ This supports the known transcript bottleneck: automatic YouTube captions can be
 
 # 11. Future Options and Backlog
 
-These items are intentionally outside Milestone 5. Transcript fallback input is already planned as Milestone 6; the rest is optional later backlog if the local MVP needs it.
+These items are optional later backlog if the local MVP needs them.
 
 ## Known Limitations
 
-- YouTube transcript fetching is the most fragile part. Automatic captions can be missing, blocked, malformed, or unstable.
+- YouTube transcript fetching is the most fragile part. Automatic captions can be missing, blocked, malformed, or unstable, so Milestone 6 adds an explicit local transcript file fallback.
 - Long transcripts may not fit into one LLM request. Chunking and map-reduce summarization are not implemented.
 - Notion is not a pure markdown editor. Markdown is converted into basic Notion blocks, and complex typography is intentionally deferred.
 - OpenAI API billing is separate from a ChatGPT subscription. Manual mode remains the fallback when API usage is unavailable or unwanted.
@@ -687,6 +711,7 @@ These items are intentionally outside Milestone 5. Transcript fallback input is 
 - n8n notification or audit branches;
 - scheduled n8n triggers;
 - improved retry and reporting behavior;
+- broader transcript input modes;
 - alternative transcript providers;
 - Whisper or local transcription;
 - hosted or remote execution model;

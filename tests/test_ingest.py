@@ -150,6 +150,44 @@ class IngestCliTests(unittest.TestCase):
             human_output=False,
         )
 
+    def test_main_converts_transcript_file_flag_to_pipeline_request(self) -> None:
+        argv = [
+            "ingest.py",
+            VIDEO_URL,
+            "--transcript-file",
+            "./manual-transcript.txt",
+            "--no-note",
+            "--output",
+            "json",
+        ]
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        run_pipeline_mock = Mock(return_value=(0, {"ok": True}))
+
+        with (
+            patch.object(sys, "argv", argv),
+            patch.object(ingest, "load_env_file"),
+            patch.object(ingest, "run_pipeline", run_pipeline_mock),
+            contextlib.redirect_stdout(stdout),
+            contextlib.redirect_stderr(stderr),
+        ):
+            exit_code = ingest.main()
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(stderr.getvalue(), "")
+        self.assertEqual(json.loads(stdout.getvalue()), {"ok": True})
+        run_pipeline_mock.assert_called_once_with(
+            pipeline.PipelineRequest(
+                url=VIDEO_URL,
+                export_mode="local",
+                languages=None,
+                output_name=None,
+                no_note=True,
+                transcript_file="./manual-transcript.txt",
+            ),
+            human_output=False,
+        )
+
     def test_export_notion_passes_original_url_and_saved_markdown(self) -> None:
         note_text = "# Generated Note\n\nTags: cli\n\nBody"
 
@@ -304,6 +342,46 @@ class IngestCliTests(unittest.TestCase):
         self.assertIn("GPT prompt saved:", stdout)
         self.assertIn("Markdown note skipped: --no-note was provided.", stdout)
         self.assertEqual(stderr, "")
+        self.assertFalse(note_exists)
+        export_mock.assert_not_called()
+
+    def test_transcript_file_without_positional_url_fails_through_input_error_path(self) -> None:
+        exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
+            "--transcript-file",
+            "./manual-transcript.txt",
+            "--output",
+            "json",
+            include_positional_url=False,
+        )
+
+        payload = json.loads(stdout)
+
+        self.assertEqual(exit_code, 2)
+        self.assertEqual(stderr, "")
+        self.assertFalse(payload["ok"])
+        self.assertEqual(payload["stage"], "input")
+        self.assertIn("A YouTube URL is required", payload["error"])
+        self.assertFalse(note_exists)
+        export_mock.assert_not_called()
+
+    def test_transcript_file_with_input_json_fails_through_input_error_path(self) -> None:
+        exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
+            "--input-json",
+            json.dumps({"url": VIDEO_URL}),
+            "--transcript-file",
+            "./manual-transcript.txt",
+            "--output",
+            "json",
+            include_positional_url=False,
+        )
+
+        payload = json.loads(stdout)
+
+        self.assertEqual(exit_code, 2)
+        self.assertEqual(stderr, "")
+        self.assertFalse(payload["ok"])
+        self.assertEqual(payload["stage"], "input")
+        self.assertIn("positional argument when using --transcript-file", payload["error"])
         self.assertFalse(note_exists)
         export_mock.assert_not_called()
 

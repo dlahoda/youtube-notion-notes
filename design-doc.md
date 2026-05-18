@@ -586,7 +586,96 @@ These are intentionally outside the current local MVP scope.
 
 ----------
 
-# 9. Вузькі місця
+# 9. Milestone 5 — pipeline core refactor
+
+Goal: move pipeline orchestration out of ./ingest.py while preserving existing behavior.
+
+The current CLI works, but ./ingest.py now owns too many responsibilities:
+
+- CLI argument parsing;
+- JSON input handling;
+- environment loading;
+- pipeline orchestration;
+- local file writing;
+- note generation branching;
+- Notion export branching;
+- JSON result shaping;
+- error staging.
+
+Milestone 5 should make the internals easier to extend before adding new input modes such as transcript-file fallback.
+
+Target shape:
+
+- ./ingest.py remains the CLI entry point;
+- ./ingest.py keeps CLI parsing and user-facing output mode selection;
+- pipeline orchestration moves into a dedicated service module;
+- the JSON stdin/stdout contract stays unchanged;
+- ./scripts/n8n-ingest.sh stays unchanged unless required by a preserved contract;
+- Notion logic stays inside Python;
+- n8n remains orchestration-only.
+
+Non-goals:
+
+- no new CLI features;
+- no transcript fallback yet;
+- no long-video chunking;
+- no HTTP server;
+- no queue;
+- no n8n workflow expansion;
+- no Notion behavior changes.
+
+Success criteria:
+
+- existing tests pass;
+- local CLI behavior is unchanged;
+- JSON output shape is unchanged;
+- n8n wrapper behavior is unchanged;
+- Notion export still works through the existing export path;
+- ./ingest.py becomes thinner and easier to read.
+
+----------
+
+# 10. Milestone 6 — transcript fallback input
+
+Goal: allow the pipeline to use a manually provided transcript when YouTube transcript fetching fails or is not desirable.
+
+This supports the known transcript bottleneck: automatic YouTube captions can be missing, blocked, malformed, or unstable.
+
+Possible shape:
+
+- accept transcript text from a local file;
+- keep YouTube URL as source metadata;
+- reuse the same prompt generation, optional note generation, local markdown output, and Notion export path.
+
+Non-goals:
+
+- no Whisper/local transcription yet;
+- no alternative transcript provider yet;
+- no long-video chunking yet.
+
+----------
+
+# 11. Future options / backlog
+
+These options are intentionally not part of Milestone 5 or Milestone 6.
+
+They may become later milestones or experiments if the local MVP needs them.
+
+Future options:
+
+- long-video chunking and map-reduce note generation;
+- n8n notification or audit branches;
+- scheduled n8n triggers;
+- improved retry and reporting behavior;
+- alternative transcript providers;
+- Whisper or local transcription;
+- hosted or remote execution model;
+- optional HTTP wrapper if local command execution stops being enough.
+
+----------
+
+
+# 12. Вузькі місця
 
 ## 1. YouTube transcript
 
@@ -646,7 +735,7 @@ Fallback:
 
 ----------
 
-# 10. Пропонований перший режим: manual-safe MVP
+# 13. Пропонований перший режим: manual-safe MVP
 
 Щоб не впертися в оплату API відразу, можна зробити два режими.
 
@@ -668,7 +757,7 @@ transcript → ready prompt file → user pastes into ChatGPT → saves result m
 
 ----------
 
-# 11. Наступний практичний крок
+# 14. Наступний практичний крок
 
 Зробити Milestone 1.
 
@@ -693,7 +782,7 @@ transcript → ready prompt file → user pastes into ChatGPT → saves result m
 
 ----------
 
-# 12. Відкриті рішення
+# 15. Відкриті рішення
 
 ## LLM mode для першої версії
 
@@ -744,7 +833,7 @@ transcript → ready prompt file → user pastes into ChatGPT → saves result m
 
 ----------
 
-# 13. Принцип дизайну
+# 16. Принцип дизайну
 
 Пайплайн має бути нудний.
 
@@ -753,7 +842,7 @@ transcript → ready prompt file → user pastes into ChatGPT → saves result m
 Менше магії означає менше місць, де все ламається без пояснень.
 
 ----------
-# 14. Repository workflow
+# 17. Repository workflow
 
 Canonical repository: dlahoda/youtube-notion-notes
 
@@ -775,7 +864,7 @@ Working flow:
 - assistant must not create commits, branches, PRs, or merge changes unless explicitly asked.
 ----------
 
-# 15. Codex execution runbook
+# 18. Codex execution runbook
 
 ## Мета
 

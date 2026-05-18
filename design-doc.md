@@ -32,7 +32,7 @@ Current roadmap:
 - Milestone 2 is complete and tagged `v0.2.0`: opt-in Notion export.
 - Milestone 3 is complete and tagged `v0.3.0`: local CLI automation contract.
 - Milestone 4 is complete and tagged `v0.4.0`: n8n integration contract and smoke workflow.
-- Milestone 5 is next: pipeline core refactor.
+- Milestone 5 is in progress: pipeline core refactor.
 - Milestone 6 is later: transcript fallback input.
 
 ---
@@ -549,6 +549,8 @@ In progress.
 
 Slice 1 is complete: pipeline orchestration moved from `./ingest.py` to `./services/pipeline.py` without changing the CLI or JSON stdin/stdout contract.
 
+Slice 2 is complete: `./services/pipeline.py` now accepts a small internal `PipelineRequest` object instead of `argparse.Namespace`, while `./ingest.py` keeps CLI parsing and JSON input handling.
+
 ## Goal
 
 Move pipeline orchestration out of `./ingest.py` while preserving existing behavior.
@@ -588,11 +590,31 @@ Out of scope:
 - no n8n workflow changes;
 - no Notion behavior changes.
 
+## Slice 2: Introduce PipelineRequest Contract
+
+Status: complete.
+
+Scope:
+
+- add a small `PipelineRequest` dataclass in `./services/pipeline.py`;
+- change `run_pipeline` to accept `PipelineRequest` instead of `argparse.Namespace`;
+- keep CLI parsing, JSON input handling, and conversion into `PipelineRequest` in `./ingest.py`;
+- keep result JSON keys, human-readable output, and n8n wrapper behavior unchanged.
+
+Out of scope:
+
+- no transcript fallback yet;
+- no long-video chunking;
+- no new CLI features;
+- no n8n workflow changes;
+- no Notion behavior changes.
+
 ## Target Shape
 
 - `./ingest.py` remains the CLI entry point.
 - `./ingest.py` keeps CLI parsing and user-facing output mode selection.
-- Pipeline orchestration moves into a dedicated service module.
+- Pipeline orchestration lives in a dedicated service module.
+- `./services/pipeline.py` accepts a pipeline-specific request object, not raw CLI parser state.
 - The JSON stdin/stdout contract stays unchanged.
 - `./scripts/n8n-ingest.sh` stays unchanged unless required by a preserved contract.
 - Notion logic stays inside Python.

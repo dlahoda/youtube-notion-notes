@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from services.pipeline import run_pipeline
+from services.pipeline import PipelineRequest, run_pipeline
 
 
 JSON_INPUT_FIELDS = {"url", "export"}
@@ -158,6 +158,16 @@ def resolve_cli_input(args: argparse.Namespace) -> argparse.Namespace:
     return args
 
 
+def build_pipeline_request(args: argparse.Namespace) -> PipelineRequest:
+    return PipelineRequest(
+        url=args.url,
+        export_mode=args.export,
+        languages=args.languages,
+        output_name=args.output_name,
+        no_note=args.no_note,
+    )
+
+
 def load_env_file(path: Path = Path(".env")) -> None:
     if not path.exists():
         return
@@ -195,11 +205,11 @@ def main() -> int:
     if args.output == "json":
         stdout = sys.stdout
         with contextlib.redirect_stdout(sys.stderr):
-            exit_code, result = run_pipeline(args, human_output=False)
+            exit_code, result = run_pipeline(build_pipeline_request(args), human_output=False)
         print(json.dumps(result, indent=2, sort_keys=True), file=stdout)
         return exit_code
 
-    exit_code, _result = run_pipeline(args, human_output=True)
+    exit_code, _result = run_pipeline(build_pipeline_request(args), human_output=True)
     return exit_code
 
 

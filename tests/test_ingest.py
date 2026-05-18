@@ -110,6 +110,46 @@ class IngestCliTests(unittest.TestCase):
             elif hasattr(services, "notion_export"):
                 delattr(services, "notion_export")
 
+    def test_main_converts_cli_args_to_pipeline_request(self) -> None:
+        argv = [
+            "ingest.py",
+            "--input-json",
+            json.dumps({"url": VIDEO_URL, "export": "notion"}),
+            "--languages",
+            "en,uk",
+            "--output-name",
+            "custom-name",
+            "--no-note",
+            "--output",
+            "json",
+        ]
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        run_pipeline_mock = Mock(return_value=(0, {"ok": True}))
+
+        with (
+            patch.object(sys, "argv", argv),
+            patch.object(ingest, "load_env_file"),
+            patch.object(ingest, "run_pipeline", run_pipeline_mock),
+            contextlib.redirect_stdout(stdout),
+            contextlib.redirect_stderr(stderr),
+        ):
+            exit_code = ingest.main()
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(stderr.getvalue(), "")
+        self.assertEqual(json.loads(stdout.getvalue()), {"ok": True})
+        run_pipeline_mock.assert_called_once_with(
+            pipeline.PipelineRequest(
+                url=VIDEO_URL,
+                export_mode="notion",
+                languages="en,uk",
+                output_name="custom-name",
+                no_note=True,
+            ),
+            human_output=False,
+        )
+
     def test_export_notion_passes_original_url_and_saved_markdown(self) -> None:
         note_text = "# Generated Note\n\nTags: cli\n\nBody"
 

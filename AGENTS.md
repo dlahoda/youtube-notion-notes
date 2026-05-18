@@ -13,9 +13,9 @@ Use `./design-doc.md` as the source of truth for the current milestone, slice bo
 - Keep changes small and reviewable.
 - Prefer boring, simple Python.
 - Do not add a web UI.
-- Do not implement Notion yet.
-- Do not add the Notion SDK until the integration milestone.
-- Do not implement n8n yet.
+- Do not add new Notion or n8n behavior unless the current task explicitly asks for it.
+- Keep Notion export logic inside Python.
+- Keep n8n as orchestration only.
 - Do not add unnecessary dependencies.
 - Keep secrets out of git.
 - Use `.env.example` for required environment variables.

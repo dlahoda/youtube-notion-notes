@@ -12,6 +12,7 @@ from unittest.mock import Mock, patch
 
 import ingest
 import services
+import services.pipeline as pipeline
 from services.notion import NotionPage
 
 
@@ -64,14 +65,14 @@ class IngestCliTests(unittest.TestCase):
                 ),
                 patch.object(sys, "argv", argv),
                 patch.object(sys, "stdin", io.StringIO(stdin_value)),
-                patch.object(ingest, "TRANSCRIPT_DIR", temp_path / "transcripts"),
-                patch.object(ingest, "PROMPT_DIR", temp_path / "prompts"),
-                patch.object(ingest, "NOTES_DIR", temp_path / "notes"),
+                patch.object(pipeline, "TRANSCRIPT_DIR", temp_path / "transcripts"),
+                patch.object(pipeline, "PROMPT_DIR", temp_path / "prompts"),
+                patch.object(pipeline, "NOTES_DIR", temp_path / "notes"),
                 patch.object(ingest, "load_env_file"),
-                patch.object(ingest, "parse_youtube_url", return_value=VIDEO_ID),
-                patch.object(ingest, "fetch_transcript", return_value=transcript),
-                patch.object(ingest, "build_manual_prompt", return_value="prompt"),
-                patch.object(ingest, "generate_note_if_available", return_value=note_text),
+                patch.object(pipeline, "parse_youtube_url", return_value=VIDEO_ID),
+                patch.object(pipeline, "fetch_transcript", return_value=transcript),
+                patch.object(pipeline, "build_manual_prompt", return_value="prompt"),
+                patch.object(pipeline, "generate_note_if_available", return_value=note_text),
                 contextlib.redirect_stdout(stdout),
                 contextlib.redirect_stderr(stderr),
             ):

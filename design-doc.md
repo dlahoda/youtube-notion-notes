@@ -89,6 +89,7 @@ youtube-notion-notes/
   prompts/
     comprehensive_note.md
   services/
+    pipeline.py
     transcript.py
     note_generator.py
     notion.py
@@ -114,9 +115,19 @@ youtube-notion-notes/
 
 Main CLI entry point.
 
-Currently owns CLI handling, input modes, output modes, and part of the pipeline orchestration.
+Owns CLI argument parsing, input modes, output mode selection, environment loading, and user-facing process exit behavior.
 
-Milestone 5 should make this file thinner without changing behavior.
+Imports `run_pipeline` from `./services/pipeline.py`.
+
+### `./services/pipeline.py`
+
+Owns the current pipeline orchestration while preserving the existing CLI contract:
+
+- transcript fetching;
+- local transcript and prompt file writing;
+- optional note generation;
+- optional Notion export branching;
+- JSON result shaping for pipeline success and pipeline failures.
 
 ### `./services/transcript.py`
 
@@ -532,11 +543,17 @@ Future n8n expansion is optional backlog work, not part of the Milestone 4 MVP b
 
 # 9. Milestone 5: Pipeline Core Refactor
 
+## Status
+
+In progress.
+
+Slice 1 is complete: pipeline orchestration moved from `./ingest.py` to `./services/pipeline.py` without changing the CLI or JSON stdin/stdout contract.
+
 ## Goal
 
 Move pipeline orchestration out of `./ingest.py` while preserving existing behavior.
 
-The current CLI works, but `./ingest.py` now owns too many responsibilities:
+Before this milestone, `./ingest.py` owned too many responsibilities:
 
 - CLI argument parsing;
 - JSON input handling;
@@ -549,6 +566,27 @@ The current CLI works, but `./ingest.py` now owns too many responsibilities:
 - error staging.
 
 Milestone 5 should make the internals easier to extend before adding new input modes such as transcript-file fallback.
+
+## Slice 1: Extract Pipeline Orchestration
+
+Status: complete.
+
+Scope:
+
+- add `./services/pipeline.py`;
+- move pipeline-only constants, helpers, result shaping, and `run_pipeline` from `./ingest.py`;
+- keep CLI parsing, JSON input handling, environment loading, and `main` in `./ingest.py`;
+- update tests to patch `./services/pipeline.py` targets where pipeline dependencies are mocked.
+
+Out of scope:
+
+- no new CLI features;
+- no transcript fallback;
+- no long-video chunking;
+- no HTTP server;
+- no queue;
+- no n8n workflow changes;
+- no Notion behavior changes.
 
 ## Target Shape
 

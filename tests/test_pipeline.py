@@ -25,12 +25,16 @@ class PipelineServiceTests(unittest.TestCase):
         notion_page_id: str = "page-123",
         notion_page_url: str | None = None,
         assert_note_saved_before_export: bool = False,
-    ) -> tuple[int, dict, Mock, dict[str, str | bool]]:
+        transcript_file_text: str | None = None,
+    ) -> tuple[int, dict, Mock, dict]:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
             transcript_path = temp_path / "transcripts" / f"{VIDEO_ID}.txt"
             prompt_path = temp_path / "prompts" / f"{VIDEO_ID}_prompt.md"
             note_path = temp_path / "notes" / f"{VIDEO_ID}.md"
+            transcript_file_path = temp_path / "manual-transcript.txt"
+            if transcript_file_text is not None:
+                transcript_file_path.write_text(transcript_file_text, encoding="utf-8")
             transcript = Mock()
             transcript.as_text.return_value = "[00:00] Transcript\n"
 
@@ -50,6 +54,7 @@ class PipelineServiceTests(unittest.TestCase):
                 languages=None,
                 output_name=None,
                 no_note=no_note,
+                transcript_file=str(transcript_file_path) if transcript_file_text is not None else None,
             )
 
             with (
@@ -77,6 +82,7 @@ class PipelineServiceTests(unittest.TestCase):
                 "parse_called": parse_mock.called,
                 "fetch_called": fetch_mock.called,
                 "prompt_called": prompt_mock.called,
+                "prompt_kwargs": prompt_mock.call_args.kwargs if prompt_mock.call_args else {},
                 "note_called": note_mock.called,
             }
 
@@ -146,6 +152,46 @@ class PipelineServiceTests(unittest.TestCase):
         self.assertEqual(result["notion_page_url"], notion_page_url)
         self.assertEqual(snapshot["note_text"], note_text)
         export_mock.assert_called_once_with(note_text, VIDEO_URL)
+
+    def test_transcript_file_mode_does_not_call_fetch_transcript(self) -> None:
+        exit_code, result, export_mock, snapshot = self.run_pipeline(
+            no_note=True,
+            transcript_file_text="Manual transcript text.\n",
+        )
+
+        self.assertEqual(exit_code, 0)
+        self.assertTrue(result["ok"])
+        self.assertTrue(snapshot["parse_called"])
+        self.assertFalse(snapshot["fetch_called"])
+        export_mock.assert_not_called()
+
+    def test_transcript_file_mode_saves_manual_text_to_transcript_output_path(self) -> None:
+        manual_text = "Manual transcript line one.\nManual transcript line two.\n"
+
+        exit_code, result, _export_mock, snapshot = self.run_pipeline(
+            no_note=True,
+            transcript_file_text=manual_text,
+        )
+
+        self.assertEqual(exit_code, 0)
+        self.assertTrue(result["transcript_path"].endswith(f"transcripts/{VIDEO_ID}.txt"))
+        self.assertTrue(snapshot["transcript_exists"])
+        self.assertEqual(snapshot["transcript_text"], manual_text)
+
+    def test_transcript_file_mode_builds_prompt_with_manual_text_and_original_url(self) -> None:
+        manual_text = "Manual prompt transcript.\n"
+
+        exit_code, result, _export_mock, snapshot = self.run_pipeline(
+            no_note=True,
+            transcript_file_text=manual_text,
+        )
+
+        self.assertEqual(exit_code, 0)
+        self.assertTrue(result["ok"])
+        self.assertTrue(snapshot["prompt_called"])
+        self.assertEqual(snapshot["prompt_kwargs"]["video_url"], VIDEO_URL)
+        self.assertEqual(snapshot["prompt_kwargs"]["video_id"], VIDEO_ID)
+        self.assertEqual(snapshot["prompt_kwargs"]["transcript"], manual_text)
 
 
 if __name__ == "__main__":

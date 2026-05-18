@@ -51,6 +51,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Optional filename stem. Defaults to the YouTube video id.",
     )
     parser.add_argument(
+        "--transcript-file",
+        default=None,
+        help="Read transcript text from a UTF-8 file while keeping the positional YouTube URL as source metadata.",
+    )
+    parser.add_argument(
         "--output",
         choices=("text", "json"),
         default="text",
@@ -131,6 +136,7 @@ def read_json_payload_file(path_value: str) -> str:
 
 def resolve_cli_input(args: argparse.Namespace) -> argparse.Namespace:
     payload: dict[str, Any] = {}
+    positional_url = args.url
 
     if args.input_json is not None and args.input_json_file is not None:
         raise CliInputError("Provide either --input-json or --input-json-file, not both.")
@@ -146,6 +152,9 @@ def resolve_cli_input(args: argparse.Namespace) -> argparse.Namespace:
             raise CliInputError("Provide either a positional URL or --input-json-file, not both.")
         payload = load_json_payload(read_json_payload_file(args.input_json_file), source="--input-json-file")
         apply_json_payload(args, payload, source="--input-json-file")
+
+    if args.transcript_file and not positional_url:
+        raise CliInputError("A YouTube URL is required as a positional argument when using --transcript-file.")
 
     if not args.url:
         raise CliInputError(
@@ -165,6 +174,7 @@ def build_pipeline_request(args: argparse.Namespace) -> PipelineRequest:
         languages=args.languages,
         output_name=args.output_name,
         no_note=args.no_note,
+        transcript_file=args.transcript_file,
     )
 
 

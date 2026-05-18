@@ -28,6 +28,7 @@ class PipelineRequest:
     languages: str | None
     output_name: str | None
     no_note: bool
+    transcript_file: str | None = None
 
 
 def language_preferences(cli_value: str | None) -> list[str]:
@@ -52,6 +53,13 @@ def write_text(path: Path, content: str) -> None:
     path.write_text(content, encoding="utf-8")
 
 
+def read_transcript_file(path_value: str) -> str:
+    try:
+        return Path(path_value).read_text(encoding="utf-8")
+    except OSError as exc:
+        raise TranscriptError(f"Unable to read --transcript-file '{path_value}': {exc.strerror}.") from exc
+
+
 def result_contract(request: PipelineRequest) -> dict[str, Any]:
     return {
         "ok": False,
@@ -73,7 +81,11 @@ def run_pipeline(request: PipelineRequest, *, human_output: bool) -> tuple[int, 
 
     try:
         video_id = parse_youtube_url(request.url)
-        transcript = fetch_transcript(video_id, language_preferences(request.languages))
+        if request.transcript_file:
+            transcript_text = read_transcript_file(request.transcript_file)
+        else:
+            transcript = fetch_transcript(video_id, language_preferences(request.languages))
+            transcript_text = transcript.as_text()
     except TranscriptError as exc:
         result["stage"] = "transcript"
         result["error"] = str(exc)
@@ -85,7 +97,6 @@ def run_pipeline(request: PipelineRequest, *, human_output: bool) -> tuple[int, 
     prompt_path = PROMPT_DIR / f"{output_name}_prompt.md"
     note_path = NOTES_DIR / f"{output_name}.md"
 
-    transcript_text = transcript.as_text()
     prompt_text = build_manual_prompt(
         template_path=PROMPT_TEMPLATE_PATH,
         video_url=request.url,

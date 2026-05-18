@@ -55,6 +55,14 @@ python ingest.py "https://youtu.be/VIDEO_ID" --export local
 python ingest.py "https://youtu.be/VIDEO_ID" --output json
 ```
 
+Manual transcript fallback:
+
+```bash
+python ingest.py "https://youtu.be/VIDEO_ID" --transcript-file ./manual-transcript.txt --no-note
+```
+
+`--transcript-file` reads UTF-8 transcript text from a local file instead of fetching captions from YouTube. The YouTube URL is still required because it remains the source metadata, video id source, and default output filename source.
+
 Expected result without OpenAI mode:
 
 - a raw transcript text file in `output/transcripts/`
@@ -221,8 +229,8 @@ Markdown note metadata convention for export: the first H1 heading, formatted as
 
 ## Limitations
 
-- Only videos with available YouTube transcripts/captions are supported.
+- YouTube transcript fetching depends on available captions unless `--transcript-file` is used.
 - Video titles are not fetched yet; output filenames use the video id unless `--output-name` is provided.
 - OpenAI mode is optional and intentionally simple.
 - Notion export requires a generated markdown note; prompt-only/manual mode does not export.
-- No n8n integration, queueing, or web UI exists in this milestone.
+- No queueing or web UI exists in this milestone.

@@ -37,14 +37,18 @@ Historical reference:
 
 # 1. Current Project State
 
-The project is a local Python pipeline that takes a YouTube link and creates a readable note that can be saved locally and optionally exported to Notion.
+The project is a repo-local Python pipeline that takes a YouTube link and creates a readable note that can be saved locally and optionally exported to Notion.
 
-Current local usage:
+Current day-to-day local usage goes through global launcher commands installed into the user's shell:
 
 ```bash
-python ingest.py "https://www.youtube.com/watch?v=..."
-python ingest.py "https://www.youtube.com/watch?v=..." --export notion
+ynn "https://www.youtube.com/watch?v=..."
+ynn-note "https://www.youtube.com/watch?v=..."
+ynn-notion "https://www.youtube.com/watch?v=..."
+ynn-prompt "https://www.youtube.com/watch?v=..."
 ```
+
+These launchers remain thin wrappers over this repository. `./ingest.py` is still the underlying direct CLI contract for fallback use, tests, local development, n8n, and any future packaging work.
 
 Current roadmap:
 
@@ -56,6 +60,8 @@ Current roadmap:
 - Milestone 6 is complete and tagged `v0.6.0`: transcript fallback input.
 - Milestone 7 Slice 1 is complete and tagged `v0.7.0`: JSON transcript-file fallback input.
 - Milestone 8 Slice 1 is complete and tagged `v0.8.0`: ingest CLI tests split by responsibility.
+- Milestone 9 is the current repo-local launcher usability closeout target and should be tagged `v0.9.0` when complete.
+- A future installable CLI package is deferred to `v1.0.0`.
 
 ---
 
@@ -77,6 +83,8 @@ Outside the current local-first MVP:
 The current MVP answers one question:
 
 > Can we reliably turn a YouTube link into a high-quality markdown note?
+
+The current MVP is still repo-local. The launcher commands make that repo-local workflow comfortable for daily use, but they do not turn the project into an installable CLI package.
 
 ---
 
@@ -240,7 +248,7 @@ A local transcript file can be used when YouTube transcript fetching is unavaila
 python ingest.py "https://www.youtube.com/watch?v=..." --transcript-file ./manual-transcript.txt
 ```
 
-Daily local launcher commands are part of local MVP usability. They are thin wrappers over the existing repository CLI, not an installable package:
+Daily local launcher commands are part of local MVP usability. They call back into this repository and remain thin wrappers over the existing direct CLI contract, not an installable package:
 
 ```bash
 ynn "https://www.youtube.com/watch?v=..."
@@ -457,6 +465,10 @@ Completed milestones:
 - Milestone 7: JSON transcript fallback input — Slice 1 complete and tagged `v0.7.0`. JSON input supports the same local transcript-file fallback.
 - Milestone 8: Test suite maintenance — Slice 1 complete and tagged `v0.8.0`. Ingest CLI tests are split by responsibility without runtime behavior changes.
 
+Current closeout target:
+
+- Milestone 9: Repo-local launcher usability closeout — active docs-only closeout target for `v0.9.0`. This milestone recognizes that day-to-day MVP usage now works through `ynn`, `ynn-note`, `ynn-notion`, and `ynn-prompt` while the project remains repo-local and `./ingest.py` remains the underlying CLI contract.
+
 ---
 
 # 9. Future Options and Backlog
@@ -493,7 +505,8 @@ Backlog themes currently parked in `./docs/ideas.md` include:
 - long-video handling;
 - n8n orchestration improvements;
 - transcript input and provider expansion;
-- hosted, remote, or HTTP execution options.
+- hosted, remote, or HTTP execution options;
+- installable CLI packaging for a future `v1.0.0`.
 
 ---
 

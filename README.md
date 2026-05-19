@@ -1,6 +1,6 @@
 # YouTube Notion Notes
 
-Small Python CLI that turns one YouTube URL into a local transcript and a ready-to-paste GPT prompt. If OpenAI API config is present, it can also generate a markdown note.
+Repo-local Python CLI that turns one YouTube URL into a local transcript and a ready-to-paste GPT prompt. If OpenAI API config is present, it can also generate a markdown note.
 
 Notion export is opt-in after a markdown note is generated locally. Production n8n automation and web UI are intentionally not implemented.
 
@@ -22,9 +22,31 @@ py -m pip install -r requirements.txt
 Copy-Item .env.example .env
 ```
 
-## Run after setup
+## Default daily usage
 
-For normal usage, activate the existing virtual environment and run the CLI. You do not need to reinstall dependencies every time; run `python -m pip install -r requirements.txt` again only when `requirements.txt` changes.
+Default day-to-day usage is through thin launcher commands installed into your shell. They work from any terminal directory, but they still call back into this local repository.
+
+```bash
+ynn "https://youtu.be/VIDEO_ID"
+ynn-note "https://youtu.be/VIDEO_ID"
+ynn-notion "https://youtu.be/VIDEO_ID"
+ynn-prompt "https://youtu.be/VIDEO_ID"
+```
+
+Launcher behavior:
+
+- `ynn` runs the current default CLI behavior: `python ./ingest.py "URL"`
+- `ynn-note` explicitly runs local note mode: `python ./ingest.py "URL" --export local`
+- `ynn-notion` runs Notion export mode: `python ./ingest.py "URL" --export notion`
+- `ynn-prompt` runs prompt-only/manual-safe mode: `python ./ingest.py "URL" --no-note`
+
+This is a repo-local launcher workflow, not an installable package. The future installable CLI package belongs to a later `v1.0.0` milestone.
+
+## Direct repo-local CLI
+
+The direct `python ingest.py` CLI remains the lower-level contract and fallback path. Use it for local development, tests, n8n integration, JSON mode, troubleshooting, or when launchers have not been installed.
+
+Activate the existing virtual environment before using the direct CLI. You do not need to reinstall dependencies every time; run `python -m pip install -r requirements.txt` again only when `requirements.txt` changes.
 
 WSL/macOS/Linux:
 
@@ -81,27 +103,11 @@ bash ./scripts/install-launchers.sh
 
 This is a local launcher over the existing repo, not an installable package yet. The future installable CLI package belongs to a later `v1.0.0` milestone.
 
-After the one-time install, these commands work from any terminal directory:
-
-```bash
-ynn "https://youtu.be/VIDEO_ID"
-ynn-note "https://youtu.be/VIDEO_ID"
-ynn-notion "https://youtu.be/VIDEO_ID"
-ynn-prompt "https://youtu.be/VIDEO_ID"
-```
-
-Launcher behavior:
-
-- `ynn` runs the current default CLI behavior: `python ./ingest.py "URL"`
-- `ynn-note` explicitly runs local note mode: `python ./ingest.py "URL" --export local`
-- `ynn-notion` runs Notion export mode: `python ./ingest.py "URL" --export notion`
-- `ynn-prompt` runs prompt-only/manual-safe mode: `python ./ingest.py "URL" --no-note`
-
 The installed wrappers call `./scripts/ynn-run` in this repo by absolute path. `./scripts/ynn-run` changes to the repository root before invoking `./ingest.py`, so `.env` loading and output paths keep matching normal repo-local CLI usage.
 
 ## Optional OpenAI mode
 
-OpenAI mode is not required for manual-safe mode. Install it only if you want the CLI to generate markdown notes automatically, then set `OPENAI_API_KEY` in `.env`.
+OpenAI mode is not required for `ynn-prompt`, `--no-note`, transcript capture, or prompt generation. Install it only if you want `ynn`, `ynn-note`, or direct `python ingest.py` usage to generate markdown notes automatically, then set `OPENAI_API_KEY` in `.env`.
 
 WSL/macOS/Linux:
 
@@ -129,7 +135,7 @@ py -m pip install -r requirements-openai.txt
 
 ## Optional Notion export
 
-Default local behavior is unchanged. Notion export runs only when explicitly requested, and only after the markdown note has been generated and saved locally.
+Default local behavior is unchanged. Notion export runs only when explicitly requested through `ynn-notion` or `--export notion`, and only after the markdown note has been generated and saved locally.
 
 ```bash
 python ingest.py "https://youtu.be/VIDEO_ID" --export notion

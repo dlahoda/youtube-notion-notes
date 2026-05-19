@@ -31,3 +31,4 @@ Durable architecture decisions still live in `./docs/decisions.md`.
 
 - Explore a hosted or remote execution model.
 - Add an optional HTTP wrapper if local command execution stops being enough.
+- Package the CLI as an installable command for a future `v1.0.0`; this is not part of the repo-local launcher usability closeout for `v0.9.0`.

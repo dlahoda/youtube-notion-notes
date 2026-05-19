@@ -64,14 +64,15 @@ Current roadmap:
 - `v1.0.0` Slice 1 is complete: minimal installable CLI packaging skeleton and console script entrypoints for local editable installs.
 - `v1.0.0` Slice 2 is complete: runtime output/config path policy for repo-local and editable-installed CLI usage.
 - `v1.0.0` Slice 3 is complete: package data and prompt template resource handling.
+- `v1.0.0` Slice 4.2 is complete: service modules moved under `./youtube_notion_notes/services/` with internal service imports and service tests migrated.
 
 Planned `v1.0.0` packaging slices:
 
 - Slice 1: minimal packaging skeleton and console script entrypoints. Complete.
 - Slice 2: output/config path policy for installed CLI runtime behavior. Complete.
 - Slice 3: package data and prompt template resource handling. Complete.
-- Slice 4: proper package layout, likely moving toward a real import package such as `youtube_notion_notes`.
-  Slice 4 must replace the temporary flat-repo packaging shape from Slice 1: remove the transitional `py-modules = ["ingest", "ynn_cli"]` / `packages = ["services"]` setup and move toward a real import package such as `youtube_notion_notes`.
+- Slice 4: proper package layout, moving toward a real import package such as `youtube_notion_notes`.
+  Slice 4 must replace the temporary flat-repo packaging shape from Slice 1. Slice 4.2 moved service modules into `youtube_notion_notes.services` while keeping transitional top-level `py-modules = ["ingest", "ynn_cli"]` for the current console scripts.
 
 ---
 
@@ -128,16 +129,19 @@ youtube-notion-notes/
   pyproject.toml
   ingest.py
   ynn_cli.py
-  services/
-    pipeline.py
-    transcript.py
-    note_generator.py
-    resources/
-      comprehensive_note.md
-    notion.py
-    markdown_to_notion.py
-    note_metadata.py
-    notion_export.py
+  youtube_notion_notes/
+    __init__.py
+    services/
+      __init__.py
+      pipeline.py
+      transcript.py
+      note_generator.py
+      resources/
+        comprehensive_note.md
+      notion.py
+      markdown_to_notion.py
+      note_metadata.py
+      notion_export.py
   scripts/
     n8n-ingest.sh
     ynn-run
@@ -165,7 +169,7 @@ Main CLI entry point.
 
 Owns CLI argument parsing, input modes, output mode selection, environment loading, and user-facing process exit behavior.
 
-Imports `run_pipeline` from `./services/pipeline.py`.
+Imports `PipelineRequest` and `run_pipeline` from `./youtube_notion_notes/services/pipeline.py`.
 
 ### `./ynn_cli.py`
 
@@ -173,7 +177,7 @@ Thin installable CLI entrypoint adapter.
 
 Owns only the `ynn`, `ynn-note`, `ynn-notion`, and `ynn-prompt` console script wrappers for local editable package installs. It appends the same mode flags as `./scripts/ynn-run` and delegates to `./ingest.py`.
 
-### `./services/pipeline.py`
+### `./youtube_notion_notes/services/pipeline.py`
 
 Owns the current pipeline orchestration while preserving the existing CLI contract:
 
@@ -183,15 +187,15 @@ Owns the current pipeline orchestration while preserving the existing CLI contra
 - optional Notion export branching;
 - JSON result shaping for pipeline success and pipeline failures.
 
-### `./services/transcript.py`
+### `./youtube_notion_notes/services/transcript.py`
 
 Responsible only for YouTube URLs, video IDs, and transcript fetching.
 
-### `./services/note_generator.py`
+### `./youtube_notion_notes/services/note_generator.py`
 
 Responsible for turning a transcript into a note.
 
-Owns the default manual prompt template as package data at `./services/resources/comprehensive_note.md`, loaded through `importlib.resources` so installed/editable commands do not depend on the current working directory containing `./prompts/comprehensive_note.md`.
+Owns the default manual prompt template as package data at `./youtube_notion_notes/services/resources/comprehensive_note.md`, loaded through `importlib.resources` so installed/editable commands do not depend on the current working directory containing `./prompts/comprehensive_note.md`.
 
 It should support multiple modes:
 
@@ -199,11 +203,11 @@ It should support multiple modes:
 - manual mode;
 - future Ollama or local model mode.
 
-### `./services/notion.py`
+### `./youtube_notion_notes/services/notion.py`
 
 Responsible for creating Notion pages and appending blocks.
 
-### `./services/markdown_to_notion.py`
+### `./youtube_notion_notes/services/markdown_to_notion.py`
 
 Converts markdown into basic Notion blocks.
 
@@ -216,13 +220,13 @@ Supported markdown shapes are intentionally simple:
 - quotes;
 - code blocks.
 
-### `./services/note_metadata.py`
+### `./youtube_notion_notes/services/note_metadata.py`
 
 Extracts metadata from a markdown note for Notion export.
 
-### `./services/notion_export.py`
+### `./youtube_notion_notes/services/notion_export.py`
 
-Orchestrates Notion export on top of `./services/notion.py`, `./services/markdown_to_notion.py`, and metadata extraction.
+Orchestrates Notion export on top of `./youtube_notion_notes/services/notion.py`, `./youtube_notion_notes/services/markdown_to_notion.py`, and metadata extraction.
 
 ### `./scripts/n8n-ingest.sh`
 
@@ -362,11 +366,11 @@ Slice 2 boundaries:
 
 Prompt template policy:
 
-- the default prompt template lives at `./services/resources/comprehensive_note.md`;
-- `./pyproject.toml` includes the markdown template as package data for the current transitional `services` package;
-- `./services/note_generator.py` loads the default template with standard-library `importlib.resources`;
+- the default prompt template lives at `./youtube_notion_notes/services/resources/comprehensive_note.md`;
+- `./pyproject.toml` includes the markdown template as package data for `youtube_notion_notes.services`;
+- `./youtube_notion_notes/services/note_generator.py` loads the default template with standard-library `importlib.resources`;
 - `build_manual_prompt` still accepts an explicit template path for tests or future use;
-- `./services/pipeline.py` uses the package-owned default template and no longer passes a cwd-relative `./prompts/comprehensive_note.md` path.
+- `./youtube_notion_notes/services/pipeline.py` uses the package-owned default template and no longer passes a cwd-relative `./prompts/comprehensive_note.md` path.
 
 Slice 3 boundaries:
 
@@ -461,19 +465,16 @@ Package data strategy after moving services:
 
 Proposed Slice 4.2-4.5 boundaries:
 
-- Slice 4.2: create ./youtube_notion_notes/ package skeleton and move ./services/ into ./youtube_notion_notes/services/, migrate internal service imports and service tests.
+- Slice 4.2: create ./youtube_notion_notes/ package skeleton and move ./services/ into ./youtube_notion_notes/services/, migrate internal service imports and service tests. Complete.
 - Slice 4.3: move CLI implementation into ./youtube_notion_notes/ingest.py and ./youtube_notion_notes/ynn_cli.py while keeping top-level ./ingest.py and ./ynn_cli.py as wrappers.
-- Slice 4.4: update package data handling for comprehensive_note.md after the services move and remove transitional services package-data config.
+- Slice 4.4: verify package data handling for comprehensive_note.md after the services move, clean up any remaining transitional package-data assumptions, and smoke-test editable install from a non-repo cwd.
 - Slice 4.5: update console script entrypoints, clean py-modules/packages transitional packaging, and update editable-install smoke docs.
 
-Likely affected tests:
+Affected tests:
 
-- `./tests/test_ingest_input.py`: currently imports `ingest` and patches `ingest.run_pipeline`; should gain coverage for `youtube_notion_notes.ingest` while keeping wrapper compatibility coverage for `./ingest.py`.
-- `./tests/test_ingest_cli.py`: currently imports `ingest`, imports `services`, patches `services.pipeline`, and fakes `services.notion_export`; patch paths must migrate to `youtube_notion_notes.services.*`.
-- `./tests/test_ynn_cli.py`: currently imports top-level `ynn_cli` and patches `ynn_cli.ingest.main`; should test `youtube_notion_notes.ynn_cli` as the real entrypoint module and keep a small adapter test if top-level `./ynn_cli.py` remains.
-- `./tests/test_pipeline.py`: currently imports `services` and `services.pipeline`, fakes `services.notion_export`, and patches service module globals; must migrate to `youtube_notion_notes.services.*`.
-- `./tests/test_note_generator.py`: currently imports `services.note_generator` and patches `services.note_generator.resources.files`; must migrate to the package path and keep package-data behavior coverage.
-- `./tests/test_notion_export.py`, `./tests/test_notion.py`, `./tests/test_markdown_to_notion.py`, and `./tests/test_note_metadata.py`: direct service imports and patch paths must migrate to `youtube_notion_notes.services.*`.
+- `./tests/test_ingest_cli.py`, `./tests/test_pipeline.py`, `./tests/test_note_generator.py`, `./tests/test_notion_export.py`, `./tests/test_notion.py`, `./tests/test_markdown_to_notion.py`, and `./tests/test_note_metadata.py` now import and patch `youtube_notion_notes.services.*`.
+- `./tests/test_ingest_input.py` still imports top-level `ingest` for the current direct CLI contract and imports `PipelineRequest` from `youtube_notion_notes.services.pipeline`.
+- `./tests/test_ynn_cli.py` still imports top-level `ynn_cli`; moving wrapper tests to `youtube_notion_notes.ynn_cli` belongs to Slice 4.3.
 
 Risks and guardrails:
 
@@ -683,7 +684,7 @@ Completed milestones:
 - Milestone 2: Notion export — complete and tagged `v0.2.0`. Notion export is opt-in and handled inside Python.
 - Milestone 3: n8n preparation — complete and tagged `v0.3.0`. The CLI supports JSON input/output contracts for automation.
 - Milestone 4: n8n integration contract and smoke workflow — complete and tagged `v0.4.0`. n8n integration is local-first through JSON stdin/stdout and a small wrapper.
-- Milestone 5: Pipeline core refactor — complete and tagged `v0.5.0`. Pipeline orchestration lives in `./services/pipeline.py` behind `PipelineRequest`.
+- Milestone 5: Pipeline core refactor — complete and tagged `v0.5.0`. Pipeline orchestration lives in `./youtube_notion_notes/services/pipeline.py` behind `PipelineRequest`.
 - Milestone 6: Transcript fallback input — complete and tagged `v0.6.0`. Human CLI usage supports local UTF-8 transcript files.
 - Milestone 7: JSON transcript fallback input — Slice 1 complete and tagged `v0.7.0`. JSON input supports the same local transcript-file fallback.
 - Milestone 8: Test suite maintenance — Slice 1 complete and tagged `v0.8.0`. Ingest CLI tests are split by responsibility without runtime behavior changes.
@@ -691,6 +692,7 @@ Completed milestones:
 - `v1.0.0` Slice 1: minimal installable CLI packaging entrypoints for local editable installs — complete.
 - `v1.0.0` Slice 2: runtime output/config path policy for repo-local and editable-installed CLI usage — complete.
 - `v1.0.0` Slice 3: package data and prompt template resource handling — complete.
+- `v1.0.0` Slice 4.2: service package move into `youtube_notion_notes.services` — complete.
 
 ---
 

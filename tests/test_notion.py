@@ -6,7 +6,7 @@ import types
 import unittest
 from unittest.mock import Mock, patch
 
-from services.notion import create_notion_page
+from youtube_notion_notes.services.notion import create_notion_page
 
 
 class NotionTests(unittest.TestCase):

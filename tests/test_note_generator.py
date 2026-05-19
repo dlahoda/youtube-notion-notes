@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from services.note_generator import PromptTemplateError, build_manual_prompt, read_default_prompt_template
+from youtube_notion_notes.services.note_generator import PromptTemplateError, build_manual_prompt, read_default_prompt_template
 
 
 class NoteGeneratorTests(unittest.TestCase):
@@ -44,7 +44,7 @@ class NoteGeneratorTests(unittest.TestCase):
         resource = Mock()
         resource.joinpath.return_value.read_text.side_effect = FileNotFoundError("missing template")
 
-        with patch("services.note_generator.resources.files", return_value=resource):
+        with patch("youtube_notion_notes.services.note_generator.resources.files", return_value=resource):
             with self.assertRaises(PromptTemplateError) as context:
                 read_default_prompt_template()
 
@@ -55,7 +55,7 @@ class NoteGeneratorTests(unittest.TestCase):
         resource = Mock()
         resource.joinpath.return_value.read_text.side_effect = OSError("permission denied")
 
-        with patch("services.note_generator.resources.files", return_value=resource):
+        with patch("youtube_notion_notes.services.note_generator.resources.files", return_value=resource):
             with self.assertRaises(PromptTemplateError) as context:
                 build_manual_prompt(
                     "https://youtu.be/abc123def45",

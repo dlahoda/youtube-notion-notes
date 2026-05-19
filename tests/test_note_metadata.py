@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from services.note_metadata import extract_note_metadata, extract_note_tags, extract_note_title
+from youtube_notion_notes.services.note_metadata import extract_note_metadata, extract_note_tags, extract_note_title
 
 
 class NoteMetadataTests(unittest.TestCase):

@@ -21,7 +21,7 @@ class PromptTemplateError(Exception):
 def read_default_prompt_template() -> str:
     try:
         return (
-            resources.files("services")
+            resources.files("youtube_notion_notes.services")
             .joinpath(DEFAULT_PROMPT_TEMPLATE)
             .read_text(encoding="utf-8")
         )

@@ -11,10 +11,10 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 import ingest
-import services
-import services.pipeline as pipeline
-from services.note_generator import PromptTemplateError
-from services.notion import NotionPage
+import youtube_notion_notes.services as services
+import youtube_notion_notes.services.pipeline as pipeline
+from youtube_notion_notes.services.note_generator import PromptTemplateError
+from youtube_notion_notes.services.notion import NotionPage
 
 
 VIDEO_ID = "abc123def45"
@@ -49,7 +49,7 @@ class IngestCliTests(unittest.TestCase):
                 return NotionPage(id="page-123")
 
             export_mock = Mock(side_effect=export_effect)
-            fake_notion_export_module = types.ModuleType("services.notion_export")
+            fake_notion_export_module = types.ModuleType("youtube_notion_notes.services.notion_export")
             fake_notion_export_module.export_markdown_note_to_notion = export_mock
             had_notion_export_attr = hasattr(services, "notion_export")
             original_notion_export_attr = getattr(services, "notion_export", None)
@@ -63,7 +63,7 @@ class IngestCliTests(unittest.TestCase):
             with (
                 patch.dict(
                     sys.modules,
-                    {"services.notion_export": fake_notion_export_module},
+                    {"youtube_notion_notes.services.notion_export": fake_notion_export_module},
                 ),
                 patch.object(sys, "argv", argv),
                 patch.object(sys, "stdin", io.StringIO(stdin_value)),
@@ -96,7 +96,7 @@ class IngestCliTests(unittest.TestCase):
             return exit_code, stdout.getvalue(), stderr.getvalue(), export_mock, note_exists, note_content
 
     def test_default_cli_behavior_does_not_call_notion_export(self) -> None:
-        existing_notion_export_module = sys.modules.pop("services.notion_export", None)
+        existing_notion_export_module = sys.modules.pop("youtube_notion_notes.services.notion_export", None)
         had_notion_export_attr = hasattr(services, "notion_export")
         original_notion_export_attr = getattr(services, "notion_export", None)
 
@@ -107,11 +107,11 @@ class IngestCliTests(unittest.TestCase):
             self.assertIn("Markdown note saved:", stdout)
             self.assertEqual(stderr, "")
             self.assertTrue(note_exists)
-            self.assertNotIn("services.notion_export", sys.modules)
+            self.assertNotIn("youtube_notion_notes.services.notion_export", sys.modules)
             export_mock.assert_not_called()
         finally:
             if existing_notion_export_module is not None:
-                sys.modules["services.notion_export"] = existing_notion_export_module
+                sys.modules["youtube_notion_notes.services.notion_export"] = existing_notion_export_module
             if had_notion_export_attr:
                 services.notion_export = original_notion_export_attr
             elif hasattr(services, "notion_export"):

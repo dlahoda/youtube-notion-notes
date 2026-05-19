@@ -6,13 +6,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from services.note_generator import (
+from youtube_notion_notes.services.note_generator import (
     NoteGenerationError,
     PromptTemplateError,
     build_manual_prompt,
     generate_note_if_available,
 )
-from services.transcript import TranscriptError, fetch_transcript, parse_youtube_url
+from youtube_notion_notes.services.transcript import TranscriptError, fetch_transcript, parse_youtube_url
 
 
 OUTPUT_DIR = Path("output")
@@ -182,7 +182,7 @@ def run_pipeline(request: PipelineRequest, *, human_output: bool) -> tuple[int, 
         log(f"Markdown note saved: {note_path}")
         if request.export_mode == "notion":
             try:
-                from services.notion_export import export_markdown_note_to_notion
+                from youtube_notion_notes.services.notion_export import export_markdown_note_to_notion
 
                 notion_page = export_markdown_note_to_notion(note_text, request.url)
             except Exception as exc:

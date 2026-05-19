@@ -3,8 +3,8 @@ from __future__ import annotations
 import unittest
 from unittest.mock import patch
 
-from services.notion_export import export_markdown_note_to_notion
-from services.notion import NotionPage
+from youtube_notion_notes.services.notion_export import export_markdown_note_to_notion
+from youtube_notion_notes.services.notion import NotionPage
 
 
 class NotionExportTests(unittest.TestCase):
@@ -13,9 +13,9 @@ class NotionExportTests(unittest.TestCase):
         blocks = [{"type": "paragraph"}]
 
         with (
-            patch("services.notion_export.markdown_to_blocks", return_value=blocks) as markdown_to_blocks,
+            patch("youtube_notion_notes.services.notion_export.markdown_to_blocks", return_value=blocks) as markdown_to_blocks,
             patch(
-                "services.notion_export.create_notion_page",
+                "youtube_notion_notes.services.notion_export.create_notion_page",
                 return_value=NotionPage(id="page-123", url="https://www.notion.so/page-123"),
             ) as create_notion_page,
         ):
@@ -35,8 +35,8 @@ class NotionExportTests(unittest.TestCase):
 
     def test_custom_status_is_passed_through(self) -> None:
         with (
-            patch("services.notion_export.markdown_to_blocks", return_value=[]) as markdown_to_blocks,
-            patch("services.notion_export.create_notion_page", return_value=NotionPage(id="page-456")) as create_notion_page,
+            patch("youtube_notion_notes.services.notion_export.markdown_to_blocks", return_value=[]) as markdown_to_blocks,
+            patch("youtube_notion_notes.services.notion_export.create_notion_page", return_value=NotionPage(id="page-456")) as create_notion_page,
         ):
             page = export_markdown_note_to_notion(
                 "# Reviewed Note",
@@ -58,8 +58,8 @@ class NotionExportTests(unittest.TestCase):
 
     def test_missing_h1_raises_metadata_error_and_does_not_create_page(self) -> None:
         with (
-            patch("services.notion_export.markdown_to_blocks") as markdown_to_blocks,
-            patch("services.notion_export.create_notion_page") as create_notion_page,
+            patch("youtube_notion_notes.services.notion_export.markdown_to_blocks") as markdown_to_blocks,
+            patch("youtube_notion_notes.services.notion_export.create_notion_page") as create_notion_page,
         ):
             with self.assertRaisesRegex(ValueError, "first-level '# ' heading"):
                 export_markdown_note_to_notion("Tags: python\n\nNo H1", "https://youtu.be/example")

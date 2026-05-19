@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from services.pipeline import PipelineRequest, run_pipeline
+from youtube_notion_notes.services.pipeline import PipelineRequest, run_pipeline
 
 
 JSON_INPUT_FIELDS = {"url", "transcript_file", "export"}

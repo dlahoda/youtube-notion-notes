@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from services.markdown_to_notion import markdown_to_blocks
+from youtube_notion_notes.services.markdown_to_notion import markdown_to_blocks
 
 
 def block_text(block: dict) -> str:

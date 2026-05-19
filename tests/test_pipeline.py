@@ -8,9 +8,9 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-import services
-import services.pipeline as pipeline
-from services.note_generator import PromptTemplateError
+import youtube_notion_notes.services as services
+import youtube_notion_notes.services.pipeline as pipeline
+from youtube_notion_notes.services.note_generator import PromptTemplateError
 
 
 VIDEO_ID = "abc123def45"
@@ -57,7 +57,7 @@ class PipelineServiceTests(unittest.TestCase):
                 return types.SimpleNamespace(id=notion_page_id, url=notion_page_url)
 
             export_mock = Mock(side_effect=export_effect)
-            fake_notion_export_module = types.ModuleType("services.notion_export")
+            fake_notion_export_module = types.ModuleType("youtube_notion_notes.services.notion_export")
             fake_notion_export_module.export_markdown_note_to_notion = export_mock
 
             request = pipeline.PipelineRequest(
@@ -72,7 +72,7 @@ class PipelineServiceTests(unittest.TestCase):
 
             with (
                 patch.dict(os.environ, {"YNN_OUTPUT_DIR": str(env_output_root) if use_env_output_dir else ""}),
-                patch.dict(sys.modules, {"services.notion_export": fake_notion_export_module}),
+                patch.dict(sys.modules, {"youtube_notion_notes.services.notion_export": fake_notion_export_module}),
                 patch.object(services, "notion_export", fake_notion_export_module, create=True),
                 patch.object(pipeline, "TRANSCRIPT_DIR", temp_path / "transcripts"),
                 patch.object(pipeline, "PROMPT_DIR", temp_path / "prompts"),

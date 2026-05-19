@@ -11,7 +11,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 import ingest
-from services.pipeline import PipelineRequest
+from youtube_notion_notes.services.pipeline import PipelineRequest
 
 
 VIDEO_ID = "abc123def45"

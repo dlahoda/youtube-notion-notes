@@ -62,7 +62,7 @@ Windows PowerShell, if Python is installed on Windows:
 python ingest.py "https://youtu.be/VIDEO_ID" --no-note
 ```
 
-By default, files are written under `./output` relative to the current working directory:
+When no output override is set, files are written under `./output` relative to the current working directory:
 
 - `output/transcripts/`
 - `output/prompts/`
@@ -122,19 +122,22 @@ ynn-notion "https://youtu.be/VIDEO_ID"
 ynn-prompt "https://youtu.be/VIDEO_ID"
 ```
 
-The editable package entrypoints delegate to the existing `./ingest.py` CLI behavior. Installed commands use the current working directory for default `.env`, default `./output/`, and `./prompts/comprehensive_note.md`; `--env-file` and `--output-dir` can override the env file and output root for a run.
+The editable package entrypoints delegate to the existing `./ingest.py` CLI behavior. Installed commands use the current working directory for default `.env`, fallback `./output/`, and `./prompts/comprehensive_note.md`; `--env-file`, `--output-dir`, and `YNN_OUTPUT_DIR` can make runtime paths explicit for a run.
 
 Runtime path policy:
 
-- default env loading uses `./.env` relative to the current working directory when it exists
-- `--env-file PATH` loads that env file instead
-- default output uses `./output` relative to the current working directory
-- `--output-dir PATH` writes files under `PATH/transcripts/`, `PATH/prompts/`, and `PATH/notes/`
+- output root resolution order is `--output-dir PATH`, then `YNN_OUTPUT_DIR`, then `./output` relative to the current working directory
+- selected output roots write files under `OUTPUT_ROOT/transcripts/`, `OUTPUT_ROOT/prompts/`, and `OUTPUT_ROOT/notes/`
+- default env loading uses optional `./.env` relative to the current working directory when it exists
+- `--env-file PATH` loads that env file instead, and the explicit file must exist
+
+For daily installed CLI usage, set `YNN_OUTPUT_DIR` to avoid creating `./output` in whichever directory the command was run from.
 
 Examples:
 
 ```bash
 ynn-prompt "https://youtu.be/VIDEO_ID" --output-dir ./tmp-output
+YNN_OUTPUT_DIR=./tmp-output ynn-prompt "https://youtu.be/VIDEO_ID"
 python ingest.py "https://youtu.be/VIDEO_ID" --no-note --output-dir ./tmp-output
 ynn-notion "https://youtu.be/VIDEO_ID" --env-file ./notion.env
 ```
@@ -164,12 +167,13 @@ py -m pip install -r requirements-openai.txt
 - `OPENAI_API_KEY`: optional API key for markdown note generation
 - `OPENAI_MODEL`: optional model name, defaults to `gpt-4.1-mini`
 - `YOUTUBE_TRANSCRIPT_LANGUAGES`: optional comma-separated language preference list, defaults to `en`
+- `YNN_OUTPUT_DIR`: optional output root used when `--output-dir` is not provided
 - `NOTION_API_KEY`: required only for Notion export and the manual Notion smoke test
 - `NOTION_DATABASE_ID`: required only for Notion export and the manual Notion smoke test
 
 `OPENAI_API_KEY` belongs only to optional OpenAI markdown note generation. It is not required for the Notion smoke test.
 
-By default, the CLI loads `./.env` from the current working directory when it exists. Use `--env-file PATH` to load a different env file for that run. Values in the env file do not override environment variables that are already set.
+By default, the CLI loads `./.env` from the current working directory when it exists and continues when it does not. Use `--env-file PATH` to load a different env file for that run; an explicit `--env-file` path must exist. Values in the env file do not override environment variables that are already set.
 
 ## Optional Notion export
 

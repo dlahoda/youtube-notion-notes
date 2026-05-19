@@ -175,6 +175,78 @@ class IngestInputTests(unittest.TestCase):
         self.assertEqual(json.loads(stdout.getvalue()), {"ok": True})
         run_pipeline_mock.assert_called_once()
 
+    def test_missing_default_env_file_does_not_fail(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            missing_env_path = Path(temp_dir) / ".env"
+
+            ingest.load_env_file(missing_env_path)
+
+    def test_missing_explicit_env_file_fails_in_text_output(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            missing_env_path = Path(temp_dir) / "missing.env"
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+            run_pipeline_mock = Mock(return_value=(0, {"ok": True}))
+
+            with (
+                patch.object(
+                    sys,
+                    "argv",
+                    [
+                        "ingest.py",
+                        VIDEO_URL,
+                        "--env-file",
+                        str(missing_env_path),
+                    ],
+                ),
+                patch.object(sys, "stdin", io.StringIO("")),
+                patch.object(ingest, "run_pipeline", run_pipeline_mock),
+                contextlib.redirect_stdout(stdout),
+                contextlib.redirect_stderr(stderr),
+            ):
+                exit_code = ingest.main()
+
+        self.assertEqual(exit_code, 2)
+        self.assertEqual(stdout.getvalue(), "")
+        self.assertIn("Input error: Unable to read --env-file", stderr.getvalue())
+        run_pipeline_mock.assert_not_called()
+
+    def test_missing_explicit_env_file_fails_with_json_only_output(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            missing_env_path = Path(temp_dir) / "missing.env"
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+            run_pipeline_mock = Mock(return_value=(0, {"ok": True}))
+
+            with (
+                patch.object(
+                    sys,
+                    "argv",
+                    [
+                        "ingest.py",
+                        VIDEO_URL,
+                        "--env-file",
+                        str(missing_env_path),
+                        "--output",
+                        "json",
+                    ],
+                ),
+                patch.object(sys, "stdin", io.StringIO("")),
+                patch.object(ingest, "run_pipeline", run_pipeline_mock),
+                contextlib.redirect_stdout(stdout),
+                contextlib.redirect_stderr(stderr),
+            ):
+                exit_code = ingest.main()
+
+        payload = json.loads(stdout.getvalue())
+
+        self.assertEqual(exit_code, 2)
+        self.assertEqual(stderr.getvalue(), "")
+        self.assertFalse(payload["ok"])
+        self.assertEqual(payload["stage"], "input")
+        self.assertIn("Unable to read --env-file", payload["error"])
+        run_pipeline_mock.assert_not_called()
+
     def test_main_converts_input_json_transcript_file_to_pipeline_request(self) -> None:
         exit_code, stdout, stderr, run_pipeline_mock = self.run_ingest(
             "--input-json",

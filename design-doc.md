@@ -326,16 +326,21 @@ Slice 1 boundaries:
 
 Output policy:
 
-- default output root remains `./output` relative to the current working directory;
-- `--output-dir PATH` overrides the output root for CLI usage;
-- when `--output-dir PATH` is provided, transcript, prompt, and note files are written under `PATH/transcripts/`, `PATH/prompts/`, and `PATH/notes/`;
+- output root resolution order is explicit `--output-dir PATH`, then `YNN_OUTPUT_DIR`, then `./output` relative to the current working directory;
+- `--output-dir PATH` wins over `YNN_OUTPUT_DIR`;
+- if neither `--output-dir` nor `YNN_OUTPUT_DIR` is set, the compatibility default remains `./output` relative to the current working directory;
+- when an output root is selected, transcript, prompt, and note files are written under `OUTPUT_ROOT/transcripts/`, `OUTPUT_ROOT/prompts/`, and `OUTPUT_ROOT/notes/`;
 - output paths returned in JSON output mode reflect the actual filesystem paths used;
 - `output_dir` is not part of the JSON input schema in this slice.
 
+Note: For daily installed CLI usage, `YNN_OUTPUT_DIR` is the recommended persistent output root. The `./output` fallback exists for backward compatibility and simple local runs.
+
 Env-file policy:
 
-- default env loading remains `./.env` relative to the current working directory when that file exists;
+- default env loading remains optional `./.env` relative to the current working directory when that file exists;
+- when no `--env-file` is provided and `./.env` does not exist, the CLI continues without error;
 - `--env-file PATH` loads that env file instead of `./.env`;
+- an explicit `--env-file PATH` must exist or the CLI returns a clean input error;
 - env file values do not override environment variables that are already set;
 - `env_file` is not part of the JSON input schema in this slice.
 

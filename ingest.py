@@ -53,12 +53,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--output-dir",
         default=None,
-        help="Output root for transcript, prompt, and note files. Defaults to ./output.",
+        help="Output root for transcript, prompt, and note files. Overrides YNN_OUTPUT_DIR and defaults to ./output.",
     )
     parser.add_argument(
         "--env-file",
         default=None,
-        help="Env file to load before running the pipeline. Defaults to ./.env when it exists.",
+        help="Env file to load before running the pipeline. Defaults to optional ./.env; explicit paths must exist.",
     )
     parser.add_argument(
         "--transcript-file",
@@ -197,11 +197,18 @@ def build_pipeline_request(args: argparse.Namespace) -> PipelineRequest:
     )
 
 
-def load_env_file(path: Path = Path(".env")) -> None:
+def load_env_file(path: Path = Path(".env"), *, required: bool = False) -> None:
     if not path.exists():
+        if required:
+            raise CliInputError(f"Unable to read --env-file '{path}': file does not exist.")
         return
 
-    for raw_line in path.read_text(encoding="utf-8").splitlines():
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError as exc:
+        raise CliInputError(f"Unable to read --env-file '{path}': {exc.strerror}.") from exc
+
+    for raw_line in lines:
         line = raw_line.strip()
         if not line or line.startswith("#") or "=" not in line:
             continue
@@ -217,6 +224,10 @@ def main() -> int:
     output_mode = "json" if requested_json_output(sys.argv[1:]) else "text"
     try:
         args = parse_args()
+        if args.env_file:
+            load_env_file(Path(args.env_file), required=True)
+        else:
+            load_env_file(Path(".env"))
     except CliInputError as exc:
         if output_mode == "json":
             print(
@@ -229,8 +240,6 @@ def main() -> int:
         else:
             print(f"Input error: {exc}", file=sys.stderr)
         return 2
-
-    load_env_file(Path(args.env_file) if args.env_file else Path(".env"))
 
     if args.output == "json":
         stdout = sys.stdout

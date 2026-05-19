@@ -19,6 +19,7 @@ TRANSCRIPT_DIR = OUTPUT_DIR / "transcripts"
 PROMPT_DIR = OUTPUT_DIR / "prompts"
 NOTES_DIR = OUTPUT_DIR / "notes"
 PROMPT_TEMPLATE_PATH = Path("prompts") / "comprehensive_note.md"
+OUTPUT_DIR_ENV_VAR = "YNN_OUTPUT_DIR"
 
 
 @dataclass(frozen=True)
@@ -42,16 +43,22 @@ class PipelineOutputPaths:
 def output_paths_for_request(request: PipelineRequest) -> PipelineOutputPaths:
     if request.output_dir:
         output_root = Path(request.output_dir)
+    elif os.getenv(OUTPUT_DIR_ENV_VAR):
+        output_root = Path(os.environ[OUTPUT_DIR_ENV_VAR])
+    else:
+        output_root = OUTPUT_DIR
+
+    if output_root == OUTPUT_DIR:
         return PipelineOutputPaths(
-            transcript_dir=output_root / "transcripts",
-            prompt_dir=output_root / "prompts",
-            notes_dir=output_root / "notes",
+            transcript_dir=TRANSCRIPT_DIR,
+            prompt_dir=PROMPT_DIR,
+            notes_dir=NOTES_DIR,
         )
 
     return PipelineOutputPaths(
-        transcript_dir=TRANSCRIPT_DIR,
-        prompt_dir=PROMPT_DIR,
-        notes_dir=NOTES_DIR,
+        transcript_dir=output_root / "transcripts",
+        prompt_dir=output_root / "prompts",
+        notes_dir=output_root / "notes",
     )
 
 

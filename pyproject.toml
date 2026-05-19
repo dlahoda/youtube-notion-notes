@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "youtube-notion-notes"
+version = "0.9.0"
+description = "Local CLI pipeline for turning YouTube URLs into transcripts, prompts, markdown notes, and optional Notion exports."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "youtube-transcript-api>=1.0.0,<2.0.0",
+    "notion-client>=2.2.1,<3.0.0",
+]
+
+[project.optional-dependencies]
+openai = [
+    "openai>=1.40.0,<2.0.0",
+]
+
+[project.scripts]
+ynn = "ynn_cli:main"
+ynn-note = "ynn_cli:main_note"
+ynn-notion = "ynn_cli:main_notion"
+ynn-prompt = "ynn_cli:main_prompt"
+
+[tool.setuptools]
+py-modules = ["ingest", "ynn_cli"]
+packages = ["services"]

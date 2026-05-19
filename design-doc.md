@@ -37,7 +37,7 @@ Historical reference:
 
 # 1. Current Project State
 
-The project is a repo-local Python pipeline that takes a YouTube link and creates a readable note that can be saved locally and optionally exported to Notion.
+The project is a Python pipeline that takes a YouTube link and creates a readable note that can be saved locally and optionally exported to Notion.
 
 Current day-to-day local usage goes through global launcher commands installed into the user's shell:
 
@@ -48,7 +48,7 @@ ynn-notion "https://www.youtube.com/watch?v=..."
 ynn-prompt "https://www.youtube.com/watch?v=..."
 ```
 
-These launchers remain thin wrappers over this repository. `./ingest.py` is still the underlying direct CLI contract for fallback use, tests, local development, n8n, and any future packaging work.
+These repo-local launchers remain thin wrappers over this repository. `./ingest.py` is still the underlying direct CLI contract for fallback use, tests, local development, n8n, and packaging work.
 
 Current roadmap:
 
@@ -60,8 +60,15 @@ Current roadmap:
 - Milestone 6 is complete and tagged `v0.6.0`: transcript fallback input.
 - Milestone 7 Slice 1 is complete and tagged `v0.7.0`: JSON transcript-file fallback input.
 - Milestone 8 Slice 1 is complete and tagged `v0.8.0`: ingest CLI tests split by responsibility.
-- Milestone 9 is the current repo-local launcher usability closeout target and should be tagged `v0.9.0` when complete.
-- A future installable CLI package is deferred to `v1.0.0`.
+- Milestone 9 is complete and tagged `v0.9.0`: repo-local launcher usability closeout.
+- `v1.0.0` Slice 1 is active: minimal installable CLI packaging skeleton and console script entrypoints for local editable installs.
+
+Planned `v1.0.0` packaging slices:
+
+- Slice 1: minimal packaging skeleton and console script entrypoints.
+- Slice 2: output/config path policy for installed CLI runtime behavior.
+- Slice 3: package data and prompt template resource handling.
+- Slice 4: proper package layout, likely moving toward a real import package such as `youtube_notion_notes`.
 
 ---
 
@@ -84,7 +91,7 @@ The current MVP answers one question:
 
 > Can we reliably turn a YouTube link into a high-quality markdown note?
 
-The current MVP is still repo-local. The launcher commands make that repo-local workflow comfortable for daily use, but they do not turn the project into an installable CLI package.
+The `v0.9.0` MVP is repo-local. The launcher commands make that repo-local workflow comfortable for daily use. `v1.0.0` turns the same command names into installable package entrypoints through small slices, without changing pipeline behavior.
 
 ---
 
@@ -115,7 +122,9 @@ Each step can be debugged independently. If transcript fetching fails, the Notio
 
 ```text
 youtube-notion-notes/
+  pyproject.toml
   ingest.py
+  ynn_cli.py
   prompts/
     comprehensive_note.md
   services/
@@ -154,6 +163,12 @@ Main CLI entry point.
 Owns CLI argument parsing, input modes, output mode selection, environment loading, and user-facing process exit behavior.
 
 Imports `run_pipeline` from `./services/pipeline.py`.
+
+### `./ynn_cli.py`
+
+Thin installable CLI entrypoint adapter.
+
+Owns only the `ynn`, `ynn-note`, `ynn-notion`, and `ynn-prompt` console script wrappers for local editable package installs. It appends the same mode flags as `./scripts/ynn-run` and delegates to `./ingest.py`.
 
 ### `./services/pipeline.py`
 
@@ -248,7 +263,7 @@ A local transcript file can be used when YouTube transcript fetching is unavaila
 python ingest.py "https://www.youtube.com/watch?v=..." --transcript-file ./manual-transcript.txt
 ```
 
-Daily local launcher commands are part of local MVP usability. They call back into this repository and remain thin wrappers over the existing direct CLI contract, not an installable package:
+Daily local launcher commands are part of local MVP usability. They call back into this repository and remain thin wrappers over the existing direct CLI contract:
 
 ```bash
 ynn "https://www.youtube.com/watch?v=..."
@@ -264,7 +279,44 @@ Launcher behavior:
 - `ynn-notion` calls `python ./ingest.py "URL" --export notion`;
 - `ynn-prompt` calls `python ./ingest.py "URL" --no-note`.
 
-The launcher layer must not change pipeline behavior, the JSON input/output contract, or n8n behavior. A future installable CLI package remains a later `v1.0.0` target, not current MVP scope.
+The launcher layer must not change pipeline behavior, the JSON input/output contract, or n8n behavior.
+
+## Installable CLI Package Slice 1
+
+`v1.0.0` Slice 1 adds a minimal Python packaging layer for local editable installs:
+
+```bash
+python -m pip install -e .
+```
+
+The installed console script names match the repo-local launcher names:
+
+```bash
+ynn "https://www.youtube.com/watch?v=..."
+ynn-note "https://www.youtube.com/watch?v=..."
+ynn-notion "https://www.youtube.com/watch?v=..."
+ynn-prompt "https://www.youtube.com/watch?v=..."
+```
+
+Installed entrypoint behavior:
+
+- `ynn` delegates to `./ingest.py "URL"`;
+- `ynn-note` delegates to `./ingest.py "URL" --export local`;
+- `ynn-notion` delegates to `./ingest.py "URL" --export notion`;
+- `ynn-prompt` delegates to `./ingest.py "URL" --no-note`.
+
+Slice 1 boundaries:
+
+- `./ingest.py` remains the direct CLI contract;
+- repo-local launcher scripts remain supported;
+- no pipeline behavior changes;
+- no JSON input/output changes;
+- no n8n behavior changes;
+- no Notion export behavior changes;
+- no output directory policy changes;
+- no `.env` loading policy changes;
+- no prompt template package-resource handling;
+- no `src/` layout or full package refactor.
 
 ## JSON Input Contract
 
@@ -464,10 +516,11 @@ Completed milestones:
 - Milestone 6: Transcript fallback input — complete and tagged `v0.6.0`. Human CLI usage supports local UTF-8 transcript files.
 - Milestone 7: JSON transcript fallback input — Slice 1 complete and tagged `v0.7.0`. JSON input supports the same local transcript-file fallback.
 - Milestone 8: Test suite maintenance — Slice 1 complete and tagged `v0.8.0`. Ingest CLI tests are split by responsibility without runtime behavior changes.
+- Milestone 9: Repo-local launcher usability closeout — complete and tagged `v0.9.0`. Day-to-day MVP usage works through `ynn`, `ynn-note`, `ynn-notion`, and `ynn-prompt` while `./ingest.py` remains the underlying CLI contract.
 
-Current closeout target:
+Current implementation target:
 
-- Milestone 9: Repo-local launcher usability closeout — active docs-only closeout target for `v0.9.0`. This milestone recognizes that day-to-day MVP usage now works through `ynn`, `ynn-note`, `ynn-notion`, and `ynn-prompt` while the project remains repo-local and `./ingest.py` remains the underlying CLI contract.
+- `v1.0.0` Slice 1: minimal installable CLI packaging entrypoints for local editable installs.
 
 ---
 
@@ -506,7 +559,7 @@ Backlog themes currently parked in `./docs/ideas.md` include:
 - n8n orchestration improvements;
 - transcript input and provider expansion;
 - hosted, remote, or HTTP execution options;
-- installable CLI packaging for a future `v1.0.0`.
+- later `v1.0.0` packaging slices for installed runtime path policy, prompt package resources, and full package layout.
 
 ---
 

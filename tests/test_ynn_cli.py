@@ -4,7 +4,7 @@ import sys
 import unittest
 from unittest.mock import patch
 
-import ynn_cli
+from youtube_notion_notes import ynn_cli
 
 
 class YnnCliEntrypointTests(unittest.TestCase):

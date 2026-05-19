@@ -10,7 +10,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-import ingest
+from youtube_notion_notes import ingest
 from youtube_notion_notes.services.pipeline import PipelineRequest
 
 

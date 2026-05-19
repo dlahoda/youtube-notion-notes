@@ -10,9 +10,9 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-import ingest
 import youtube_notion_notes.services as services
 import youtube_notion_notes.services.pipeline as pipeline
+from youtube_notion_notes import ingest
 from youtube_notion_notes.services.note_generator import PromptTemplateError
 from youtube_notion_notes.services.notion import NotionPage
 

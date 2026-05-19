@@ -65,6 +65,7 @@ Current roadmap:
 - `v1.0.0` Slice 2 is complete: runtime output/config path policy for repo-local and editable-installed CLI usage.
 - `v1.0.0` Slice 3 is complete: package data and prompt template resource handling.
 - `v1.0.0` Slice 4.2 is complete: service modules moved under `./youtube_notion_notes/services/` with internal service imports and service tests migrated.
+- `v1.0.0` Slice 4.3 is complete: CLI implementation modules moved under `./youtube_notion_notes/` while top-level compatibility wrappers remain.
 
 Planned `v1.0.0` packaging slices:
 
@@ -72,7 +73,7 @@ Planned `v1.0.0` packaging slices:
 - Slice 2: output/config path policy for installed CLI runtime behavior. Complete.
 - Slice 3: package data and prompt template resource handling. Complete.
 - Slice 4: proper package layout, moving toward a real import package such as `youtube_notion_notes`.
-  Slice 4 must replace the temporary flat-repo packaging shape from Slice 1. Slice 4.2 moved service modules into `youtube_notion_notes.services` while keeping transitional top-level `py-modules = ["ingest", "ynn_cli"]` for the current console scripts.
+  Slice 4 must replace the temporary flat-repo packaging shape from Slice 1. Slice 4.2 moved service modules into `youtube_notion_notes.services`. Slice 4.3 moved CLI implementation modules into `youtube_notion_notes` while keeping transitional top-level `py-modules = ["ingest", "ynn_cli"]` for the current console scripts.
 
 ---
 
@@ -131,6 +132,8 @@ youtube-notion-notes/
   ynn_cli.py
   youtube_notion_notes/
     __init__.py
+    ingest.py
+    ynn_cli.py
     services/
       __init__.py
       pipeline.py
@@ -165,17 +168,29 @@ youtube-notion-notes/
 
 ### `./ingest.py`
 
-Main CLI entry point.
+Compatibility wrapper for direct CLI usage.
+
+Delegates to `youtube_notion_notes.ingest.main` so `python ./ingest.py ...`, n8n, tests, and repo-local launchers keep the existing direct CLI contract.
+
+### `./ynn_cli.py`
+
+Compatibility adapter for the current editable-install console script entrypoints.
+
+Re-exports the package launcher functions from `./youtube_notion_notes/ynn_cli.py` until Slice 4.5 updates `./pyproject.toml` entrypoints.
+
+### `./youtube_notion_notes/ingest.py`
+
+Main CLI implementation module.
 
 Owns CLI argument parsing, input modes, output mode selection, environment loading, and user-facing process exit behavior.
 
 Imports `PipelineRequest` and `run_pipeline` from `./youtube_notion_notes/services/pipeline.py`.
 
-### `./ynn_cli.py`
+### `./youtube_notion_notes/ynn_cli.py`
 
-Thin installable CLI entrypoint adapter.
+Thin installable CLI entrypoint implementation.
 
-Owns only the `ynn`, `ynn-note`, `ynn-notion`, and `ynn-prompt` console script wrappers for local editable package installs. It appends the same mode flags as `./scripts/ynn-run` and delegates to `./ingest.py`.
+Owns only the `ynn`, `ynn-note`, `ynn-notion`, and `ynn-prompt` console script wrappers for local editable package installs. It appends the same mode flags as `./scripts/ynn-run` and delegates to `./youtube_notion_notes/ingest.py`.
 
 ### `./youtube_notion_notes/services/pipeline.py`
 
@@ -309,10 +324,10 @@ ynn-prompt "https://www.youtube.com/watch?v=..."
 
 Installed entrypoint behavior:
 
-- `ynn` delegates to `./ingest.py "URL"`;
-- `ynn-note` delegates to `./ingest.py "URL" --export local`;
-- `ynn-notion` delegates to `./ingest.py "URL" --export notion`;
-- `ynn-prompt` delegates to `./ingest.py "URL" --no-note`.
+- `ynn` delegates to the packaged ingest CLI implementation with `"URL"`;
+- `ynn-note` delegates to the packaged ingest CLI implementation with `"URL" --export local`;
+- `ynn-notion` delegates to the packaged ingest CLI implementation with `"URL" --export notion`;
+- `ynn-prompt` delegates to the packaged ingest CLI implementation with `"URL" --no-note`.
 
 Slice 1 boundaries:
 
@@ -466,15 +481,16 @@ Package data strategy after moving services:
 Proposed Slice 4.2-4.5 boundaries:
 
 - Slice 4.2: create ./youtube_notion_notes/ package skeleton and move ./services/ into ./youtube_notion_notes/services/, migrate internal service imports and service tests. Complete.
-- Slice 4.3: move CLI implementation into ./youtube_notion_notes/ingest.py and ./youtube_notion_notes/ynn_cli.py while keeping top-level ./ingest.py and ./ynn_cli.py as wrappers.
+- Slice 4.3: move CLI implementation into ./youtube_notion_notes/ingest.py and ./youtube_notion_notes/ynn_cli.py while keeping top-level ./ingest.py and ./ynn_cli.py as wrappers. Complete.
 - Slice 4.4: verify package data handling for comprehensive_note.md after the services move, clean up any remaining transitional package-data assumptions, and smoke-test editable install from a non-repo cwd.
 - Slice 4.5: update console script entrypoints, clean py-modules/packages transitional packaging, and update editable-install smoke docs.
 
 Affected tests:
 
 - `./tests/test_ingest_cli.py`, `./tests/test_pipeline.py`, `./tests/test_note_generator.py`, `./tests/test_notion_export.py`, `./tests/test_notion.py`, `./tests/test_markdown_to_notion.py`, and `./tests/test_note_metadata.py` now import and patch `youtube_notion_notes.services.*`.
-- `./tests/test_ingest_input.py` still imports top-level `ingest` for the current direct CLI contract and imports `PipelineRequest` from `youtube_notion_notes.services.pipeline`.
-- `./tests/test_ynn_cli.py` still imports top-level `ynn_cli`; moving wrapper tests to `youtube_notion_notes.ynn_cli` belongs to Slice 4.3.
+- `./tests/test_ingest_input.py` imports `youtube_notion_notes.ingest` for real CLI module coverage and imports `PipelineRequest` from `youtube_notion_notes.services.pipeline`.
+- `./tests/test_ynn_cli.py` imports `youtube_notion_notes.ynn_cli` for real launcher adapter coverage.
+- `./tests/test_cli_wrappers.py` keeps small compatibility checks for top-level `./ingest.py` and `./ynn_cli.py`.
 
 Risks and guardrails:
 
@@ -693,6 +709,7 @@ Completed milestones:
 - `v1.0.0` Slice 2: runtime output/config path policy for repo-local and editable-installed CLI usage — complete.
 - `v1.0.0` Slice 3: package data and prompt template resource handling — complete.
 - `v1.0.0` Slice 4.2: service package move into `youtube_notion_notes.services` — complete.
+- `v1.0.0` Slice 4.3: CLI package module move into `youtube_notion_notes.ingest` and `youtube_notion_notes.ynn_cli` — complete.
 
 ---
 

@@ -29,6 +29,30 @@ class PipelineRequest:
     output_name: str | None
     no_note: bool
     transcript_file: str | None = None
+    output_dir: str | None = None
+
+
+@dataclass(frozen=True)
+class PipelineOutputPaths:
+    transcript_dir: Path
+    prompt_dir: Path
+    notes_dir: Path
+
+
+def output_paths_for_request(request: PipelineRequest) -> PipelineOutputPaths:
+    if request.output_dir:
+        output_root = Path(request.output_dir)
+        return PipelineOutputPaths(
+            transcript_dir=output_root / "transcripts",
+            prompt_dir=output_root / "prompts",
+            notes_dir=output_root / "notes",
+        )
+
+    return PipelineOutputPaths(
+        transcript_dir=TRANSCRIPT_DIR,
+        prompt_dir=PROMPT_DIR,
+        notes_dir=NOTES_DIR,
+    )
 
 
 def language_preferences(cli_value: str | None) -> list[str]:
@@ -96,9 +120,10 @@ def run_pipeline(request: PipelineRequest, *, human_output: bool) -> tuple[int, 
         return 1, result
 
     output_name = safe_output_name(request.output_name or video_id)
-    transcript_path = TRANSCRIPT_DIR / f"{output_name}.txt"
-    prompt_path = PROMPT_DIR / f"{output_name}_prompt.md"
-    note_path = NOTES_DIR / f"{output_name}.md"
+    output_paths = output_paths_for_request(request)
+    transcript_path = output_paths.transcript_dir / f"{output_name}.txt"
+    prompt_path = output_paths.prompt_dir / f"{output_name}_prompt.md"
+    note_path = output_paths.notes_dir / f"{output_name}.md"
 
     prompt_text = build_manual_prompt(
         template_path=PROMPT_TEMPLATE_PATH,

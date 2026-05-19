@@ -61,14 +61,16 @@ Current roadmap:
 - Milestone 7 Slice 1 is complete and tagged `v0.7.0`: JSON transcript-file fallback input.
 - Milestone 8 Slice 1 is complete and tagged `v0.8.0`: ingest CLI tests split by responsibility.
 - Milestone 9 is complete and tagged `v0.9.0`: repo-local launcher usability closeout.
-- `v1.0.0` Slice 1 is active: minimal installable CLI packaging skeleton and console script entrypoints for local editable installs.
+- `v1.0.0` Slice 1 is complete: minimal installable CLI packaging skeleton and console script entrypoints for local editable installs.
+- `v1.0.0` Slice 2 is active/current: runtime output/config path policy for repo-local and editable-installed CLI usage.
 
 Planned `v1.0.0` packaging slices:
 
-- Slice 1: minimal packaging skeleton and console script entrypoints.
-- Slice 2: output/config path policy for installed CLI runtime behavior.
+- Slice 1: minimal packaging skeleton and console script entrypoints. Complete.
+- Slice 2: output/config path policy for installed CLI runtime behavior. Active/current.
 - Slice 3: package data and prompt template resource handling.
 - Slice 4: proper package layout, likely moving toward a real import package such as `youtube_notion_notes`.
+  Slice 4 must replace the temporary flat-repo packaging shape from Slice 1: remove the transitional `py-modules = ["ingest", "ynn_cli"]` / `packages = ["services"]` setup and move toward a real import package such as `youtube_notion_notes`.
 
 ---
 
@@ -283,7 +285,7 @@ The launcher layer must not change pipeline behavior, the JSON input/output cont
 
 ## Installable CLI Package Slice 1
 
-`v1.0.0` Slice 1 adds a minimal Python packaging layer for local editable installs:
+`v1.0.0` Slice 1 added a minimal Python packaging layer for local editable installs:
 
 ```bash
 python -m pip install -e .
@@ -317,6 +319,41 @@ Slice 1 boundaries:
 - no `.env` loading policy changes;
 - no prompt template package-resource handling;
 - no `src/` layout or full package refactor.
+
+## Runtime Path Policy Slice 2
+
+`v1.0.0` Slice 2 makes output and env-file behavior explicit for both repo-local CLI usage and editable-installed console script usage, without changing pipeline behavior.
+
+Output policy:
+
+- default output root remains `./output` relative to the current working directory;
+- `--output-dir PATH` overrides the output root for CLI usage;
+- when `--output-dir PATH` is provided, transcript, prompt, and note files are written under `PATH/transcripts/`, `PATH/prompts/`, and `PATH/notes/`;
+- output paths returned in JSON output mode reflect the actual filesystem paths used;
+- `output_dir` is not part of the JSON input schema in this slice.
+
+Env-file policy:
+
+- default env loading remains `./.env` relative to the current working directory when that file exists;
+- `--env-file PATH` loads that env file instead of `./.env`;
+- env file values do not override environment variables that are already set;
+- `env_file` is not part of the JSON input schema in this slice.
+
+Slice 2 boundaries:
+
+- no JSON input/output schema changes;
+- no n8n behavior changes;
+- no Notion export behavior changes;
+- no transcript fetching behavior changes;
+- no note generation behavior changes;
+- no prompt template package-resource handling;
+- no `importlib.resources`;
+- no prompt file move;
+- no `src/` layout or package refactor.
+
+Known Slice 2 limitation:
+
+- editable-installed commands still depend on `./prompts/comprehensive_note.md` being available from the current working directory until Slice 3 handles package data and prompt template resources.
 
 ## JSON Input Contract
 
@@ -517,10 +554,11 @@ Completed milestones:
 - Milestone 7: JSON transcript fallback input — Slice 1 complete and tagged `v0.7.0`. JSON input supports the same local transcript-file fallback.
 - Milestone 8: Test suite maintenance — Slice 1 complete and tagged `v0.8.0`. Ingest CLI tests are split by responsibility without runtime behavior changes.
 - Milestone 9: Repo-local launcher usability closeout — complete and tagged `v0.9.0`. Day-to-day MVP usage works through `ynn`, `ynn-note`, `ynn-notion`, and `ynn-prompt` while `./ingest.py` remains the underlying CLI contract.
+- `v1.0.0` Slice 1: minimal installable CLI packaging entrypoints for local editable installs — complete.
 
 Current implementation target:
 
-- `v1.0.0` Slice 1: minimal installable CLI packaging entrypoints for local editable installs.
+- `v1.0.0` Slice 2: runtime output/config path policy for repo-local and editable-installed CLI usage.
 
 ---
 
@@ -536,6 +574,7 @@ Those ideas are not current scope, active contracts, or implementation instructi
 - Long transcripts may not fit into one LLM request. Chunking and map-reduce summarization are not implemented.
 - Notion is not a pure markdown editor. Markdown is converted into basic Notion blocks, and complex typography is intentionally deferred.
 - OpenAI API billing is separate from a ChatGPT subscription. Manual mode remains the fallback when API usage is unavailable or unwanted.
+- Editable-installed commands still depend on `./prompts/comprehensive_note.md` being available from the current working directory until `v1.0.0` Slice 3 handles package data and prompt template resource loading.
 
 ## Current Design Decisions
 
@@ -559,7 +598,7 @@ Backlog themes currently parked in `./docs/ideas.md` include:
 - n8n orchestration improvements;
 - transcript input and provider expansion;
 - hosted, remote, or HTTP execution options;
-- later `v1.0.0` packaging slices for installed runtime path policy, prompt package resources, and full package layout.
+- later `v1.0.0` packaging slices for prompt package resources and full package layout.
 
 ---
 

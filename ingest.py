@@ -51,6 +51,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Optional filename stem. Defaults to the YouTube video id.",
     )
     parser.add_argument(
+        "--output-dir",
+        default=None,
+        help="Output root for transcript, prompt, and note files. Defaults to ./output.",
+    )
+    parser.add_argument(
+        "--env-file",
+        default=None,
+        help="Env file to load before running the pipeline. Defaults to ./.env when it exists.",
+    )
+    parser.add_argument(
         "--transcript-file",
         default=None,
         help="Read transcript text from a UTF-8 file while keeping the positional YouTube URL as source metadata.",
@@ -183,6 +193,7 @@ def build_pipeline_request(args: argparse.Namespace) -> PipelineRequest:
         output_name=args.output_name,
         no_note=args.no_note,
         transcript_file=args.transcript_file,
+        output_dir=args.output_dir,
     )
 
 
@@ -203,7 +214,6 @@ def load_env_file(path: Path = Path(".env")) -> None:
 
 
 def main() -> int:
-    load_env_file()
     output_mode = "json" if requested_json_output(sys.argv[1:]) else "text"
     try:
         args = parse_args()
@@ -219,6 +229,8 @@ def main() -> int:
         else:
             print(f"Input error: {exc}", file=sys.stderr)
         return 2
+
+    load_env_file(Path(args.env_file) if args.env_file else Path(".env"))
 
     if args.output == "json":
         stdout = sys.stdout

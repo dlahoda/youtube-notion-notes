@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 import io
 import json
+import os
 import sys
 import tempfile
 import unittest
@@ -103,6 +104,76 @@ class IngestInputTests(unittest.TestCase):
             ),
             human_output=False,
         )
+
+    def test_main_converts_output_dir_flag_to_pipeline_request(self) -> None:
+        exit_code, stdout, stderr, run_pipeline_mock = self.run_ingest(
+            "--output-dir",
+            "./tmp-output",
+            "--no-note",
+            "--output",
+            "json",
+            include_positional_url=True,
+        )
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(stderr, "")
+        self.assertEqual(json.loads(stdout), {"ok": True})
+        run_pipeline_mock.assert_called_once_with(
+            PipelineRequest(
+                url=VIDEO_URL,
+                export_mode="local",
+                languages=None,
+                output_name=None,
+                no_note=True,
+                output_dir="./tmp-output",
+            ),
+            human_output=False,
+        )
+
+    def test_main_loads_env_file_flag_before_running_pipeline(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            env_path = Path(temp_dir) / "custom.env"
+            env_path.write_text(
+                "YNN_ENV_FILE_TEST=loaded\nEXISTING_KEY=from-file\n",
+                encoding="utf-8",
+            )
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+
+            def assert_env_loaded(_request: PipelineRequest, *, human_output: bool) -> tuple[int, dict]:
+                self.assertFalse(human_output)
+                self.assertEqual(os.environ["YNN_ENV_FILE_TEST"], "loaded")
+                self.assertEqual(os.environ["EXISTING_KEY"], "already-present")
+                return 0, {"ok": True}
+
+            run_pipeline_mock = Mock(side_effect=assert_env_loaded)
+
+            with (
+                patch.dict(os.environ, {"EXISTING_KEY": "already-present"}, clear=True),
+                patch.object(
+                    sys,
+                    "argv",
+                    [
+                        "ingest.py",
+                        VIDEO_URL,
+                        "--env-file",
+                        str(env_path),
+                        "--no-note",
+                        "--output",
+                        "json",
+                    ],
+                ),
+                patch.object(sys, "stdin", io.StringIO("")),
+                patch.object(ingest, "run_pipeline", run_pipeline_mock),
+                contextlib.redirect_stdout(stdout),
+                contextlib.redirect_stderr(stderr),
+            ):
+                exit_code = ingest.main()
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(stderr.getvalue(), "")
+        self.assertEqual(json.loads(stdout.getvalue()), {"ok": True})
+        run_pipeline_mock.assert_called_once()
 
     def test_main_converts_input_json_transcript_file_to_pipeline_request(self) -> None:
         exit_code, stdout, stderr, run_pipeline_mock = self.run_ingest(
@@ -296,6 +367,18 @@ class IngestInputTests(unittest.TestCase):
 
         self.assertEqual(exit_code, 2)
         self.assert_input_error(stdout, stderr, "Invalid --input-json: unsupported field 'exprt'.")
+        run_pipeline_mock.assert_not_called()
+
+    def test_input_json_with_output_dir_field_fails_cleanly(self) -> None:
+        exit_code, stdout, stderr, run_pipeline_mock = self.run_ingest(
+            "--input-json",
+            json.dumps({"url": VIDEO_URL, "output_dir": "./tmp-output"}),
+            "--output",
+            "json",
+        )
+
+        self.assertEqual(exit_code, 2)
+        self.assert_input_error(stdout, stderr, "Invalid --input-json: unsupported field 'output_dir'.")
         run_pipeline_mock.assert_not_called()
 
     def test_input_json_file_with_unknown_field_fails_cleanly_in_json_output(self) -> None:

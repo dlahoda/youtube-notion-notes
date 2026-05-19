@@ -68,6 +68,7 @@ Current roadmap:
 - `v1.0.0` Slice 4.3 is complete: CLI implementation modules moved under `./youtube_notion_notes/` while top-level compatibility wrappers remain.
 - `v1.0.0` Slice 4.4 is complete: package data handling for `comprehensive_note.md` was verified after the services move, including editable-install smoke coverage from a non-repo cwd.
 - `v1.0.0` Slice 4.5 is complete: console script entrypoints point at package modules and transitional top-level `py-modules` packaging has been removed.
+- `v1.0.0` UX-1 is complete: Notion export config preflight fails before transcript, prompt, note, or Notion work when required config is incomplete.
 - `v1.0.0` UX hardening planning is active: the approved goal is to make installed CLI usage predictable after one setup path: install -> init/config -> use.
 
 Completed `v1.0.0` packaging slices:
@@ -98,7 +99,7 @@ Milestone-level boundaries for UX hardening:
 - no runtime code, tests, or packaging config changes in the docs-only planning slice;
 - no README restructure that presents future UX behavior as already implemented.
 
-UX-1 -- Notion fail-fast:
+UX-1 -- Notion fail-fast: Complete.
 
 - `--export notion` and `ynn-notion` should fail before transcript fetching, OpenAI calls, or Notion calls if required config is incomplete.
 - For generated-note Notion export in the `v1.0.0` UX contract, `ynn-notion` requires `OPENAI_API_KEY`, `NOTION_API_KEY`, and `NOTION_DATABASE_ID`.
@@ -696,11 +697,12 @@ python ingest.py --input-json "{\"url\":\"https://www.youtube.com/watch?v=...\",
 Required `.env` variables for Notion export:
 
 ```env
+OPENAI_API_KEY=...
 NOTION_API_KEY=...
 NOTION_DATABASE_ID=...
 ```
 
-`OPENAI_API_KEY` remains optional and belongs only to OpenAI note generation. It is not required for Notion export.
+For generated-note Notion export, `OPENAI_API_KEY` is required because Notion export depends on a generated markdown note. Missing `OPENAI_API_KEY` remains a non-error for local/manual modes.
 
 Required Notion database contract:
 

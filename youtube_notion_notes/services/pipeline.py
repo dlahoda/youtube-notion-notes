@@ -20,6 +20,11 @@ TRANSCRIPT_DIR = OUTPUT_DIR / "transcripts"
 PROMPT_DIR = OUTPUT_DIR / "prompts"
 NOTES_DIR = OUTPUT_DIR / "notes"
 OUTPUT_DIR_ENV_VAR = "YNN_OUTPUT_DIR"
+REQUIRED_NOTION_EXPORT_ENV_VARS = (
+    "OPENAI_API_KEY",
+    "NOTION_API_KEY",
+    "NOTION_DATABASE_ID",
+)
 
 
 @dataclass(frozen=True)
@@ -106,12 +111,30 @@ def result_contract(request: PipelineRequest) -> dict[str, Any]:
     }
 
 
+def missing_notion_export_config() -> list[str]:
+    return [
+        name
+        for name in REQUIRED_NOTION_EXPORT_ENV_VARS
+        if not os.getenv(name, "").strip()
+    ]
+
+
 def run_pipeline(request: PipelineRequest, *, human_output: bool) -> tuple[int, dict[str, Any]]:
     result = result_contract(request)
 
     def log(message: str, *, error: bool = False) -> None:
         if human_output:
             print(message, file=sys.stderr if error else sys.stdout)
+
+    if request.export_mode == "notion":
+        missing_config = missing_notion_export_config()
+        if missing_config:
+            missing_names = ", ".join(missing_config)
+            message = f"Notion export config error: missing required config: {missing_names}."
+            result["stage"] = "config"
+            result["error"] = message
+            log(message, error=True)
+            return 1, result
 
     try:
         video_id = parse_youtube_url(request.url)

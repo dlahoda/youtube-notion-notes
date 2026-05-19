@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 import io
 import json
+import os
 import sys
 import tempfile
 import types
@@ -19,6 +20,11 @@ from youtube_notion_notes.services.notion import NotionPage
 
 VIDEO_ID = "abc123def45"
 VIDEO_URL = f"https://youtu.be/{VIDEO_ID}"
+FAKE_NOTION_CONFIG = {
+    "OPENAI_API_KEY": "fake-openai-key",
+    "NOTION_API_KEY": "fake-notion-key",
+    "NOTION_DATABASE_ID": "fake-database-id",
+}
 
 
 class IngestCliTests(unittest.TestCase):
@@ -31,6 +37,7 @@ class IngestCliTests(unittest.TestCase):
         include_positional_url: bool = True,
         stdin_value: str = "",
         prompt_side_effect: Exception | None = None,
+        notion_config: dict[str, str] | None = None,
     ) -> tuple[int, str, str, Mock, bool, str]:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
@@ -57,6 +64,13 @@ class IngestCliTests(unittest.TestCase):
             if include_positional_url:
                 argv.append(VIDEO_URL)
             argv.extend(extra_args)
+            env_values = {
+                "OPENAI_API_KEY": "",
+                "NOTION_API_KEY": "",
+                "NOTION_DATABASE_ID": "",
+            }
+            if notion_config:
+                env_values.update(notion_config)
 
             stdout = io.StringIO()
             stderr = io.StringIO()
@@ -65,6 +79,7 @@ class IngestCliTests(unittest.TestCase):
                     sys.modules,
                     {"youtube_notion_notes.services.notion_export": fake_notion_export_module},
                 ),
+                patch.dict(os.environ, env_values),
                 patch.object(sys, "argv", argv),
                 patch.object(sys, "stdin", io.StringIO(stdin_value)),
                 patch.object(pipeline, "TRANSCRIPT_DIR", temp_path / "transcripts"),
@@ -131,6 +146,7 @@ class IngestCliTests(unittest.TestCase):
             note_text=note_text,
             export_side_effect=assert_note_saved_before_export,
             assert_note_saved_before_export=True,
+            notion_config=FAKE_NOTION_CONFIG,
         )
 
         self.assertEqual(exit_code, 0)
@@ -140,6 +156,64 @@ class IngestCliTests(unittest.TestCase):
         self.assertEqual(note_content, note_text)
         export_mock.assert_called_once_with(note_text, VIDEO_URL)
 
+    def test_export_notion_uses_explicit_env_file_before_config_preflight(self) -> None:
+        note_text = "# Generated Note\n\nTags: cli\n\nBody"
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            env_file = temp_path / "notion.env"
+            note_path = temp_path / "notes" / f"{VIDEO_ID}.md"
+            env_file.write_text(
+                "\n".join(
+                    [
+                        "OPENAI_API_KEY=fake-openai-key",
+                        "NOTION_API_KEY=fake-notion-key",
+                        "NOTION_DATABASE_ID=fake-database-id",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            transcript = Mock()
+            transcript.as_text.return_value = "[00:00] Transcript\n"
+            export_mock = Mock(return_value=NotionPage(id="page-123"))
+            fake_notion_export_module = types.ModuleType("youtube_notion_notes.services.notion_export")
+            fake_notion_export_module.export_markdown_note_to_notion = export_mock
+            had_notion_export_attr = hasattr(services, "notion_export")
+            original_notion_export_attr = getattr(services, "notion_export", None)
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+
+            with (
+                patch.dict(
+                    sys.modules,
+                    {"youtube_notion_notes.services.notion_export": fake_notion_export_module},
+                ),
+                patch.dict(os.environ, {}, clear=True),
+                patch.object(sys, "argv", ["ingest.py", VIDEO_URL, "--export", "notion", "--env-file", str(env_file)]),
+                patch.object(sys, "stdin", io.StringIO("")),
+                patch.object(pipeline, "TRANSCRIPT_DIR", temp_path / "transcripts"),
+                patch.object(pipeline, "PROMPT_DIR", temp_path / "prompts"),
+                patch.object(pipeline, "NOTES_DIR", temp_path / "notes"),
+                patch.object(pipeline, "parse_youtube_url", return_value=VIDEO_ID),
+                patch.object(pipeline, "fetch_transcript", return_value=transcript),
+                patch.object(pipeline, "build_manual_prompt", return_value="prompt"),
+                patch.object(pipeline, "generate_note_if_available", return_value=note_text),
+                contextlib.redirect_stdout(stdout),
+                contextlib.redirect_stderr(stderr),
+            ):
+                exit_code = ingest.main()
+
+            if had_notion_export_attr:
+                services.notion_export = original_notion_export_attr
+            elif hasattr(services, "notion_export"):
+                delattr(services, "notion_export")
+
+            self.assertEqual(exit_code, 0)
+            self.assertIn("Notion page created: page-123", stdout.getvalue())
+            self.assertEqual(stderr.getvalue(), "")
+            self.assertTrue(note_path.exists())
+            export_mock.assert_called_once_with(note_text, VIDEO_URL)
+
     def test_export_notion_failure_exits_nonzero_and_keeps_local_note(self) -> None:
         note_text = "# Generated Note\n\nBody"
 
@@ -148,6 +222,7 @@ class IngestCliTests(unittest.TestCase):
             "notion",
             note_text=note_text,
             export_side_effect=RuntimeError("boom"),
+            notion_config=FAKE_NOTION_CONFIG,
         )
 
         self.assertEqual(exit_code, 1)
@@ -157,11 +232,33 @@ class IngestCliTests(unittest.TestCase):
         self.assertEqual(note_content, note_text)
         export_mock.assert_called_once_with(note_text, VIDEO_URL)
 
+    def test_export_notion_missing_config_fails_cleanly_in_text_output(self) -> None:
+        exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
+            "--export",
+            "notion",
+            notion_config={
+                "OPENAI_API_KEY": "",
+                "NOTION_API_KEY": " ",
+                "NOTION_DATABASE_ID": "",
+            },
+        )
+
+        self.assertEqual(exit_code, 1)
+        self.assertEqual(stdout, "")
+        self.assertIn("Notion export config error:", stderr)
+        self.assertIn("OPENAI_API_KEY", stderr)
+        self.assertIn("NOTION_API_KEY", stderr)
+        self.assertIn("NOTION_DATABASE_ID", stderr)
+        self.assertNotIn("Traceback", stderr)
+        self.assertFalse(note_exists)
+        export_mock.assert_not_called()
+
     def test_export_notion_requires_a_generated_markdown_note(self) -> None:
         exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
             "--no-note",
             "--export",
             "notion",
+            notion_config=FAKE_NOTION_CONFIG,
         )
 
         self.assertEqual(exit_code, 1)
@@ -175,6 +272,7 @@ class IngestCliTests(unittest.TestCase):
             "--export",
             "notion",
             note_text=None,
+            notion_config=FAKE_NOTION_CONFIG,
         )
 
         self.assertEqual(exit_code, 1)
@@ -225,6 +323,7 @@ class IngestCliTests(unittest.TestCase):
             "--output",
             "json",
             export_side_effect=lambda _markdown, _url: NotionPage(id=page_id, url=page_url),
+            notion_config=FAKE_NOTION_CONFIG,
         )
 
         payload = json.loads(stdout)
@@ -241,6 +340,37 @@ class IngestCliTests(unittest.TestCase):
         self.assertNotIn("Notion page created:", stdout)
         export_mock.assert_called_once()
 
+    def test_json_output_config_failure_is_valid_json_only(self) -> None:
+        exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
+            "--export",
+            "notion",
+            "--output",
+            "json",
+            notion_config={
+                "OPENAI_API_KEY": "",
+                "NOTION_API_KEY": " ",
+                "NOTION_DATABASE_ID": "",
+            },
+        )
+
+        payload = json.loads(stdout)
+
+        self.assertEqual(exit_code, 1)
+        self.assertEqual(stderr, "")
+        self.assertFalse(payload["ok"])
+        self.assertEqual(payload["stage"], "config")
+        self.assertIn("OPENAI_API_KEY", payload["error"])
+        self.assertIn("NOTION_API_KEY", payload["error"])
+        self.assertIn("NOTION_DATABASE_ID", payload["error"])
+        self.assertIsNone(payload["transcript_path"])
+        self.assertIsNone(payload["prompt_path"])
+        self.assertIsNone(payload["note_path"])
+        self.assertIsNone(payload["notion_page_id"])
+        self.assertFalse(note_exists)
+        self.assertTrue(stdout.lstrip().startswith("{"))
+        self.assertNotIn("Transcript saved:", stdout)
+        export_mock.assert_not_called()
+
     def test_json_output_failure_contains_stage_and_error(self) -> None:
         exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
             "--export",
@@ -248,6 +378,7 @@ class IngestCliTests(unittest.TestCase):
             "--output",
             "json",
             note_text=None,
+            notion_config=FAKE_NOTION_CONFIG,
         )
 
         payload = json.loads(stdout)

@@ -31,6 +31,7 @@ class PipelineServiceTests(unittest.TestCase):
         use_custom_output_dir: bool = False,
         use_env_output_dir: bool = False,
         prompt_side_effect: Exception | None = None,
+        notion_config: dict[str, str] | None = None,
     ) -> tuple[int, dict, Mock, dict]:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
@@ -69,9 +70,17 @@ class PipelineServiceTests(unittest.TestCase):
                 transcript_file=str(transcript_file_path) if transcript_file_text is not None else None,
                 output_dir=str(request_output_root) if use_custom_output_dir else None,
             )
+            env_values = {
+                "YNN_OUTPUT_DIR": str(env_output_root) if use_env_output_dir else "",
+                "OPENAI_API_KEY": "",
+                "NOTION_API_KEY": "",
+                "NOTION_DATABASE_ID": "",
+            }
+            if notion_config:
+                env_values.update(notion_config)
 
             with (
-                patch.dict(os.environ, {"YNN_OUTPUT_DIR": str(env_output_root) if use_env_output_dir else ""}),
+                patch.dict(os.environ, env_values),
                 patch.dict(sys.modules, {"youtube_notion_notes.services.notion_export": fake_notion_export_module}),
                 patch.object(services, "notion_export", fake_notion_export_module, create=True),
                 patch.object(pipeline, "TRANSCRIPT_DIR", temp_path / "transcripts"),
@@ -107,6 +116,31 @@ class PipelineServiceTests(unittest.TestCase):
 
             return exit_code, result, export_mock, snapshot
 
+    def test_missing_notion_export_config_fails_before_pipeline_work(self) -> None:
+        exit_code, result, export_mock, snapshot = self.run_pipeline(
+            export_mode="notion",
+            notion_config={
+                "OPENAI_API_KEY": "",
+                "NOTION_API_KEY": " \n\t",
+                "NOTION_DATABASE_ID": "",
+            },
+        )
+
+        self.assertEqual(exit_code, 1)
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["stage"], "config")
+        self.assertIn("OPENAI_API_KEY", result["error"])
+        self.assertIn("NOTION_API_KEY", result["error"])
+        self.assertIn("NOTION_DATABASE_ID", result["error"])
+        self.assertFalse(snapshot["parse_called"])
+        self.assertFalse(snapshot["fetch_called"])
+        self.assertFalse(snapshot["prompt_called"])
+        self.assertFalse(snapshot["note_called"])
+        self.assertFalse(snapshot["transcript_exists"])
+        self.assertFalse(snapshot["prompt_exists"])
+        self.assertFalse(snapshot["note_exists"])
+        export_mock.assert_not_called()
+
     def test_manual_fallback_local_mode_writes_transcript_and_prompt_only(self) -> None:
         exit_code, result, export_mock, snapshot = self.run_pipeline(note_text=None)
 
@@ -129,6 +163,11 @@ class PipelineServiceTests(unittest.TestCase):
         exit_code, result, export_mock, snapshot = self.run_pipeline(
             export_mode="notion",
             no_note=True,
+            notion_config={
+                "OPENAI_API_KEY": "fake-openai-key",
+                "NOTION_API_KEY": "fake-notion-key",
+                "NOTION_DATABASE_ID": "fake-database-id",
+            },
         )
 
         self.assertEqual(exit_code, 1)
@@ -162,6 +201,11 @@ class PipelineServiceTests(unittest.TestCase):
             notion_page_id="page-123",
             notion_page_url=notion_page_url,
             assert_note_saved_before_export=True,
+            notion_config={
+                "OPENAI_API_KEY": "fake-openai-key",
+                "NOTION_API_KEY": "fake-notion-key",
+                "NOTION_DATABASE_ID": "fake-database-id",
+            },
         )
 
         self.assertEqual(exit_code, 0)

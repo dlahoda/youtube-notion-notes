@@ -70,6 +70,7 @@ Current roadmap:
 - `v1.0.0` Slice 4.5 is complete: console script entrypoints point at package modules and transitional top-level `py-modules` packaging has been removed.
 - `v1.0.0` UX-1 is complete: Notion export config preflight fails before transcript, prompt, note, or Notion work when required config is incomplete.
 - `v1.0.0` UX hardening planning is active: the approved goal is to make installed CLI usage predictable after one setup path: install -> init/config -> use.
+- `v1.0.0` public repository release gate is active: publishing should use an All Rights Reserved / source-visible licensing posture unless a different license is explicitly decided later.
 
 Completed `v1.0.0` packaging slices:
 
@@ -210,6 +211,13 @@ UX-5 -- Release readiness check:
 - Run a manual `ynn-prompt` smoke.
 - Run a manual `ynn-notion` config failure smoke.
 - Verify `./README.md` matches actual behavior before tagging `v1.0.0`.
+
+UX-6 -- Public repository licensing gate:
+
+- Before publishing the repository publicly for `v1.0.0`, use an All Rights Reserved / source-visible but not open-source licensing posture.
+- Do not add MIT, Apache, BSD, GPL, AGPL, or any other open-source license unless that is explicitly decided later.
+- Do not create `./LICENSE.md` until the public licensing posture and wording are intentionally chosen.
+- Before publishing publicly, audit for committed secrets, generated output files, Notion IDs, private URLs, generated artifacts, and dependency licenses.
 
 ---
 

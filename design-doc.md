@@ -432,6 +432,9 @@ Failure output includes:
 - `stage`;
 - `error`.
 
+Current pipeline failure stages include `transcript`, `prompt_template`, and `notion_export`.
+Input errors use the `input` stage.
+
 Input errors keep stdout JSON-only:
 
 ```json

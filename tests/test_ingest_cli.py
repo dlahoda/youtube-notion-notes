@@ -13,6 +13,7 @@ from unittest.mock import Mock, patch
 import ingest
 import services
 import services.pipeline as pipeline
+from services.note_generator import PromptTemplateError
 from services.notion import NotionPage
 
 
@@ -29,6 +30,7 @@ class IngestCliTests(unittest.TestCase):
         assert_note_saved_before_export: bool = False,
         include_positional_url: bool = True,
         stdin_value: str = "",
+        prompt_side_effect: Exception | None = None,
     ) -> tuple[int, str, str, Mock, bool, str]:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
@@ -71,7 +73,12 @@ class IngestCliTests(unittest.TestCase):
                 patch.object(ingest, "load_env_file"),
                 patch.object(pipeline, "parse_youtube_url", return_value=VIDEO_ID),
                 patch.object(pipeline, "fetch_transcript", return_value=transcript),
-                patch.object(pipeline, "build_manual_prompt", return_value="prompt"),
+                patch.object(
+                    pipeline,
+                    "build_manual_prompt",
+                    return_value="prompt",
+                    side_effect=prompt_side_effect,
+                ),
                 patch.object(pipeline, "generate_note_if_available", return_value=note_text),
                 contextlib.redirect_stdout(stdout),
                 contextlib.redirect_stderr(stderr),
@@ -253,6 +260,39 @@ class IngestCliTests(unittest.TestCase):
         self.assertTrue(payload["transcript_path"].endswith(f"transcripts/{VIDEO_ID}.txt"))
         self.assertTrue(payload["prompt_path"].endswith(f"prompts/{VIDEO_ID}_prompt.md"))
         self.assertIsNone(payload["note_path"])
+        self.assertFalse(note_exists)
+        export_mock.assert_not_called()
+
+    def test_json_output_prompt_template_failure_is_valid_json_only(self) -> None:
+        exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
+            "--output",
+            "json",
+            prompt_side_effect=PromptTemplateError("Unable to read built-in prompt template."),
+        )
+
+        payload = json.loads(stdout)
+
+        self.assertEqual(exit_code, 1)
+        self.assertEqual(stderr, "")
+        self.assertFalse(payload["ok"])
+        self.assertEqual(payload["stage"], "prompt_template")
+        self.assertIn("Unable to read built-in prompt template", payload["error"])
+        self.assertIsNone(payload["transcript_path"])
+        self.assertIsNone(payload["prompt_path"])
+        self.assertIsNone(payload["note_path"])
+        self.assertFalse(note_exists)
+        self.assertNotIn("Prompt template error:", stdout)
+        export_mock.assert_not_called()
+
+    def test_text_output_prompt_template_failure_is_clean_error(self) -> None:
+        exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
+            prompt_side_effect=PromptTemplateError("Unable to format prompt template."),
+        )
+
+        self.assertEqual(exit_code, 1)
+        self.assertEqual(stdout, "")
+        self.assertIn("Prompt template error: Unable to format prompt template.", stderr)
+        self.assertNotIn("Traceback", stderr)
         self.assertFalse(note_exists)
         export_mock.assert_not_called()
 

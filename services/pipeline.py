@@ -8,6 +8,7 @@ from typing import Any
 
 from services.note_generator import (
     NoteGenerationError,
+    PromptTemplateError,
     build_manual_prompt,
     generate_note_if_available,
 )
@@ -131,11 +132,17 @@ def run_pipeline(request: PipelineRequest, *, human_output: bool) -> tuple[int, 
     prompt_path = output_paths.prompt_dir / f"{output_name}_prompt.md"
     note_path = output_paths.notes_dir / f"{output_name}.md"
 
-    prompt_text = build_manual_prompt(
-        video_url=request.url,
-        video_id=video_id,
-        transcript=transcript_text,
-    )
+    try:
+        prompt_text = build_manual_prompt(
+            video_url=request.url,
+            video_id=video_id,
+            transcript=transcript_text,
+        )
+    except PromptTemplateError as exc:
+        result["stage"] = "prompt_template"
+        result["error"] = str(exc)
+        log(f"Prompt template error: {exc}", error=True)
+        return 1, result
 
     write_text(transcript_path, transcript_text)
     write_text(prompt_path, prompt_text)

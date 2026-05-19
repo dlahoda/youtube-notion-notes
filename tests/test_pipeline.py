@@ -10,6 +10,7 @@ from unittest.mock import Mock, patch
 
 import services
 import services.pipeline as pipeline
+from services.note_generator import PromptTemplateError
 
 
 VIDEO_ID = "abc123def45"
@@ -29,6 +30,7 @@ class PipelineServiceTests(unittest.TestCase):
         transcript_file_text: str | None = None,
         use_custom_output_dir: bool = False,
         use_env_output_dir: bool = False,
+        prompt_side_effect: Exception | None = None,
     ) -> tuple[int, dict, Mock, dict]:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
@@ -77,7 +79,12 @@ class PipelineServiceTests(unittest.TestCase):
                 patch.object(pipeline, "NOTES_DIR", temp_path / "notes"),
                 patch.object(pipeline, "parse_youtube_url", return_value=VIDEO_ID) as parse_mock,
                 patch.object(pipeline, "fetch_transcript", return_value=transcript) as fetch_mock,
-                patch.object(pipeline, "build_manual_prompt", return_value="prompt") as prompt_mock,
+                patch.object(
+                    pipeline,
+                    "build_manual_prompt",
+                    return_value="prompt",
+                    side_effect=prompt_side_effect,
+                ) as prompt_mock,
                 patch.object(pipeline, "generate_note_if_available", return_value=note_text) as note_mock,
             ):
                 exit_code, result = pipeline.run_pipeline(request, human_output=False)
@@ -205,6 +212,22 @@ class PipelineServiceTests(unittest.TestCase):
         self.assertIn("empty or contains only whitespace", result["error"])
         self.assertFalse(snapshot["fetch_called"])
         self.assertFalse(snapshot["prompt_called"])
+        self.assertFalse(snapshot["note_called"])
+        self.assertFalse(snapshot["transcript_exists"])
+        self.assertFalse(snapshot["prompt_exists"])
+        self.assertFalse(snapshot["note_exists"])
+        export_mock.assert_not_called()
+
+    def test_prompt_template_error_returns_prompt_template_stage(self) -> None:
+        exit_code, result, export_mock, snapshot = self.run_pipeline(
+            prompt_side_effect=PromptTemplateError("Unable to read built-in prompt template."),
+        )
+
+        self.assertEqual(exit_code, 1)
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["stage"], "prompt_template")
+        self.assertIn("Unable to read built-in prompt template", result["error"])
+        self.assertTrue(snapshot["prompt_called"])
         self.assertFalse(snapshot["note_called"])
         self.assertFalse(snapshot["transcript_exists"])
         self.assertFalse(snapshot["prompt_exists"])

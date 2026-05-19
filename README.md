@@ -268,7 +268,7 @@ The smoke test is opt-in and does not change the default local CLI behavior. It 
 Set `NOTION_API_KEY` and `NOTION_DATABASE_ID` in `.env`, then run:
 
 ```bash
-python -m services.notion
+python -m youtube_notion_notes.services.notion
 ```
 
 The created page uses:

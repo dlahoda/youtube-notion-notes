@@ -69,12 +69,12 @@ Current roadmap:
 - `v1.0.0` Slice 4.4 is complete: package data handling for `comprehensive_note.md` was verified after the services move, including editable-install smoke coverage from a non-repo cwd.
 - `v1.0.0` Slice 4.5 is complete: console script entrypoints point at package modules and transitional top-level `py-modules` packaging has been removed.
 
-Planned `v1.0.0` packaging slices:
+Completed `v1.0.0` packaging slices:
 
 - Slice 1: minimal packaging skeleton and console script entrypoints. Complete.
 - Slice 2: output/config path policy for installed CLI runtime behavior. Complete.
 - Slice 3: package data and prompt template resource handling. Complete.
-- Slice 4: proper package layout, moving toward a real import package such as `youtube_notion_notes`.
+- Slice 4: proper package layout using the real import package `youtube_notion_notes`.
   Slice 4 replaces the temporary flat-repo packaging shape from Slice 1. Slice 4.2 moved service modules into `youtube_notion_notes.services`. Slice 4.3 moved CLI implementation modules into `youtube_notion_notes` while keeping top-level compatibility wrappers. Slice 4.4 verified package data handling for `comprehensive_note.md` after the services move. Slice 4.5 moved console scripts to `youtube_notion_notes.ynn_cli:*` and removed transitional top-level `py-modules` packaging.
 
 ---
@@ -484,7 +484,7 @@ Proposed Slice 4.2-4.5 boundaries:
 
 - Slice 4.2: create ./youtube_notion_notes/ package skeleton and move ./services/ into ./youtube_notion_notes/services/, migrate internal service imports and service tests. Complete.
 - Slice 4.3: move CLI implementation into ./youtube_notion_notes/ingest.py and ./youtube_notion_notes/ynn_cli.py while keeping top-level ./ingest.py and ./ynn_cli.py as wrappers. Complete.
-- Slice 4.4: verify package data handling for comprehensive_note.md after the services move, clean up any remaining transitional package-data assumptions, and smoke-test editable install from a non-repo cwd.
+- Slice 4.4: verify package data handling for comprehensive_note.md after the services move, clean up any remaining transitional package-data assumptions, and smoke-test editable install from a non-repo cwd. Complete.
 - Slice 4.5: update console script entrypoints, clean py-modules/packages transitional packaging, and update editable-install smoke docs. Complete.
 
 Affected tests:
@@ -712,6 +712,7 @@ Completed milestones:
 - `v1.0.0` Slice 3: package data and prompt template resource handling — complete.
 - `v1.0.0` Slice 4.2: service package move into `youtube_notion_notes.services` — complete.
 - `v1.0.0` Slice 4.3: CLI package module move into `youtube_notion_notes.ingest` and `youtube_notion_notes.ynn_cli` — complete.
+- `v1.0.0` Slice 4.4: package data verification after the services move — complete.
 - `v1.0.0` Slice 4.5: package console script entrypoint cleanup — complete.
 
 ---
@@ -751,7 +752,7 @@ Backlog themes currently parked in `./docs/ideas.md` include:
 - n8n orchestration improvements;
 - transcript input and provider expansion;
 - hosted, remote, or HTTP execution options;
-- later `v1.0.0` packaging work for the full package layout.
+- post-`v1.0.0` packaging polish if release review finds gaps.
 
 ---
 

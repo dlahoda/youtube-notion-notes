@@ -122,7 +122,7 @@ ynn-notion "https://youtu.be/VIDEO_ID"
 ynn-prompt "https://youtu.be/VIDEO_ID"
 ```
 
-The editable package entrypoints delegate to the existing `./ingest.py` CLI behavior. Installed commands use the current working directory for default `.env` and fallback `./output/`; `--env-file`, `--output-dir`, and `YNN_OUTPUT_DIR` can make runtime paths explicit for a run. The built-in prompt template is package-owned data, so installed commands do not require a repo-local `./prompts/comprehensive_note.md` file in the current working directory.
+The editable package entrypoints run the packaged CLI implementation while preserving the existing `./ingest.py` CLI behavior. Installed commands use the current working directory for default `.env` and fallback `./output/`; `--env-file`, `--output-dir`, and `YNN_OUTPUT_DIR` can make runtime paths explicit for a run. The built-in prompt template is package-owned data, so installed commands do not require a repo-local `./prompts/comprehensive_note.md` file in the current working directory.
 
 Runtime path policy:
 

@@ -66,6 +66,8 @@ Current roadmap:
 - `v1.0.0` Slice 3 is complete: package data and prompt template resource handling.
 - `v1.0.0` Slice 4.2 is complete: service modules moved under `./youtube_notion_notes/services/` with internal service imports and service tests migrated.
 - `v1.0.0` Slice 4.3 is complete: CLI implementation modules moved under `./youtube_notion_notes/` while top-level compatibility wrappers remain.
+- `v1.0.0` Slice 4.4 is complete: package data handling for `comprehensive_note.md` was verified after the services move, including editable-install smoke coverage from a non-repo cwd.
+- `v1.0.0` Slice 4.5 is complete: console script entrypoints point at package modules and transitional top-level `py-modules` packaging has been removed.
 
 Planned `v1.0.0` packaging slices:
 
@@ -73,7 +75,7 @@ Planned `v1.0.0` packaging slices:
 - Slice 2: output/config path policy for installed CLI runtime behavior. Complete.
 - Slice 3: package data and prompt template resource handling. Complete.
 - Slice 4: proper package layout, moving toward a real import package such as `youtube_notion_notes`.
-  Slice 4 must replace the temporary flat-repo packaging shape from Slice 1. Slice 4.2 moved service modules into `youtube_notion_notes.services`. Slice 4.3 moved CLI implementation modules into `youtube_notion_notes` while keeping transitional top-level `py-modules = ["ingest", "ynn_cli"]` for the current console scripts.
+  Slice 4 replaces the temporary flat-repo packaging shape from Slice 1. Slice 4.2 moved service modules into `youtube_notion_notes.services`. Slice 4.3 moved CLI implementation modules into `youtube_notion_notes` while keeping top-level compatibility wrappers. Slice 4.4 verified package data handling for `comprehensive_note.md` after the services move. Slice 4.5 moved console scripts to `youtube_notion_notes.ynn_cli:*` and removed transitional top-level `py-modules` packaging.
 
 ---
 
@@ -174,9 +176,9 @@ Delegates to `youtube_notion_notes.ingest.main` so `python ./ingest.py ...`, n8n
 
 ### `./ynn_cli.py`
 
-Compatibility adapter for the current editable-install console script entrypoints.
+Compatibility adapter for direct top-level import users and wrapper compatibility tests.
 
-Re-exports the package launcher functions from `./youtube_notion_notes/ynn_cli.py` until Slice 4.5 updates `./pyproject.toml` entrypoints.
+Re-exports the package launcher functions from `./youtube_notion_notes/ynn_cli.py`. Editable-install console scripts now point directly at `youtube_notion_notes.ynn_cli`.
 
 ### `./youtube_notion_notes/ingest.py`
 
@@ -438,7 +440,7 @@ Target import map:
 - `./services/note_generator.py` moves to `./youtube_notion_notes/services/note_generator.py`;
 - all internal imports move from `services.*` to `youtube_notion_notes.services.*`;
 - the lazy Notion export import inside pipeline moves from `services.notion_export` to `youtube_notion_notes.services.notion_export`;
-- console scripts eventually move from `ynn_cli:*` to `youtube_notion_notes.ynn_cli:*`;
+- console scripts point to `youtube_notion_notes.ynn_cli:*`;
 - tests that exercise real package modules should import `youtube_notion_notes.*`, not only the top-level wrappers.
 
 Compatibility policy for `./ingest.py`:
@@ -483,7 +485,7 @@ Proposed Slice 4.2-4.5 boundaries:
 - Slice 4.2: create ./youtube_notion_notes/ package skeleton and move ./services/ into ./youtube_notion_notes/services/, migrate internal service imports and service tests. Complete.
 - Slice 4.3: move CLI implementation into ./youtube_notion_notes/ingest.py and ./youtube_notion_notes/ynn_cli.py while keeping top-level ./ingest.py and ./ynn_cli.py as wrappers. Complete.
 - Slice 4.4: verify package data handling for comprehensive_note.md after the services move, clean up any remaining transitional package-data assumptions, and smoke-test editable install from a non-repo cwd.
-- Slice 4.5: update console script entrypoints, clean py-modules/packages transitional packaging, and update editable-install smoke docs.
+- Slice 4.5: update console script entrypoints, clean py-modules/packages transitional packaging, and update editable-install smoke docs. Complete.
 
 Affected tests:
 
@@ -710,6 +712,7 @@ Completed milestones:
 - `v1.0.0` Slice 3: package data and prompt template resource handling — complete.
 - `v1.0.0` Slice 4.2: service package move into `youtube_notion_notes.services` — complete.
 - `v1.0.0` Slice 4.3: CLI package module move into `youtube_notion_notes.ingest` and `youtube_notion_notes.ynn_cli` — complete.
+- `v1.0.0` Slice 4.5: package console script entrypoint cleanup — complete.
 
 ---
 

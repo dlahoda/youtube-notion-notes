@@ -378,6 +378,114 @@ Slice 3 boundaries:
 - no custom prompt selection, prompt profiles, prompt env vars, or prompt CLI flag;
 - no `src/` layout or package refactor.
 
+## Package Layout Planning Slice 4.1
+
+`v1.0.0` Slice 4.1 is a docs-only planning slice for replacing the transitional flat-repo packaging shape with a real package layout. It must not move files, change imports, update runtime behavior, or change `./pyproject.toml` entrypoints.
+
+Target package layout:
+
+```text
+youtube-notion-notes/
+  pyproject.toml
+  ingest.py
+  ynn_cli.py
+  youtube_notion_notes/
+    __init__.py
+    ingest.py
+    ynn_cli.py
+    services/
+      __init__.py
+      pipeline.py
+      transcript.py
+      note_generator.py
+      resources/
+        comprehensive_note.md
+      notion.py
+      markdown_to_notion.py
+      note_metadata.py
+      notion_export.py
+  scripts/
+    n8n-ingest.sh
+    ynn-run
+    install-launchers.sh
+  tests/
+```
+
+Target import map:
+
+- `./ingest.py` becomes a compatibility wrapper around `youtube_notion_notes.ingest.main`;
+- `./ynn_cli.py` becomes a compatibility adapter around `youtube_notion_notes.ynn_cli`;
+- `./services/pipeline.py` moves to `./youtube_notion_notes/services/pipeline.py`;
+- `./services/note_generator.py` moves to `./youtube_notion_notes/services/note_generator.py`;
+- all internal imports move from `services.*` to `youtube_notion_notes.services.*`;
+- the lazy Notion export import inside pipeline moves from `services.notion_export` to `youtube_notion_notes.services.notion_export`;
+- console scripts eventually move from `ynn_cli:*` to `youtube_notion_notes.ynn_cli:*`;
+- tests that exercise real package modules should import `youtube_notion_notes.*`, not only the top-level wrappers.
+
+Compatibility policy for `./ingest.py`:
+
+- `./ingest.py` remains the long-term compatibility wrapper for direct CLI, n8n, tests, local fallback usage, and existing repo-local launchers;
+- `python ./ingest.py ...` must preserve the current human CLI behavior, JSON input/output contract, output-dir policy, env-file policy, transcript-file behavior, and Notion behavior;
+- after the package move, real CLI implementation should live in `./youtube_notion_notes/ingest.py`, with `./ingest.py` delegating without adding behavior;
+- do not create a long-term top-level `services` compatibility package to support old internal imports.
+
+Compatibility policy for `./ynn_cli.py`:
+
+- top-level `./ynn_cli.py` is a migration compatibility adapter for the current editable install entrypoints and tests;
+- after console script entrypoints point to `youtube_notion_notes.ynn_cli`, all real wrapper behavior should live in `./youtube_notion_notes/ynn_cli.py`;
+- direct behavior of `ynn`, `ynn-note`, `ynn-notion`, and `ynn-prompt` must stay unchanged while the adapter exists;
+- `./ynn_cli.py` is not the long-term implementation module once package entrypoints have migrated.
+
+n8n wrapper compatibility policy:
+
+- `./scripts/n8n-ingest.sh` should keep calling `python ./ingest.py --input-json-file - --output json` unless there is a separately justified reason to change it;
+- the wrapper must continue to accept JSON on stdin, return valid JSON on stdout, validate stdout JSON, and allow valid `ok: false` CLI results to reach n8n;
+- n8n must continue to depend on the Python CLI boundary, not on package internals.
+
+Import migration strategy:
+
+- migrate internal imports fully to `youtube_notion_notes.services.*`;
+- avoid dual import paths inside runtime code;
+- move tests in the same slice as their corresponding runtime module so mocks and patches target the active import path;
+- keep wrapper-focused tests small and explicit so they prove compatibility without accidentally becoming the only coverage;
+- add or adjust package-module tests so failures in `youtube_notion_notes.ingest`, `youtube_notion_notes.ynn_cli`, and `youtube_notion_notes.services.*` are visible even if top-level wrappers still work.
+
+Package data strategy after moving services:
+
+- move the built-in template from `./services/resources/comprehensive_note.md` to `./youtube_notion_notes/services/resources/comprehensive_note.md`;
+- keep the default template loaded through `importlib.resources`, not cwd-relative paths;
+- update the moved note generator module after the move to read from package `youtube_notion_notes.services`;
+- update `./pyproject.toml` package data from `services = ["resources/*.md"]` to package data for `youtube_notion_notes.services`;
+- keep explicit `template_path` support in `build_manual_prompt` for tests and future use;
+- preserve installed and editable package behavior when the current working directory does not contain prompt files.
+
+Proposed Slice 4.2-4.5 boundaries:
+
+- Slice 4.2: create ./youtube_notion_notes/ package skeleton and move ./services/ into ./youtube_notion_notes/services/, migrate internal service imports and service tests.
+- Slice 4.3: move CLI implementation into ./youtube_notion_notes/ingest.py and ./youtube_notion_notes/ynn_cli.py while keeping top-level ./ingest.py and ./ynn_cli.py as wrappers.
+- Slice 4.4: update package data handling for comprehensive_note.md after the services move and remove transitional services package-data config.
+- Slice 4.5: update console script entrypoints, clean py-modules/packages transitional packaging, and update editable-install smoke docs.
+
+Likely affected tests:
+
+- `./tests/test_ingest_input.py`: currently imports `ingest` and patches `ingest.run_pipeline`; should gain coverage for `youtube_notion_notes.ingest` while keeping wrapper compatibility coverage for `./ingest.py`.
+- `./tests/test_ingest_cli.py`: currently imports `ingest`, imports `services`, patches `services.pipeline`, and fakes `services.notion_export`; patch paths must migrate to `youtube_notion_notes.services.*`.
+- `./tests/test_ynn_cli.py`: currently imports top-level `ynn_cli` and patches `ynn_cli.ingest.main`; should test `youtube_notion_notes.ynn_cli` as the real entrypoint module and keep a small adapter test if top-level `./ynn_cli.py` remains.
+- `./tests/test_pipeline.py`: currently imports `services` and `services.pipeline`, fakes `services.notion_export`, and patches service module globals; must migrate to `youtube_notion_notes.services.*`.
+- `./tests/test_note_generator.py`: currently imports `services.note_generator` and patches `services.note_generator.resources.files`; must migrate to the package path and keep package-data behavior coverage.
+- `./tests/test_notion_export.py`, `./tests/test_notion.py`, `./tests/test_markdown_to_notion.py`, and `./tests/test_note_metadata.py`: direct service imports and patch paths must migrate to `youtube_notion_notes.services.*`.
+
+Risks and guardrails:
+
+- Tests may accidentally keep testing top-level wrappers instead of the real package modules after CLI code moves.
+- Tests that patch `sys.modules` or fake `services.notion_export` must migrate to the new `youtube_notion_notes.services.*` module paths.
+- The built-in prompt template must remain package data after moving from `./services/resources/comprehensive_note.md` to `./youtube_notion_notes/services/resources/comprehensive_note.md`.
+- `./scripts/n8n-ingest.sh` should keep calling `python ./ingest.py --input-json-file - --output json` unless there is a separately justified reason to change it.
+- Do not create a long-term top-level `services` compatibility package. Migrate internal imports fully.
+- `./ingest.py` remains the long-term compatibility wrapper for direct CLI, n8n, tests, and local fallback usage.
+- `./pyproject.toml` changes should land only in implementation slices, not in Slice 4.1.
+- Package layout work must preserve direct CLI behavior, JSON input/output contracts, n8n wrapper behavior, Notion behavior, output-dir policy, env-file policy, and prompt template package-data behavior.
+
 ## JSON Input Contract
 
 Automation callers may use structured JSON instead of a positional URL:

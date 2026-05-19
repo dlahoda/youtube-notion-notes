@@ -1,0 +1,41 @@
+#!/usr/bin/env sh
+
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+repo_root=$(CDPATH= cd -- "$script_dir/.." && pwd)
+
+launcher_name=${1:-}
+if [ -z "$launcher_name" ]; then
+    echo "ynn-run: missing launcher name." >&2
+    exit 2
+fi
+shift
+
+case "$launcher_name" in
+    ynn)
+        ;;
+    ynn-note)
+        set -- "$@" --export local
+        ;;
+    ynn-notion)
+        set -- "$@" --export notion
+        ;;
+    ynn-prompt)
+        set -- "$@" --no-note
+        ;;
+    *)
+        echo "ynn-run: unknown launcher '$launcher_name'." >&2
+        exit 2
+        ;;
+esac
+
+cd "$repo_root"
+
+if [ -x ./.venv/bin/python ]; then
+    python_cmd=./.venv/bin/python
+else
+    python_cmd=python
+fi
+
+exec "$python_cmd" ./ingest.py "$@"

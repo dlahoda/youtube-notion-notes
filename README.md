@@ -2,7 +2,7 @@
 
 Small Python CLI that turns one YouTube URL into a local transcript and a ready-to-paste GPT prompt. If OpenAI API config is present, it can also generate a markdown note.
 
-Notion export is opt-in after a markdown note is generated locally. n8n workflows and web UI are intentionally not implemented.
+Notion export is opt-in after a markdown note is generated locally. Production n8n automation and web UI are intentionally not implemented.
 
 ## One-time setup: WSL/macOS/Linux
 
@@ -68,6 +68,36 @@ Expected result without OpenAI mode:
 - a raw transcript text file in `output/transcripts/`
 - a ready-to-paste GPT prompt in `output/prompts/`
 - no markdown note in `output/notes/`
+
+## Daily launcher setup
+
+This launcher setup is for WSL/macOS/Linux shell usage.
+
+For daily local usage, install thin launcher commands into `~/.local/bin`:
+
+```bash
+bash ./scripts/install-launchers.sh
+```
+
+This is a local launcher over the existing repo, not an installable package yet. The future installable CLI package belongs to a later `v1.0.0` milestone.
+
+After the one-time install, these commands work from any terminal directory:
+
+```bash
+ynn "https://youtu.be/VIDEO_ID"
+ynn-note "https://youtu.be/VIDEO_ID"
+ynn-notion "https://youtu.be/VIDEO_ID"
+ynn-prompt "https://youtu.be/VIDEO_ID"
+```
+
+Launcher behavior:
+
+- `ynn` runs the current default CLI behavior: `python ./ingest.py "URL"`
+- `ynn-note` explicitly runs local note mode: `python ./ingest.py "URL" --export local`
+- `ynn-notion` runs Notion export mode: `python ./ingest.py "URL" --export notion`
+- `ynn-prompt` runs prompt-only/manual-safe mode: `python ./ingest.py "URL" --no-note`
+
+The installed wrappers call `./scripts/ynn-run` in this repo by absolute path. `./scripts/ynn-run` changes to the repository root before invoking `./ingest.py`, so `.env` loading and output paths keep matching normal repo-local CLI usage.
 
 ## Optional OpenAI mode
 

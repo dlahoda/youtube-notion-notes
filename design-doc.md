@@ -120,6 +120,8 @@ youtube-notion-notes/
     notion_export.py
   scripts/
     n8n-ingest.sh
+    ynn-run
+    install-launchers.sh
   docs/
     decisions.md
     ideas.md
@@ -198,6 +200,14 @@ Orchestrates Notion export on top of `./services/notion.py`, `./services/markdow
 
 Small n8n-facing wrapper that calls `./ingest.py` through the JSON stdin/stdout contract and verifies that stdout is valid JSON.
 
+### `./scripts/ynn-run`
+
+Small repo-local launcher used by daily shell commands. It changes to the repository root before calling `./ingest.py`, uses `./.venv/bin/python` when present, and falls back to `python` otherwise.
+
+### `./scripts/install-launchers.sh`
+
+One-time local installer that creates `ynn`, `ynn-note`, `ynn-notion`, and `ynn-prompt` wrappers in `~/.local/bin`. These wrappers point back to the repo-local `./scripts/ynn-run` by absolute path.
+
 ---
 
 # 5. Current CLI and Automation Contracts
@@ -229,6 +239,24 @@ A local transcript file can be used when YouTube transcript fetching is unavaila
 ```bash
 python ingest.py "https://www.youtube.com/watch?v=..." --transcript-file ./manual-transcript.txt
 ```
+
+Daily local launcher commands are part of local MVP usability. They are thin wrappers over the existing repository CLI, not an installable package:
+
+```bash
+ynn "https://www.youtube.com/watch?v=..."
+ynn-note "https://www.youtube.com/watch?v=..."
+ynn-notion "https://www.youtube.com/watch?v=..."
+ynn-prompt "https://www.youtube.com/watch?v=..."
+```
+
+Launcher behavior:
+
+- `ynn` calls `python ./ingest.py "URL"`;
+- `ynn-note` calls `python ./ingest.py "URL" --export local`;
+- `ynn-notion` calls `python ./ingest.py "URL" --export notion`;
+- `ynn-prompt` calls `python ./ingest.py "URL" --no-note`.
+
+The launcher layer must not change pipeline behavior, the JSON input/output contract, or n8n behavior. A future installable CLI package remains a later `v1.0.0` target, not current MVP scope.
 
 ## JSON Input Contract
 

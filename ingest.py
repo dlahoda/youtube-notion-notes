@@ -51,6 +51,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Optional filename stem. Defaults to the YouTube video id.",
     )
     parser.add_argument(
+        "--output-dir",
+        default=None,
+        help="Output root for transcript, prompt, and note files. Overrides YNN_OUTPUT_DIR and defaults to ./output.",
+    )
+    parser.add_argument(
+        "--env-file",
+        default=None,
+        help="Env file to load before running the pipeline. Defaults to optional ./.env; explicit paths must exist.",
+    )
+    parser.add_argument(
         "--transcript-file",
         default=None,
         help="Read transcript text from a UTF-8 file while keeping the positional YouTube URL as source metadata.",
@@ -183,14 +193,22 @@ def build_pipeline_request(args: argparse.Namespace) -> PipelineRequest:
         output_name=args.output_name,
         no_note=args.no_note,
         transcript_file=args.transcript_file,
+        output_dir=args.output_dir,
     )
 
 
-def load_env_file(path: Path = Path(".env")) -> None:
+def load_env_file(path: Path = Path(".env"), *, required: bool = False) -> None:
     if not path.exists():
+        if required:
+            raise CliInputError(f"Unable to read --env-file '{path}': file does not exist.")
         return
 
-    for raw_line in path.read_text(encoding="utf-8").splitlines():
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError as exc:
+        raise CliInputError(f"Unable to read --env-file '{path}': {exc.strerror}.") from exc
+
+    for raw_line in lines:
         line = raw_line.strip()
         if not line or line.startswith("#") or "=" not in line:
             continue
@@ -203,10 +221,13 @@ def load_env_file(path: Path = Path(".env")) -> None:
 
 
 def main() -> int:
-    load_env_file()
     output_mode = "json" if requested_json_output(sys.argv[1:]) else "text"
     try:
         args = parse_args()
+        if args.env_file:
+            load_env_file(Path(args.env_file), required=True)
+        else:
+            load_env_file(Path(".env"))
     except CliInputError as exc:
         if output_mode == "json":
             print(

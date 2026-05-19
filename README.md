@@ -62,7 +62,7 @@ Windows PowerShell, if Python is installed on Windows:
 python ingest.py "https://youtu.be/VIDEO_ID" --no-note
 ```
 
-By default, files are written to:
+When no output override is set, files are written under `./output` relative to the current working directory:
 
 - `output/transcripts/`
 - `output/prompts/`
@@ -73,6 +73,8 @@ Useful options:
 ```bash
 python ingest.py "https://youtu.be/VIDEO_ID" --languages en,uk
 python ingest.py "https://youtu.be/VIDEO_ID" --output-name my-video
+python ingest.py "https://youtu.be/VIDEO_ID" --output-dir ./tmp-output
+python ingest.py "https://youtu.be/VIDEO_ID" --env-file ./local.env
 python ingest.py "https://youtu.be/VIDEO_ID" --export local
 python ingest.py "https://youtu.be/VIDEO_ID" --output json
 ```
@@ -120,7 +122,27 @@ ynn-notion "https://youtu.be/VIDEO_ID"
 ynn-prompt "https://youtu.be/VIDEO_ID"
 ```
 
-The editable package entrypoints delegate to the existing `./ingest.py` CLI behavior. In this slice, installed commands still use the current working directory for `.env`, `./output/`, and `./prompts/comprehensive_note.md`; installed-runtime path policy and packaged prompt resources are later packaging slices.
+The editable package entrypoints delegate to the existing `./ingest.py` CLI behavior. Installed commands use the current working directory for default `.env`, fallback `./output/`, and `./prompts/comprehensive_note.md`; `--env-file`, `--output-dir`, and `YNN_OUTPUT_DIR` can make runtime paths explicit for a run.
+
+Runtime path policy:
+
+- output root resolution order is `--output-dir PATH`, then `YNN_OUTPUT_DIR`, then `./output` relative to the current working directory
+- selected output roots write files under `OUTPUT_ROOT/transcripts/`, `OUTPUT_ROOT/prompts/`, and `OUTPUT_ROOT/notes/`
+- default env loading uses optional `./.env` relative to the current working directory when it exists
+- `--env-file PATH` loads that env file instead, and the explicit file must exist
+
+For daily installed CLI usage, set `YNN_OUTPUT_DIR` to avoid creating `./output` in whichever directory the command was run from.
+
+Examples:
+
+```bash
+ynn-prompt "https://youtu.be/VIDEO_ID" --output-dir ./tmp-output
+YNN_OUTPUT_DIR=./tmp-output ynn-prompt "https://youtu.be/VIDEO_ID"
+python ingest.py "https://youtu.be/VIDEO_ID" --no-note --output-dir ./tmp-output
+ynn-notion "https://youtu.be/VIDEO_ID" --env-file ./notion.env
+```
+
+Current Slice 2 limitation: installed commands may still depend on `./prompts/comprehensive_note.md` being available from the current working directory. Package-resource handling for the prompt template is planned for Slice 3.
 
 ## Optional OpenAI mode
 
@@ -145,10 +167,13 @@ py -m pip install -r requirements-openai.txt
 - `OPENAI_API_KEY`: optional API key for markdown note generation
 - `OPENAI_MODEL`: optional model name, defaults to `gpt-4.1-mini`
 - `YOUTUBE_TRANSCRIPT_LANGUAGES`: optional comma-separated language preference list, defaults to `en`
+- `YNN_OUTPUT_DIR`: optional output root used when `--output-dir` is not provided
 - `NOTION_API_KEY`: required only for Notion export and the manual Notion smoke test
 - `NOTION_DATABASE_ID`: required only for Notion export and the manual Notion smoke test
 
 `OPENAI_API_KEY` belongs only to optional OpenAI markdown note generation. It is not required for the Notion smoke test.
+
+By default, the CLI loads `./.env` from the current working directory when it exists and continues when it does not. Use `--env-file PATH` to load a different env file for that run; an explicit `--env-file` path must exist. Values in the env file do not override environment variables that are already set.
 
 ## Optional Notion export
 
@@ -288,4 +313,5 @@ Markdown note metadata convention for export: the first H1 heading, formatted as
 - Video titles are not fetched yet; output filenames use the video id unless `--output-name` is provided.
 - OpenAI mode is optional and intentionally simple.
 - Notion export requires a generated markdown note; prompt-only/manual mode does not export.
+- Installed commands still depend on `./prompts/comprehensive_note.md` being available from the current working directory until package-resource handling is added.
 - No queueing or web UI exists in this milestone.

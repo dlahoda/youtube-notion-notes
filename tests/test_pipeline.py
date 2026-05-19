@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import sys
 import tempfile
 import types
@@ -26,12 +27,21 @@ class PipelineServiceTests(unittest.TestCase):
         notion_page_url: str | None = None,
         assert_note_saved_before_export: bool = False,
         transcript_file_text: str | None = None,
+        use_custom_output_dir: bool = False,
+        use_env_output_dir: bool = False,
     ) -> tuple[int, dict, Mock, dict]:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
-            transcript_path = temp_path / "transcripts" / f"{VIDEO_ID}.txt"
-            prompt_path = temp_path / "prompts" / f"{VIDEO_ID}_prompt.md"
-            note_path = temp_path / "notes" / f"{VIDEO_ID}.md"
+            request_output_root = temp_path / "custom-output"
+            env_output_root = temp_path / "env-output"
+            output_root = temp_path
+            if use_env_output_dir:
+                output_root = env_output_root
+            if use_custom_output_dir:
+                output_root = request_output_root
+            transcript_path = output_root / "transcripts" / f"{VIDEO_ID}.txt"
+            prompt_path = output_root / "prompts" / f"{VIDEO_ID}_prompt.md"
+            note_path = output_root / "notes" / f"{VIDEO_ID}.md"
             transcript_file_path = temp_path / "manual-transcript.txt"
             if transcript_file_text is not None:
                 transcript_file_path.write_text(transcript_file_text, encoding="utf-8")
@@ -55,9 +65,11 @@ class PipelineServiceTests(unittest.TestCase):
                 output_name=None,
                 no_note=no_note,
                 transcript_file=str(transcript_file_path) if transcript_file_text is not None else None,
+                output_dir=str(request_output_root) if use_custom_output_dir else None,
             )
 
             with (
+                patch.dict(os.environ, {"YNN_OUTPUT_DIR": str(env_output_root) if use_env_output_dir else ""}),
                 patch.dict(sys.modules, {"services.notion_export": fake_notion_export_module}),
                 patch.object(services, "notion_export", fake_notion_export_module, create=True),
                 patch.object(pipeline, "TRANSCRIPT_DIR", temp_path / "transcripts"),
@@ -226,6 +238,78 @@ class PipelineServiceTests(unittest.TestCase):
         self.assertEqual(snapshot["prompt_kwargs"]["video_url"], VIDEO_URL)
         self.assertEqual(snapshot["prompt_kwargs"]["video_id"], VIDEO_ID)
         self.assertEqual(snapshot["prompt_kwargs"]["transcript"], manual_text)
+
+    def test_custom_output_dir_writes_pipeline_files_under_requested_root(self) -> None:
+        exit_code, result, export_mock, snapshot = self.run_pipeline(
+            no_note=True,
+            use_custom_output_dir=True,
+        )
+
+        self.assertEqual(exit_code, 0)
+        self.assertTrue(result["ok"])
+        self.assertIn("custom-output", Path(result["transcript_path"]).parts)
+        self.assertIn("transcripts", Path(result["transcript_path"]).parts)
+        self.assertIn("custom-output", Path(result["prompt_path"]).parts)
+        self.assertIn("prompts", Path(result["prompt_path"]).parts)
+        self.assertIsNone(result["note_path"])
+        self.assertTrue(snapshot["transcript_exists"])
+        self.assertTrue(snapshot["prompt_exists"])
+        self.assertFalse(snapshot["note_exists"])
+        export_mock.assert_not_called()
+
+    def test_output_dir_flag_wins_over_ynn_output_dir(self) -> None:
+        exit_code, result, _export_mock, snapshot = self.run_pipeline(
+            no_note=True,
+            use_custom_output_dir=True,
+            use_env_output_dir=True,
+        )
+
+        self.assertEqual(exit_code, 0)
+        self.assertTrue(result["ok"])
+        self.assertIn("custom-output", Path(result["transcript_path"]).parts)
+        self.assertNotIn("env-output", Path(result["transcript_path"]).parts)
+        self.assertTrue(snapshot["transcript_exists"])
+        self.assertTrue(snapshot["prompt_exists"])
+
+    def test_ynn_output_dir_is_used_when_output_dir_is_omitted(self) -> None:
+        exit_code, result, _export_mock, snapshot = self.run_pipeline(
+            no_note=True,
+            use_env_output_dir=True,
+        )
+
+        self.assertEqual(exit_code, 0)
+        self.assertTrue(result["ok"])
+        self.assertIn("env-output", Path(result["transcript_path"]).parts)
+        self.assertIn("env-output", Path(result["prompt_path"]).parts)
+        self.assertTrue(snapshot["transcript_exists"])
+        self.assertTrue(snapshot["prompt_exists"])
+
+    def test_default_output_dir_is_used_when_no_override_is_set(self) -> None:
+        exit_code, result, _export_mock, snapshot = self.run_pipeline(no_note=True)
+
+        self.assertEqual(exit_code, 0)
+        self.assertTrue(result["ok"])
+        self.assertTrue(result["transcript_path"].endswith(f"transcripts/{VIDEO_ID}.txt"))
+        self.assertNotIn("custom-output", Path(result["transcript_path"]).parts)
+        self.assertNotIn("env-output", Path(result["transcript_path"]).parts)
+        self.assertTrue(snapshot["transcript_exists"])
+        self.assertTrue(snapshot["prompt_exists"])
+
+    def test_output_paths_default_to_cwd_output_root(self) -> None:
+        request = pipeline.PipelineRequest(
+            url=VIDEO_URL,
+            export_mode="local",
+            languages=None,
+            output_name=None,
+            no_note=True,
+        )
+
+        with patch.dict(os.environ, {"YNN_OUTPUT_DIR": ""}):
+            output_paths = pipeline.output_paths_for_request(request)
+
+        self.assertEqual(output_paths.transcript_dir, Path("output") / "transcripts")
+        self.assertEqual(output_paths.prompt_dir, Path("output") / "prompts")
+        self.assertEqual(output_paths.notes_dir, Path("output") / "notes")
 
 
 if __name__ == "__main__":

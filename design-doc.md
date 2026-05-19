@@ -54,8 +54,8 @@ Current roadmap:
 - Milestone 4 is complete and tagged `v0.4.0`: n8n integration contract and smoke workflow.
 - Milestone 5 is complete and tagged `v0.5.0`: pipeline core refactor.
 - Milestone 6 is complete and tagged `v0.6.0`: transcript fallback input.
-- Milestone 7 Slice 1 is complete: JSON transcript-file fallback input.
-- Milestone 8 Slice 1 is complete: ingest CLI tests split by responsibility.
+- Milestone 7 Slice 1 is complete and tagged `v0.7.0`: JSON transcript-file fallback input.
+- Milestone 8 Slice 1 is complete and tagged `v0.8.0`: ingest CLI tests split by responsibility.
 
 ---
 
@@ -426,8 +426,8 @@ Completed milestones:
 - Milestone 4: n8n integration contract and smoke workflow — complete and tagged `v0.4.0`. n8n integration is local-first through JSON stdin/stdout and a small wrapper.
 - Milestone 5: Pipeline core refactor — complete and tagged `v0.5.0`. Pipeline orchestration lives in `./services/pipeline.py` behind `PipelineRequest`.
 - Milestone 6: Transcript fallback input — complete and tagged `v0.6.0`. Human CLI usage supports local UTF-8 transcript files.
-- Milestone 7: JSON transcript fallback input — Slice 1 complete. JSON input supports the same local transcript-file fallback.
-- Milestone 8: Test suite maintenance — Slice 1 complete. Ingest CLI tests are split by responsibility without runtime behavior changes.
+- Milestone 7: JSON transcript fallback input — Slice 1 complete and tagged `v0.7.0`. JSON input supports the same local transcript-file fallback.
+- Milestone 8: Test suite maintenance — Slice 1 complete and tagged `v0.8.0`. Ingest CLI tests are split by responsibility without runtime behavior changes.
 
 ---
 

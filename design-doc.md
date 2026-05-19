@@ -263,6 +263,10 @@ One-time local installer that creates `ynn`, `ynn-note`, `ynn-notion`, and `ynn-
 
 These contracts are current behavior and should stay in `./design-doc.md` even when completed milestone history moves to archive docs.
 
+## Platform Support Contract
+
+For `v1.0.0`, WSL/Linux is the primary supported path. Windows via WSL is the recommended Windows path because it uses the same Linux-style setup and shell workflow. macOS is expected to work and likely supported, but should be smoke-tested separately before claiming strong support. Native Windows PowerShell is best-effort and partial: direct Python CLI usage and editable package console entrypoints may work when Python is installed on Windows, but repo-local shell launchers, bash wrappers, make-based workflows, and Unix-style environment examples are not the primary supported path.
+
 ## Human CLI Usage
 
 Default local usage accepts a YouTube URL and writes local transcript, prompt, and note outputs:

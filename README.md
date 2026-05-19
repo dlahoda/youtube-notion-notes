@@ -22,6 +22,14 @@ py -m pip install -r requirements.txt
 Copy-Item .env.example .env
 ```
 
+## Platform support
+
+WSL/Linux is the primary supported path. On Windows, WSL is the recommended path because it uses the same Linux-style setup, launcher, environment, and shell workflow.
+
+macOS is expected to work and is likely supported, but should be smoke-tested separately before claiming strong support.
+
+Native Windows PowerShell support is best-effort and partial. Direct Python CLI usage and editable package console entrypoints may work when Python is installed on Windows. Repo-local shell launchers, bash wrappers, make-based developer shortcuts, and Unix-style environment examples are not the primary supported path on native Windows.
+
 ## Default daily usage
 
 Default day-to-day usage is through thin launcher commands installed into your shell. They work from any terminal directory, but they still call back into this local repository.

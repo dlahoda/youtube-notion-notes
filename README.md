@@ -40,7 +40,7 @@ Launcher behavior:
 - `ynn-notion` runs Notion export mode: `python ./ingest.py "URL" --export notion`
 - `ynn-prompt` runs prompt-only/manual-safe mode: `python ./ingest.py "URL" --no-note`
 
-This is a repo-local launcher workflow, not an installable package. The future installable CLI package belongs to a later `v1.0.0` milestone.
+These names can come from either the repo-local launcher setup or the local editable package install below. The repo-local launcher workflow remains supported.
 
 ## Direct repo-local CLI
 
@@ -101,9 +101,26 @@ For daily local usage, install thin launcher commands into `~/.local/bin`:
 bash ./scripts/install-launchers.sh
 ```
 
-This is a local launcher over the existing repo, not an installable package yet. The future installable CLI package belongs to a later `v1.0.0` milestone.
-
 The installed wrappers call `./scripts/ynn-run` in this repo by absolute path. `./scripts/ynn-run` changes to the repository root before invoking `./ingest.py`, so `.env` loading and output paths keep matching normal repo-local CLI usage.
+
+## Installable CLI package
+
+For local package-development usage, install the repository in editable mode:
+
+```bash
+python -m pip install -e .
+```
+
+This installs the same command names:
+
+```bash
+ynn "https://youtu.be/VIDEO_ID"
+ynn-note "https://youtu.be/VIDEO_ID"
+ynn-notion "https://youtu.be/VIDEO_ID"
+ynn-prompt "https://youtu.be/VIDEO_ID"
+```
+
+The editable package entrypoints delegate to the existing `./ingest.py` CLI behavior. In this slice, installed commands still use the current working directory for `.env`, `./output/`, and `./prompts/comprehensive_note.md`; installed-runtime path policy and packaged prompt resources are later packaging slices.
 
 ## Optional OpenAI mode
 

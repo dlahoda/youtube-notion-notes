@@ -68,6 +68,7 @@ Current roadmap:
 - `v1.0.0` Slice 4.3 is complete: CLI implementation modules moved under `./youtube_notion_notes/` while top-level compatibility wrappers remain.
 - `v1.0.0` Slice 4.4 is complete: package data handling for `comprehensive_note.md` was verified after the services move, including editable-install smoke coverage from a non-repo cwd.
 - `v1.0.0` Slice 4.5 is complete: console script entrypoints point at package modules and transitional top-level `py-modules` packaging has been removed.
+- `v1.0.0` UX hardening planning is active: the approved goal is to make installed CLI usage predictable after one setup path: install -> init/config -> use.
 
 Completed `v1.0.0` packaging slices:
 
@@ -76,6 +77,78 @@ Completed `v1.0.0` packaging slices:
 - Slice 3: package data and prompt template resource handling. Complete.
 - Slice 4: proper package layout using the real import package `youtube_notion_notes`.
   Slice 4 replaces the temporary flat-repo packaging shape from Slice 1. Slice 4.2 moved service modules into `youtube_notion_notes.services`. Slice 4.3 moved CLI implementation modules into `youtube_notion_notes` while keeping top-level compatibility wrappers. Slice 4.4 verified package data handling for `comprehensive_note.md` after the services move. Slice 4.5 moved console scripts to `youtube_notion_notes.ynn_cli:*` and removed transitional top-level `py-modules` packaging.
+
+Active `v1.0.0` UX hardening plan:
+
+The approved UX milestone goal is to make the installed CLI predictable from any directory after one setup path:
+
+```text
+install
+-> init/config
+-> use
+```
+
+`ynn init` is included in `v1.0.0` scope, but it must be designed before it is implemented. Until the implementation slices land, this section is planning scope only and does not describe current runtime behavior.
+
+Milestone-level boundaries for UX hardening:
+
+- no web UI;
+- no new n8n behavior;
+- no new Notion behavior beyond config validation needed for predictable Notion export;
+- no runtime code, tests, or packaging config changes in the docs-only planning slice;
+- no README restructure that presents future UX behavior as already implemented.
+
+UX-1 -- Notion fail-fast:
+
+- `--export notion` and `ynn-notion` should fail before transcript fetching, OpenAI calls, or Notion calls if required config is incomplete.
+- For generated-note Notion export in the `v1.0.0` UX contract, `ynn-notion` requires `OPENAI_API_KEY`, `NOTION_API_KEY`, and `NOTION_DATABASE_ID`.
+- Local and manual modes must not become strict.
+- Missing `OPENAI_API_KEY` remains a non-error for `ynn`, `ynn-note`, and `ynn-prompt`.
+- The implementation slice should keep human and JSON failure output clean and predictable.
+
+UX-2 -- `ynn init` config contract design:
+
+- Design the config contract before implementing `ynn init`.
+- `ynn init` is a setup helper, not the only supported way to manage config.
+- User config should use a plain text dotenv format.
+- The preferred user config path is likely `~/.config/youtube-notion-notes/.env`.
+- Manual editing of the user config file must be officially supported.
+- Explicit overrides must remain possible.
+- The contract design must decide and document config priority before implementation, covering environment variables, `--env-file`, cwd `./.env`, and user config.
+- The contract design must decide re-run behavior and overwrite behavior before implementation.
+- The contract design must decide how output directory creation works before implementation.
+- Secrets are stored as plain text for the local MVP; documentation should state that honestly.
+
+UX-3 -- `ynn init` implementation:
+
+- Add an installed CLI setup command only after the config contract is documented.
+- The desired installed CLI flow is:
+
+```bash
+python -m pip install -e .
+ynn init
+ynn-prompt "https://www.youtube.com/watch?v=..."
+ynn-note "https://www.youtube.com/watch?v=..."
+ynn-notion "https://www.youtube.com/watch?v=..."
+```
+
+- `ynn init` should make daily usage predictable from any directory.
+- `ynn init` should configure the output directory and optional OpenAI/Notion keys.
+
+UX-4 -- README command/setup contract:
+
+- After UX-1 and UX-3 behavior exists, restructure `./README.md` around what this does, platform support, recommended installed CLI setup, first run, daily commands, command requirements and expected outcomes, repo-local/developer/fallback usage, automation/n8n notes, and limitations.
+- Add a command requirements table.
+- Explain `ynn-prompt` clearly: it builds the ChatGPT-ready prompt file and stops. It does not call OpenAI and does not create a Notion page.
+- Do not restructure `./README.md` as if the UX work is already implemented before the corresponding runtime behavior exists.
+
+UX-5 -- Release readiness check:
+
+- Run the normal test suite.
+- Run the editable-install smoke test.
+- Run a manual `ynn-prompt` smoke.
+- Run a manual `ynn-notion` config failure smoke.
+- Verify `./README.md` matches actual behavior before tagging `v1.0.0`.
 
 ---
 
@@ -98,7 +171,7 @@ The current MVP answers one question:
 
 > Can we reliably turn a YouTube link into a high-quality markdown note?
 
-The `v0.9.0` MVP is repo-local. The launcher commands make that repo-local workflow comfortable for daily use. `v1.0.0` turns the same command names into installable package entrypoints through small slices, without changing pipeline behavior.
+The `v0.9.0` MVP is repo-local. The launcher commands make that repo-local workflow comfortable for daily use. `v1.0.0` began by turning the same command names into installable package entrypoints through small slices, then hardens the installed CLI setup path so daily use is predictable from any directory.
 
 ---
 

@@ -18,7 +18,6 @@ OUTPUT_DIR = Path("output")
 TRANSCRIPT_DIR = OUTPUT_DIR / "transcripts"
 PROMPT_DIR = OUTPUT_DIR / "prompts"
 NOTES_DIR = OUTPUT_DIR / "notes"
-PROMPT_TEMPLATE_PATH = Path("prompts") / "comprehensive_note.md"
 OUTPUT_DIR_ENV_VAR = "YNN_OUTPUT_DIR"
 
 
@@ -133,7 +132,6 @@ def run_pipeline(request: PipelineRequest, *, human_output: bool) -> tuple[int, 
     note_path = output_paths.notes_dir / f"{output_name}.md"
 
     prompt_text = build_manual_prompt(
-        template_path=PROMPT_TEMPLATE_PATH,
         video_url=request.url,
         video_id=video_id,
         transcript=transcript_text,

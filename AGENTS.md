@@ -52,7 +52,7 @@ Good examples:
 - `./review`
 - `./README.md`
 - `./services/transcript.py`
-- `./prompts/comprehensive_note.md`
+- `./services/resources/comprehensive_note.md`
 
 Avoid vague references like:
 - "the review file"

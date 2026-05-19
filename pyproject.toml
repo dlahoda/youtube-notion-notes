@@ -29,3 +29,6 @@ ynn-prompt = "ynn_cli:main_prompt"
 [tool.setuptools]
 py-modules = ["ingest", "ynn_cli"]
 packages = ["services"]
+
+[tool.setuptools.package-data]
+services = ["resources/*.md"]

@@ -1,20 +1,35 @@
 from __future__ import annotations
 
+from importlib import resources
 import os
 from pathlib import Path
+
+
+DEFAULT_PROMPT_TEMPLATE = "resources/comprehensive_note.md"
 
 
 class NoteGenerationError(Exception):
     """Raised when optional note generation cannot complete."""
 
 
+def read_default_prompt_template() -> str:
+    return (
+        resources.files("services")
+        .joinpath(DEFAULT_PROMPT_TEMPLATE)
+        .read_text(encoding="utf-8")
+    )
+
+
 def build_manual_prompt(
-    template_path: Path,
     video_url: str,
     video_id: str,
     transcript: str,
+    template_path: Path | str | None = None,
 ) -> str:
-    template = template_path.read_text(encoding="utf-8")
+    if template_path is None:
+        template = read_default_prompt_template()
+    else:
+        template = Path(template_path).read_text(encoding="utf-8")
     return template.format(
         video_url=video_url,
         video_id=video_id,

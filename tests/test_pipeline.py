@@ -311,6 +311,46 @@ class PipelineServiceTests(unittest.TestCase):
         self.assertEqual(output_paths.prompt_dir, Path("output") / "prompts")
         self.assertEqual(output_paths.notes_dir, Path("output") / "notes")
 
+    def test_default_prompt_template_uses_package_resource_not_cwd_prompts(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            cwd_path = temp_path / "run-from-here"
+            output_root = temp_path / "out"
+            transcript_file = temp_path / "manual-transcript.txt"
+            cwd_path.mkdir()
+            transcript_file.write_text("Manual transcript from temp cwd.\n", encoding="utf-8")
+
+            request = pipeline.PipelineRequest(
+                url=VIDEO_URL,
+                export_mode="local",
+                languages=None,
+                output_name=None,
+                no_note=True,
+                transcript_file=str(transcript_file),
+                output_dir=str(output_root),
+            )
+
+            original_cwd = Path.cwd()
+            try:
+                os.chdir(cwd_path)
+                with (
+                    patch.dict(os.environ, {"YNN_OUTPUT_DIR": ""}),
+                    patch.object(pipeline, "parse_youtube_url", return_value=VIDEO_ID),
+                ):
+                    exit_code, result = pipeline.run_pipeline(request, human_output=False)
+            finally:
+                os.chdir(original_cwd)
+
+            prompt_path = output_root / "prompts" / f"{VIDEO_ID}_prompt.md"
+            self.assertEqual(exit_code, 0)
+            self.assertTrue(result["ok"])
+            self.assertFalse((cwd_path / "prompts" / "comprehensive_note.md").exists())
+            self.assertTrue(prompt_path.exists())
+            prompt_text = prompt_path.read_text(encoding="utf-8")
+            self.assertIn(f"Video URL: {VIDEO_URL}", prompt_text)
+            self.assertIn(f"Video ID: {VIDEO_ID}", prompt_text)
+            self.assertIn("Manual transcript from temp cwd.", prompt_text)
+
 
 if __name__ == "__main__":
     unittest.main()

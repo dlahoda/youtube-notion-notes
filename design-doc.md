@@ -62,13 +62,14 @@ Current roadmap:
 - Milestone 8 Slice 1 is complete and tagged `v0.8.0`: ingest CLI tests split by responsibility.
 - Milestone 9 is complete and tagged `v0.9.0`: repo-local launcher usability closeout.
 - `v1.0.0` Slice 1 is complete: minimal installable CLI packaging skeleton and console script entrypoints for local editable installs.
-- `v1.0.0` Slice 2 is active/current: runtime output/config path policy for repo-local and editable-installed CLI usage.
+- `v1.0.0` Slice 2 is complete: runtime output/config path policy for repo-local and editable-installed CLI usage.
+- `v1.0.0` Slice 3 is complete: package data and prompt template resource handling.
 
 Planned `v1.0.0` packaging slices:
 
 - Slice 1: minimal packaging skeleton and console script entrypoints. Complete.
-- Slice 2: output/config path policy for installed CLI runtime behavior. Active/current.
-- Slice 3: package data and prompt template resource handling.
+- Slice 2: output/config path policy for installed CLI runtime behavior. Complete.
+- Slice 3: package data and prompt template resource handling. Complete.
 - Slice 4: proper package layout, likely moving toward a real import package such as `youtube_notion_notes`.
   Slice 4 must replace the temporary flat-repo packaging shape from Slice 1: remove the transitional `py-modules = ["ingest", "ynn_cli"]` / `packages = ["services"]` setup and move toward a real import package such as `youtube_notion_notes`.
 
@@ -127,12 +128,12 @@ youtube-notion-notes/
   pyproject.toml
   ingest.py
   ynn_cli.py
-  prompts/
-    comprehensive_note.md
   services/
     pipeline.py
     transcript.py
     note_generator.py
+    resources/
+      comprehensive_note.md
     notion.py
     markdown_to_notion.py
     note_metadata.py
@@ -189,6 +190,8 @@ Responsible only for YouTube URLs, video IDs, and transcript fetching.
 ### `./services/note_generator.py`
 
 Responsible for turning a transcript into a note.
+
+Owns the default manual prompt template as package data at `./services/resources/comprehensive_note.md`, loaded through `importlib.resources` so installed/editable commands do not depend on the current working directory containing `./prompts/comprehensive_note.md`.
 
 It should support multiple modes:
 
@@ -322,7 +325,7 @@ Slice 1 boundaries:
 
 ## Runtime Path Policy Slice 2
 
-`v1.0.0` Slice 2 makes output and env-file behavior explicit for both repo-local CLI usage and editable-installed console script usage, without changing pipeline behavior.
+`v1.0.0` Slice 2 made output and env-file behavior explicit for both repo-local CLI usage and editable-installed console script usage, without changing pipeline behavior.
 
 Output policy:
 
@@ -351,14 +354,29 @@ Slice 2 boundaries:
 - no Notion export behavior changes;
 - no transcript fetching behavior changes;
 - no note generation behavior changes;
-- no prompt template package-resource handling;
-- no `importlib.resources`;
-- no prompt file move;
 - no `src/` layout or package refactor.
 
-Known Slice 2 limitation:
+## Package Data Prompt Template Slice 3
 
-- editable-installed commands still depend on `./prompts/comprehensive_note.md` being available from the current working directory until Slice 3 handles package data and prompt template resources.
+`v1.0.0` Slice 3 moved the built-in manual prompt template into package-owned data while preserving the existing CLI behavior and output contracts.
+
+Prompt template policy:
+
+- the default prompt template lives at `./services/resources/comprehensive_note.md`;
+- `./pyproject.toml` includes the markdown template as package data for the current transitional `services` package;
+- `./services/note_generator.py` loads the default template with standard-library `importlib.resources`;
+- `build_manual_prompt` still accepts an explicit template path for tests or future use;
+- `./services/pipeline.py` uses the package-owned default template and no longer passes a cwd-relative `./prompts/comprehensive_note.md` path.
+
+Slice 3 boundaries:
+
+- no CLI behavior changes;
+- no JSON input/output schema changes;
+- no n8n behavior changes;
+- no Notion export behavior changes;
+- no output directory or env-file behavior changes;
+- no custom prompt selection, prompt profiles, prompt env vars, or prompt CLI flag;
+- no `src/` layout or package refactor.
 
 ## JSON Input Contract
 
@@ -560,10 +578,8 @@ Completed milestones:
 - Milestone 8: Test suite maintenance — Slice 1 complete and tagged `v0.8.0`. Ingest CLI tests are split by responsibility without runtime behavior changes.
 - Milestone 9: Repo-local launcher usability closeout — complete and tagged `v0.9.0`. Day-to-day MVP usage works through `ynn`, `ynn-note`, `ynn-notion`, and `ynn-prompt` while `./ingest.py` remains the underlying CLI contract.
 - `v1.0.0` Slice 1: minimal installable CLI packaging entrypoints for local editable installs — complete.
-
-Current implementation target:
-
-- `v1.0.0` Slice 2: runtime output/config path policy for repo-local and editable-installed CLI usage.
+- `v1.0.0` Slice 2: runtime output/config path policy for repo-local and editable-installed CLI usage — complete.
+- `v1.0.0` Slice 3: package data and prompt template resource handling — complete.
 
 ---
 
@@ -579,7 +595,6 @@ Those ideas are not current scope, active contracts, or implementation instructi
 - Long transcripts may not fit into one LLM request. Chunking and map-reduce summarization are not implemented.
 - Notion is not a pure markdown editor. Markdown is converted into basic Notion blocks, and complex typography is intentionally deferred.
 - OpenAI API billing is separate from a ChatGPT subscription. Manual mode remains the fallback when API usage is unavailable or unwanted.
-- Editable-installed commands still depend on `./prompts/comprehensive_note.md` being available from the current working directory until `v1.0.0` Slice 3 handles package data and prompt template resource loading.
 
 ## Current Design Decisions
 
@@ -603,7 +618,7 @@ Backlog themes currently parked in `./docs/ideas.md` include:
 - n8n orchestration improvements;
 - transcript input and provider expansion;
 - hosted, remote, or HTTP execution options;
-- later `v1.0.0` packaging slices for prompt package resources and full package layout.
+- later `v1.0.0` packaging work for the full package layout.
 
 ---
 

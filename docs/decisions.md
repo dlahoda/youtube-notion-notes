@@ -70,7 +70,7 @@ Supported generation paths include manual GPT bridge mode and optional OpenAI AP
 
 Future local model support should remain possible, but should not be implemented until explicitly scoped.
 
-The note shape stays in `./prompts/comprehensive_note.md`: title, source URL, overview, key ideas, detailed notes, memorable phrasing, practical takeaways, and tags.
+The note shape stays in the built-in prompt template at `./services/resources/comprehensive_note.md`: title, source URL, overview, key ideas, detailed notes, memorable phrasing, practical takeaways, and tags.
 
 ---
 

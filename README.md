@@ -122,7 +122,7 @@ ynn-notion "https://youtu.be/VIDEO_ID"
 ynn-prompt "https://youtu.be/VIDEO_ID"
 ```
 
-The editable package entrypoints delegate to the existing `./ingest.py` CLI behavior. Installed commands use the current working directory for default `.env`, fallback `./output/`, and `./prompts/comprehensive_note.md`; `--env-file`, `--output-dir`, and `YNN_OUTPUT_DIR` can make runtime paths explicit for a run.
+The editable package entrypoints delegate to the existing `./ingest.py` CLI behavior. Installed commands use the current working directory for default `.env` and fallback `./output/`; `--env-file`, `--output-dir`, and `YNN_OUTPUT_DIR` can make runtime paths explicit for a run. The built-in prompt template is package-owned data, so installed commands do not require a repo-local `./prompts/comprehensive_note.md` file in the current working directory.
 
 Runtime path policy:
 
@@ -141,8 +141,6 @@ YNN_OUTPUT_DIR=./tmp-output ynn-prompt "https://youtu.be/VIDEO_ID"
 python ingest.py "https://youtu.be/VIDEO_ID" --no-note --output-dir ./tmp-output
 ynn-notion "https://youtu.be/VIDEO_ID" --env-file ./notion.env
 ```
-
-Current Slice 2 limitation: installed commands may still depend on `./prompts/comprehensive_note.md` being available from the current working directory. Package-resource handling for the prompt template is planned for Slice 3.
 
 ## Optional OpenAI mode
 
@@ -313,5 +311,4 @@ Markdown note metadata convention for export: the first H1 heading, formatted as
 - Video titles are not fetched yet; output filenames use the video id unless `--output-name` is provided.
 - OpenAI mode is optional and intentionally simple.
 - Notion export requires a generated markdown note; prompt-only/manual mode does not export.
-- Installed commands still depend on `./prompts/comprehensive_note.md` being available from the current working directory until package-resource handling is added.
 - No queueing or web UI exists in this milestone.

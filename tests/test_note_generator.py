@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from importlib import resources
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -9,6 +11,14 @@ from youtube_notion_notes.services.note_generator import PromptTemplateError, bu
 
 
 class NoteGeneratorTests(unittest.TestCase):
+    def test_pyproject_includes_moved_service_prompt_package_data(self) -> None:
+        pyproject_path = Path(__file__).resolve().parents[1] / "pyproject.toml"
+        pyproject_text = pyproject_path.read_text(encoding="utf-8")
+        package_data_table = pyproject_text.split("[tool.setuptools.package-data]", 1)[1]
+
+        self.assertIn('"youtube_notion_notes.services" = ["resources/*.md"]', package_data_table)
+        self.assertNotIn('services = ["resources/*.md"]', package_data_table)
+
     def test_build_manual_prompt_uses_default_template_without_template_path(self) -> None:
         prompt = build_manual_prompt(
             "https://youtu.be/abc123def45",
@@ -19,6 +29,42 @@ class NoteGeneratorTests(unittest.TestCase):
         self.assertIn("- Video URL: https://youtu.be/abc123def45", prompt)
         self.assertIn("- Video ID: abc123def45", prompt)
         self.assertIn("Default transcript.", prompt)
+
+    def test_read_default_prompt_template_uses_moved_service_package(self) -> None:
+        with patch(
+            "youtube_notion_notes.services.note_generator.resources.files",
+            wraps=resources.files,
+        ) as files_mock:
+            template = read_default_prompt_template()
+
+        files_mock.assert_called_once_with("youtube_notion_notes.services")
+        self.assertIn("# Transcript", template)
+        self.assertIn("{transcript}", template)
+
+    def test_build_manual_prompt_does_not_read_cwd_prompt_template(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            cwd_path = Path(temp_dir)
+            cwd_prompt_path = cwd_path / "prompts" / "comprehensive_note.md"
+            cwd_prompt_path.parent.mkdir()
+            cwd_prompt_path.write_text(
+                "CWD TEMPLATE SHOULD NOT BE USED {video_url} {video_id} {transcript}",
+                encoding="utf-8",
+            )
+
+            original_cwd = Path.cwd()
+            try:
+                os.chdir(cwd_path)
+                prompt = build_manual_prompt(
+                    "https://youtu.be/abc123def45",
+                    "abc123def45",
+                    "Transcript from a non-repo cwd.",
+                )
+            finally:
+                os.chdir(original_cwd)
+
+        self.assertIn("- Video URL: https://youtu.be/abc123def45", prompt)
+        self.assertIn("Transcript from a non-repo cwd.", prompt)
+        self.assertNotIn("CWD TEMPLATE SHOULD NOT BE USED", prompt)
 
     def test_build_manual_prompt_allows_explicit_template_path(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

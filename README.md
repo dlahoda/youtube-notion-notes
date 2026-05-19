@@ -133,6 +133,14 @@ Runtime path policy:
 
 For daily installed CLI usage, set `YNN_OUTPUT_DIR` to avoid creating `./output` in whichever directory the command was run from.
 
+Optional editable-install smoke verification:
+
+```bash
+YNN_RUN_EDITABLE_INSTALL_SMOKE=1 python -m unittest tests.test_editable_install_smoke
+```
+
+This smoke creates a temporary virtual environment and skips itself if local Python venv support is unavailable.
+
 Examples:
 
 ```bash

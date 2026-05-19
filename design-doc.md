@@ -107,18 +107,78 @@ UX-1 -- Notion fail-fast: Complete.
 - Missing `OPENAI_API_KEY` remains a non-error for `ynn`, `ynn-note`, and `ynn-prompt`.
 - The implementation slice should keep human and JSON failure output clean and predictable.
 
-UX-2 -- `ynn init` config contract design:
+UX-2 -- `ynn init` config contract design: Complete docs-only planning.
 
-- Design the config contract before implementing `ynn init`.
-- `ynn init` is a setup helper, not the only supported way to manage config.
-- User config should use a plain text dotenv format.
-- The preferred user config path is likely `~/.config/youtube-notion-notes/.env`.
-- Manual editing of the user config file must be officially supported.
-- Explicit overrides must remain possible.
-- The contract design must decide and document config priority before implementation, covering environment variables, `--env-file`, cwd `./.env`, and user config.
-- The contract design must decide re-run behavior and overwrite behavior before implementation.
-- The contract design must decide how output directory creation works before implementation.
-- Secrets are stored as plain text for the local MVP; documentation should state that honestly.
+This UX-2 slice documents the planned config contract only. It does not describe current runtime behavior until UX-3 implementation lands.
+
+Current behavior remains the Slice 2 runtime path policy: the CLI can read a cwd `./.env`, can read an explicit `--env-file PATH`, and can use `YNN_OUTPUT_DIR`, but there is not yet a `ynn init` command or installed user config fallback.
+
+Planned UX-2/UX-3 config source priority:
+
+1. explicit `--env-file PATH`;
+2. real process environment variables;
+3. cwd `./.env`;
+4. user config `~/.config/youtube-notion-notes/.env`;
+5. built-in defaults.
+
+Priority semantics:
+
+- explicit `--env-file PATH` is the highest-priority config source for that run;
+- values loaded from an explicit `--env-file PATH` should override matching real process environment variables;
+- real process environment variables should override cwd `./.env`, user config, and built-in defaults;
+- cwd `./.env` should override user config and built-in defaults;
+- user config is the installed CLI fallback created by `ynn init`;
+- built-in defaults are used only when no higher-priority source provides a value.
+
+User config file contract:
+
+- the preferred user config path is `~/.config/youtube-notion-notes/.env`;
+- the file is a plain dotenv text file;
+- manual editing of this file is officially supported;
+- no new config file format is introduced in this slice.
+
+`ynn init` role:
+
+- `ynn init` is a setup helper, not the only supported way to manage config;
+- users may still use process environment variables, cwd `./.env`, explicit `--env-file PATH`, or manual edits to the user config file;
+- `ynn init` should create or update the user config file so installed CLI usage is predictable from any directory.
+
+Re-run and overwrite behavior:
+
+- the first run should create `~/.config/youtube-notion-notes/.env` if it does not exist;
+- re-running `ynn init` should not silently overwrite existing secret values;
+- if the user config file already exists, `ynn init` should preserve existing values by default;
+- a future implementation may support explicit overwrite or update behavior;
+- silent destructive overwrite is out of scope.
+
+Secrets:
+
+- secrets are stored as plain text in the local user config file for the MVP;
+- users should not commit this file;
+- this is acceptable for the local MVP, but it is not a production secret-management story.
+
+Output directory config contract:
+
+- `YNN_OUTPUT_DIR` may be stored in the user config file;
+- explicit `--output-dir PATH` remains the highest-priority output directory override;
+- process environment `YNN_OUTPUT_DIR` remains above config-file fallback behavior unless the command uses an explicit `--env-file PATH`, which intentionally overrides matching process environment values according to the UX-2 config priority contract;
+- default output remains `./output` relative to cwd when no output setting is provided;
+- `ynn init` may create the configured output directory when the user chooses or accepts an output path;
+- output directory creation should be idempotent, preserving existing directories;
+- `ynn init` must not delete, clean, or move existing output files;
+- parent directory creation is allowed for the selected output path;
+- regular pipeline runs keep creating `transcripts/`, `prompts/`, and `notes/` under the resolved output root as needed.
+
+UX-2 boundaries:
+
+- no implementation;
+- no runtime code changes;
+- no test changes;
+- no packaging config changes;
+- no README restructure;
+- no n8n behavior changes;
+- no Notion behavior changes beyond documenting config requirements already introduced by UX-1;
+- no new config file format beyond dotenv.
 
 UX-3 -- `ynn init` implementation:
 

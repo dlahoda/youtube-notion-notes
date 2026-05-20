@@ -1,11 +1,19 @@
 from __future__ import annotations
 
 import argparse
+import getpass
 import sys
 from pathlib import Path
 
 from youtube_notion_notes.config import ConfigFileError, parse_dotenv, user_config_path
 from youtube_notion_notes.services.pipeline import OUTPUT_DIR_ENV_VAR
+
+
+OPTIONAL_CONFIG_PROMPTS = (
+    ("OPENAI_API_KEY", "OpenAI API key (optional, empty to skip): ", True),
+    ("NOTION_API_KEY", "Notion API key (optional, empty to skip): ", True),
+    ("NOTION_DATABASE_ID", "Notion database ID (optional, empty to skip): ", False),
+)
 
 
 class InitArgumentParser(argparse.ArgumentParser):
@@ -50,10 +58,32 @@ def init_output_dir(output_dir: str, *, config_path: Path | None = None) -> Path
     return path
 
 
+def init_optional_config(config_path: Path) -> None:
+    existing_values = parse_dotenv(config_path) if config_path.exists() else {}
+
+    for key, prompt, is_secret in OPTIONAL_CONFIG_PROMPTS:
+        if key in existing_values:
+            print(f"{key} already configured; leaving existing value unchanged.")
+            continue
+
+        value = getpass.getpass(prompt).strip() if is_secret else input(prompt).strip()
+        if not value:
+            continue
+
+        append_env_value(config_path, key, value)
+        existing_values[key] = value
+
+
+def init_user_config(output_dir: str, *, config_path: Path | None = None) -> Path:
+    path = init_output_dir(output_dir, config_path=config_path)
+    init_optional_config(path)
+    return path
+
+
 def main(argv: list[str] | None = None) -> int:
     try:
         args = parse_args(argv)
-        config_path = init_output_dir(args.output_dir)
+        config_path = init_user_config(args.output_dir)
     except ValueError as exc:
         print(f"Input error: {exc}", file=sys.stderr)
         return 2

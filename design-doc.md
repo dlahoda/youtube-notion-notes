@@ -71,6 +71,7 @@ Current roadmap:
 - `v1.0.0` UX-1 is complete: Notion export config preflight fails before transcript, prompt, note, or Notion work when required config is incomplete.
 - `v1.0.0` UX hardening planning is active: the approved goal is to make installed CLI usage predictable after one setup path: install -> init/config -> use.
 - `v1.0.0` UX-3 Slice 1 is complete: `ynn init --output-dir PATH` creates or updates the user config fallback, and runtime config loading follows the UX-2 source priority contract.
+- `v1.0.0` UX-3 Slice 2 is complete: `ynn init --output-dir PATH` can optionally collect missing OpenAI and Notion config values interactively while preserving existing user config values.
 - `v1.0.0` public repository release gate is active: publishing should use an All Rights Reserved / source-visible licensing posture unless a different license is explicitly decided later.
 
 Completed `v1.0.0` packaging slices:
@@ -91,7 +92,7 @@ install
 -> use
 ```
 
-`ynn init` is included in `v1.0.0` scope, but it must be designed before it is implemented. Until the implementation slices land, this section is planning scope only and does not describe current runtime behavior.
+`ynn init` is included in `v1.0.0` scope. This section records both implemented behavior and remaining planned UX hardening work.
 
 Milestone-level boundaries for UX hardening:
 
@@ -115,7 +116,7 @@ This UX-2 slice documented the planned config contract before UX-3 implementatio
 
 Current behavior includes the UX-3 Slice 1 runtime config priority: the CLI can read an explicit `--env-file PATH`, real process environment variables, cwd `./.env`, the user config fallback at `~/.config/youtube-notion-notes/.env`, and built-in defaults.
 
-Planned UX-2/UX-3 config source priority:
+UX-2/UX-3 config source priority:
 
 1. explicit `--env-file PATH`;
 2. real process environment variables;
@@ -182,7 +183,7 @@ UX-2 boundaries:
 - no Notion behavior changes beyond documenting config requirements already introduced by UX-1;
 - no new config file format beyond dotenv.
 
-UX-3 -- `ynn init` implementation: Active, Slice 1 complete.
+UX-3 -- `ynn init` implementation: Active, Slices 1 and 2 complete.
 
 - Add an installed CLI setup command only after the config contract is documented.
 - The desired installed CLI flow is:
@@ -204,7 +205,16 @@ UX-3 Slice 1:
 - the configured output directory is created idempotently;
 - runtime config loading follows the UX-2 priority contract.
 
-Later UX-3 slices may configure optional OpenAI/Notion keys.
+UX-3 Slice 2:
+
+- after configuring the output directory, `ynn init --output-dir PATH` prompts for optional `OPENAI_API_KEY`, `NOTION_API_KEY`, and `NOTION_DATABASE_ID`;
+- empty prompt input skips that value;
+- existing user config values are preserved by default and are not duplicated;
+- missing provided values are appended to the existing dotenv file;
+- API key prompts use hidden input;
+- manual editing of the user config dotenv file remains supported;
+- runtime config priority remains unchanged;
+- `ynn init` does not call OpenAI or Notion and does not validate keys.
 
 UX-4 -- README command/setup contract:
 

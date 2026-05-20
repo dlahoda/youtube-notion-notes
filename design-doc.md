@@ -73,6 +73,7 @@ Current roadmap:
 - `v1.0.0` UX-3 Slice 1 is complete: `ynn init --output-dir PATH` creates or updates the user config fallback, and runtime config loading follows the UX-2 source priority contract.
 - `v1.0.0` UX-3 Slice 2 is complete: `ynn init --output-dir PATH` can optionally collect missing OpenAI and Notion config values interactively while preserving existing user config values.
 - `v1.0.0` UX-3 transcript language follow-up is complete: `ynn init --output-dir PATH` can optionally append `YOUTUBE_TRANSCRIPT_LANGUAGES` to the user config while preserving runtime fallback to `en` when no language config is provided.
+- `v1.0.0` UX-5 is complete: release readiness checks were manually run and passed.
 - `v1.0.0` public repository release gate is active: publishing should use an All Rights Reserved / source-visible licensing posture unless a different license is explicitly decided later.
 
 Completed `v1.0.0` packaging slices:
@@ -233,13 +234,14 @@ UX-4 -- README command/setup contract:
 - Explain `ynn-prompt` clearly: it builds the ChatGPT-ready prompt file and stops. It does not call OpenAI and does not create a Notion page.
 - Do not restructure `./README.md` as if the UX work is already implemented before the corresponding runtime behavior exists.
 
-UX-5 -- Release readiness check:
+UX-5 -- Release readiness check: Complete.
 
-- Run the normal test suite.
-- Run the editable-install smoke test.
-- Run a manual `ynn-prompt` smoke.
-- Run a manual `ynn-notion` config failure smoke.
-- Verify `./README.md` matches actual behavior before tagging `v1.0.0`.
+The following release readiness checks were manually run and passed:
+
+- `make test`;
+- editable-install smoke test;
+- manual `ynn-prompt` smoke;
+- manual `ynn-notion` config failure smoke.
 
 UX-6 -- Public repository licensing gate:
 

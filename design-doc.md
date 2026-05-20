@@ -80,6 +80,7 @@ Current roadmap:
 - `v1.0.0` UX-6 Slice 3 is complete: transcript selection runtime visibility and failure contracts are documented.
 - `v1.0.0` UX-6 Slice 4 is complete: normal YouTube transcript fetching uses project-owned discovery and selection before fetching the selected track.
 - `v1.0.0` UX-6 Slice 5 is complete: transcript selection metadata is visible in concise human output and additive JSON output.
+- `v1.0.0` UX-6 is complete: README/docs truth alignment and the closeout smoke checklist are recorded.
 - `v1.0.0` public repository release gate is deferred until numbered UX work is closed: publishing should use an All Rights Reserved / source-visible licensing posture unless a different license is explicitly decided later.
 
 Completed `v1.0.0` packaging slices:
@@ -249,7 +250,7 @@ The following release readiness checks were manually run and passed:
 - manual `ynn-prompt` smoke;
 - manual `ynn-notion` config failure smoke.
 
-UX-6 -- Transcript selection quality: Active; Slices 1, 2, 2.1, 3, 4, and 5 complete.
+UX-6 -- Transcript selection quality: Complete.
 
 - Current normal YouTube transcript fetching inspects available transcript tracks and chooses the best available track by origin and quality before fetching transcript snippets.
 - A narrow language-preference fetch fallback may remain only for older `youtube-transcript-api` shapes where transcript discovery is not available.
@@ -281,6 +282,16 @@ UX-6 -- Transcript selection quality: Active; Slices 1, 2, 2.1, 3, 4, and 5 comp
 - Slice 5 adds concise human output when the transcript source is known.
 - Slice 5 adds an additive JSON result field named `transcript_selection`.
 - Slice 5 keeps existing JSON fields valid and keeps `--transcript-file` as a bypass of YouTube discovery and selection.
+- Closeout updates `./README.md` to describe current transcript selection behavior, additive JSON `transcript_selection` metadata, and transcript-file bypass behavior.
+- Closeout does not change runtime code, tests, Notion behavior, n8n behavior, CLI flags, or licensing.
+
+UX-6 smoke checklist:
+
+- `make test`;
+- `ynn-prompt "https://youtu.be/VIDEO_ID"`;
+- `python ingest.py "https://youtu.be/VIDEO_ID" --no-note --output json` and check that `transcript_selection` exists;
+- `python ingest.py "https://youtu.be/VIDEO_ID" --transcript-file ./manual-transcript.txt --no-note --output json` and check that `transcript_selection.origin` is `transcript_file`;
+- optional release-readiness recheck: `ynn-notion "https://youtu.be/VIDEO_ID"` should fail cleanly when required Notion/OpenAI config is missing.
 
 UX-6 Slice 3 -- Transcript selection runtime visibility contract: Complete docs-only.
 
@@ -823,7 +834,16 @@ Success output includes:
 - `url`;
 - `export_mode`;
 - created local output paths;
-- Notion page details when Notion export runs.
+- Notion page details when Notion export runs;
+- additive `transcript_selection` metadata when known.
+
+`transcript_selection` includes:
+
+- `origin`;
+- `source_language`;
+- `selected_language`;
+- `requires_translation`;
+- `selection_reason`.
 
 `notion_page_url` comes from the Notion API page response `url` field and is included only when that field is present.
 
@@ -854,6 +874,7 @@ Current behavior:
 
 - `--transcript-file PATH` works with positional URL usage;
 - JSON payloads may include `"transcript_file": "./manual-transcript.txt"`;
+- transcript-file input bypasses YouTube discovery and selection and reports `origin: transcript_file` in `transcript_selection`;
 - the YouTube URL remains required and is kept as source metadata;
 - the YouTube URL is still parsed for `video_id` and default output naming;
 - transcript files are read as UTF-8 local files;

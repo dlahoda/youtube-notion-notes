@@ -76,6 +76,7 @@ Current roadmap:
 - `v1.0.0` UX-5 is complete: release readiness checks were manually run and passed.
 - `v1.0.0` UX-6 Slice 1 is complete: transcript track discovery metadata can be listed internally without changing default transcript fetching behavior.
 - `v1.0.0` UX-6 Slice 2 is complete: transcript track selection policy can choose from discovered metadata internally without changing default transcript fetching behavior.
+- `v1.0.0` UX-6 Slice 2.1 is complete: unknown-origin transcript tracks are last-resort selection fallbacks after known manual and generated matches.
 - `v1.0.0` public repository release gate is deferred until numbered UX work is closed: publishing should use an All Rights Reserved / source-visible licensing posture unless a different license is explicitly decided later.
 
 Completed `v1.0.0` packaging slices:
@@ -245,7 +246,7 @@ The following release readiness checks were manually run and passed:
 - manual `ynn-prompt` smoke;
 - manual `ynn-notion` config failure smoke.
 
-UX-6 -- Transcript selection quality: Active; Slices 1 and 2 complete.
+UX-6 -- Transcript selection quality: Active; Slices 1, 2, and 2.1 complete.
 
 - Current transcript fetching is language-preference based and should not be treated as a full transcript-quality selection system.
 - Future goal: inspect available transcript tracks and choose the best available track by origin and quality.
@@ -257,13 +258,17 @@ UX-6 -- Transcript selection quality: Active; Slices 1 and 2 complete.
 - Slice 2 adds only the internal transcript track selection policy.
 - Slice 2 keeps `fetch_transcript(video_id, languages)` behavior unchanged.
 - Slice 2 can choose from discovered `TranscriptTrack` metadata by origin, direct language match, translation language match, and preferred language order.
-- Slice 2 returns the selected track plus selection metadata, or no selection when no known manual/generated track matches the policy.
+- Slice 2 returns the selected track plus selection metadata, or no selection when no track matches the policy.
 - Slice 2 does not connect selection to CLI flags, JSON output, README instructions, Notion behavior, n8n behavior, or automatic best-track fetching.
+- Slice 2.1 makes unknown-origin tracks a last-resort fallback instead of ignoring them completely.
+- Slice 2.1 keeps unknown-origin tracks lower priority than known manual or generated tracks.
 - Current internal selection priority:
   1. manual/author-provided transcript in preferred languages;
   2. manual/author-provided transcript translated to a preferred language;
   3. generated transcript in preferred languages;
-  4. generated transcript translated to a preferred language.
+  4. generated transcript translated to a preferred language;
+  5. unknown-origin transcript in preferred languages;
+  6. unknown-origin transcript translated to a preferred language.
 - Original spoken language detection is future best-effort only.
 - Do not require YouTube Data API, OAuth, `captions.list`, or quota-dependent behavior for `v1.0.0`.
 - Later UX-6 slices may connect discovery and selection metadata to runtime fetching.

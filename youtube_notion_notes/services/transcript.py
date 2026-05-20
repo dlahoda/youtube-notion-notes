@@ -109,9 +109,8 @@ def select_transcript_track(
 ) -> TranscriptTrackSelection | None:
     """Choose the best discovered track without fetching transcript snippets.
 
-    Tracks with unknown origin are not selected by this policy. That keeps them
-    from outranking known manual or generated transcripts until runtime behavior
-    can make an explicit choice about unknown metadata.
+    Tracks with unknown origin are selected only as a last-resort fallback after
+    known manual and generated tracks have been considered.
     """
 
     preferred_languages = [
@@ -122,9 +121,11 @@ def select_transcript_track(
 
     for reason, origin, requires_translation in (
         ("manual_preferred_language", False, False),
-        ("manual_translated_to_preferred_language", False, True),
+        ("manual_translatable_to_preferred_language", False, True),
         ("generated_preferred_language", True, False),
-        ("generated_translated_to_preferred_language", True, True),
+        ("generated_translatable_to_preferred_language", True, True),
+        ("unknown_origin_preferred_language", None, False),
+        ("unknown_origin_translatable_to_preferred_language", None, True),
     ):
         selection = _select_first_matching_track(
             tracks,
@@ -177,7 +178,7 @@ def _select_first_matching_track(
     tracks: list[TranscriptTrack],
     preferred_languages: list[str],
     *,
-    is_generated: bool,
+    is_generated: bool | None,
     requires_translation: bool,
     selection_reason: str,
 ) -> TranscriptTrackSelection | None:

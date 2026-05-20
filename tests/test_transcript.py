@@ -249,7 +249,7 @@ class TranscriptServiceTests(unittest.TestCase):
         self.assertEqual(selection.track, manual_spanish)
         self.assertEqual(
             selection.selection_reason,
-            "manual_translated_to_preferred_language",
+            "manual_translatable_to_preferred_language",
         )
         self.assertTrue(selection.requires_translation)
 
@@ -307,7 +307,86 @@ class TranscriptServiceTests(unittest.TestCase):
         self.assertEqual(selection.track, generated_spanish)
         self.assertEqual(
             selection.selection_reason,
-            "generated_translated_to_preferred_language",
+            "generated_translatable_to_preferred_language",
+        )
+
+    def test_select_track_unknown_preferred_language_is_last_resort_fallback(self) -> None:
+        unknown_english = self.track("en", is_generated=None)
+
+        selection = select_transcript_track(
+            [unknown_english],
+            ["en"],
+        )
+
+        self.assertIsNotNone(selection)
+        assert selection is not None
+        self.assertEqual(selection.track, unknown_english)
+        self.assertEqual(selection.selection_reason, "unknown_origin_preferred_language")
+        self.assertFalse(selection.requires_translation)
+
+    def test_select_track_unknown_translatable_is_last_resort_fallback(self) -> None:
+        unknown_spanish = self.track("es", is_generated=None, translations=["en"])
+
+        selection = select_transcript_track(
+            [unknown_spanish],
+            ["en"],
+        )
+
+        self.assertIsNotNone(selection)
+        assert selection is not None
+        self.assertEqual(selection.track, unknown_spanish)
+        self.assertEqual(
+            selection.selection_reason,
+            "unknown_origin_translatable_to_preferred_language",
+        )
+        self.assertTrue(selection.requires_translation)
+
+    def test_select_track_known_generated_preferred_outranks_unknown_preferred(self) -> None:
+        unknown_english = self.track("en", is_generated=None)
+        generated_english = self.track("en", is_generated=True)
+
+        selection = select_transcript_track(
+            [unknown_english, generated_english],
+            ["en"],
+        )
+
+        self.assertIsNotNone(selection)
+        assert selection is not None
+        self.assertEqual(selection.track, generated_english)
+        self.assertEqual(selection.selection_reason, "generated_preferred_language")
+
+    def test_select_track_known_generated_translatable_outranks_unknown_preferred(self) -> None:
+        unknown_english = self.track("en", is_generated=None)
+        generated_spanish = self.track("es", is_generated=True, translations=["en"])
+
+        selection = select_transcript_track(
+            [unknown_english, generated_spanish],
+            ["en"],
+        )
+
+        self.assertIsNotNone(selection)
+        assert selection is not None
+        self.assertEqual(selection.track, generated_spanish)
+        self.assertEqual(
+            selection.selection_reason,
+            "generated_translatable_to_preferred_language",
+        )
+
+    def test_select_track_known_manual_translatable_outranks_unknown_preferred(self) -> None:
+        unknown_english = self.track("en", is_generated=None)
+        manual_spanish = self.track("es", is_generated=False, translations=["en"])
+
+        selection = select_transcript_track(
+            [unknown_english, manual_spanish],
+            ["en"],
+        )
+
+        self.assertIsNotNone(selection)
+        assert selection is not None
+        self.assertEqual(selection.track, manual_spanish)
+        self.assertEqual(
+            selection.selection_reason,
+            "manual_translatable_to_preferred_language",
         )
 
 

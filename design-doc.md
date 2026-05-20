@@ -72,6 +72,7 @@ Current roadmap:
 - `v1.0.0` UX hardening planning is active: the approved goal is to make installed CLI usage predictable after one setup path: install -> init/config -> use.
 - `v1.0.0` UX-3 Slice 1 is complete: `ynn init --output-dir PATH` creates or updates the user config fallback, and runtime config loading follows the UX-2 source priority contract.
 - `v1.0.0` UX-3 Slice 2 is complete: `ynn init --output-dir PATH` can optionally collect missing OpenAI and Notion config values interactively while preserving existing user config values.
+- `v1.0.0` UX-3 transcript language follow-up is complete: `ynn init --output-dir PATH` can optionally append `YOUTUBE_TRANSCRIPT_LANGUAGES` to the user config while preserving runtime fallback to `en` when no language config is provided.
 - `v1.0.0` public repository release gate is active: publishing should use an All Rights Reserved / source-visible licensing posture unless a different license is explicitly decided later.
 
 Completed `v1.0.0` packaging slices:
@@ -183,7 +184,7 @@ UX-2 boundaries:
 - no Notion behavior changes beyond documenting config requirements already introduced by UX-1;
 - no new config file format beyond dotenv.
 
-UX-3 -- `ynn init` implementation: Active, Slices 1 and 2 complete.
+UX-3 -- `ynn init` implementation: Active; Slices 1, 2, and transcript language follow-up complete.
 
 - Add an installed CLI setup command only after the config contract is documented.
 - The desired installed CLI flow is:
@@ -215,6 +216,15 @@ UX-3 Slice 2:
 - manual editing of the user config dotenv file remains supported;
 - runtime config priority remains unchanged;
 - `ynn init` does not call OpenAI or Notion and does not validate keys.
+
+UX-3 transcript language follow-up:
+
+- `ynn init --output-dir PATH` prompts for optional transcript language preferences as `YOUTUBE_TRANSCRIPT_LANGUAGES`;
+- the prompt makes the runtime default clear as `Transcript languages [en]: `;
+- empty prompt input skips writing `YOUTUBE_TRANSCRIPT_LANGUAGES`;
+- existing `YOUTUBE_TRANSCRIPT_LANGUAGES` values are preserved and not duplicated;
+- runtime fallback remains `en` when no language config is provided;
+- runtime config priority and pipeline behavior remain unchanged.
 
 UX-4 -- README command/setup contract:
 

@@ -85,7 +85,7 @@ class InitConfigTests(unittest.TestCase):
 
             with (
                 patch.object(init_config.getpass, "getpass", side_effect=["openai-key", "notion-key"]),
-                patch("builtins.input", return_value="notion-database-id"),
+                patch("builtins.input", side_effect=["notion-database-id", "en,fr"]),
             ):
                 init_config.init_user_config(str(output_dir), config_path=config_path)
 
@@ -97,6 +97,7 @@ class InitConfigTests(unittest.TestCase):
                         "OPENAI_API_KEY=openai-key",
                         "NOTION_API_KEY=notion-key",
                         "NOTION_DATABASE_ID=notion-database-id",
+                        "YOUTUBE_TRANSCRIPT_LANGUAGES=en,fr",
                         "",
                     ]
                 ),
@@ -118,6 +119,86 @@ class InitConfigTests(unittest.TestCase):
             self.assertEqual(config_path.read_text(encoding="utf-8"), f"YNN_OUTPUT_DIR={output_dir}\n")
             self.assertTrue(output_dir.is_dir())
 
+    def test_init_appends_transcript_languages_when_provided(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            config_path = temp_path / "config" / ".env"
+            config_path.parent.mkdir(parents=True)
+            config_text = "\n".join(
+                [
+                    "OPENAI_API_KEY=keep-openai",
+                    "NOTION_API_KEY=keep-notion",
+                    "NOTION_DATABASE_ID=keep-database",
+                    "",
+                ]
+            )
+            config_path.write_text(config_text, encoding="utf-8")
+
+            with (
+                patch.object(init_config.getpass, "getpass") as getpass_mock,
+                patch("builtins.input", return_value="en,fr"),
+                contextlib.redirect_stdout(io.StringIO()),
+            ):
+                init_config.init_optional_config(config_path)
+
+            self.assertEqual(
+                config_path.read_text(encoding="utf-8"),
+                f"{config_text}YOUTUBE_TRANSCRIPT_LANGUAGES=en,fr\n",
+            )
+            getpass_mock.assert_not_called()
+
+    def test_init_skips_empty_transcript_languages(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            config_path = temp_path / "config" / ".env"
+            config_path.parent.mkdir(parents=True)
+            config_text = "\n".join(
+                [
+                    "OPENAI_API_KEY=keep-openai",
+                    "NOTION_API_KEY=keep-notion",
+                    "NOTION_DATABASE_ID=keep-database",
+                    "",
+                ]
+            )
+            config_path.write_text(config_text, encoding="utf-8")
+
+            with (
+                patch.object(init_config.getpass, "getpass") as getpass_mock,
+                patch("builtins.input", return_value=""),
+                contextlib.redirect_stdout(io.StringIO()),
+            ):
+                init_config.init_optional_config(config_path)
+
+            self.assertEqual(config_path.read_text(encoding="utf-8"), config_text)
+            getpass_mock.assert_not_called()
+
+    def test_init_preserves_existing_transcript_languages_without_prompt(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            config_path = temp_path / "config" / ".env"
+            config_path.parent.mkdir(parents=True)
+            config_text = "\n".join(
+                [
+                    "OPENAI_API_KEY=keep-openai",
+                    "NOTION_API_KEY=keep-notion",
+                    "NOTION_DATABASE_ID=keep-database",
+                    "YOUTUBE_TRANSCRIPT_LANGUAGES=ja,en",
+                    "",
+                ]
+            )
+            config_path.write_text(config_text, encoding="utf-8")
+
+            with (
+                patch.object(init_config.getpass, "getpass") as getpass_mock,
+                patch("builtins.input") as input_mock,
+                contextlib.redirect_stdout(io.StringIO()),
+            ):
+                init_config.init_optional_config(config_path)
+
+            self.assertEqual(config_path.read_text(encoding="utf-8"), config_text)
+            getpass_mock.assert_not_called()
+            input_mock.assert_not_called()
+
     def test_init_preserves_existing_optional_values_without_duplication(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
@@ -130,6 +211,7 @@ class InitConfigTests(unittest.TestCase):
                     "OPENAI_API_KEY=keep-openai",
                     "NOTION_API_KEY=keep-notion",
                     "NOTION_DATABASE_ID=keep-database",
+                    "YOUTUBE_TRANSCRIPT_LANGUAGES=ja,en",
                     "",
                 ]
             )

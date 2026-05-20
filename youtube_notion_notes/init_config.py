@@ -13,6 +13,7 @@ OPTIONAL_CONFIG_PROMPTS = (
     ("OPENAI_API_KEY", "OpenAI API key (optional, empty to skip): ", True),
     ("NOTION_API_KEY", "Notion API key (optional, empty to skip): ", True),
     ("NOTION_DATABASE_ID", "Notion database ID (optional, empty to skip): ", False),
+    ("YOUTUBE_TRANSCRIPT_LANGUAGES", "Transcript languages [en]: ", False),
 )
 
 

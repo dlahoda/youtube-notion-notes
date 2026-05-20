@@ -77,6 +77,7 @@ Current roadmap:
 - `v1.0.0` UX-6 Slice 1 is complete: transcript track discovery metadata can be listed internally without changing default transcript fetching behavior.
 - `v1.0.0` UX-6 Slice 2 is complete: transcript track selection policy can choose from discovered metadata internally without changing default transcript fetching behavior.
 - `v1.0.0` UX-6 Slice 2.1 is complete: unknown-origin transcript tracks are last-resort selection fallbacks after known manual and generated matches.
+- `v1.0.0` UX-6 Slice 3 is planned as a docs-only contract for transcript selection runtime visibility before runtime fetching is changed.
 - `v1.0.0` public repository release gate is deferred until numbered UX work is closed: publishing should use an All Rights Reserved / source-visible licensing posture unless a different license is explicitly decided later.
 
 Completed `v1.0.0` packaging slices:
@@ -246,7 +247,7 @@ The following release readiness checks were manually run and passed:
 - manual `ynn-prompt` smoke;
 - manual `ynn-notion` config failure smoke.
 
-UX-6 -- Transcript selection quality: Active; Slices 1, 2, and 2.1 complete.
+UX-6 -- Transcript selection quality: Active; Slices 1, 2, and 2.1 complete. Slice 3 planned docs-only.
 
 - Current transcript fetching is language-preference based and should not be treated as a full transcript-quality selection system.
 - Future goal: inspect available transcript tracks and choose the best available track by origin and quality.
@@ -272,6 +273,63 @@ UX-6 -- Transcript selection quality: Active; Slices 1, 2, and 2.1 complete.
 - Original spoken language detection is future best-effort only.
 - Do not require YouTube Data API, OAuth, `captions.list`, or quota-dependent behavior for `v1.0.0`.
 - Later UX-6 slices may connect discovery and selection metadata to runtime fetching.
+
+UX-6 Slice 3 -- Transcript selection runtime visibility contract: Planned docs-only.
+
+This slice defines the future runtime visibility contract before connecting the UX-6 selection policy to transcript fetching.
+
+Current behavior:
+
+- runtime transcript fetching remains unchanged;
+- discovery and selection metadata are not yet connected to CLI fetching;
+- no new human output line or JSON metadata field exists yet.
+
+Human output visibility contract:
+
+- when runtime selection is later connected, human CLI output should show one short transcript selection line;
+- the line should be concise and useful for debugging;
+- example shape: `Transcript selected: manual Spanish -> English`;
+- the line should not be noisy during normal successful runs;
+- the line should not expose low-level `youtube-transcript-api` object names, exception classes, or other library internals.
+
+JSON output metadata contract:
+
+- JSON changes must be additive only so existing automation and n8n consumers keep working;
+- existing JSON fields must remain valid;
+- add one compact metadata field, preferably `transcript_selection`;
+- `transcript_selection` should include enough information to debug runtime selection:
+  - `origin`: `manual`, `generated`, `unknown`, or `transcript_file`;
+  - `source_language`;
+  - `selected_language`;
+  - `requires_translation`;
+  - `selection_reason`.
+
+Failure behavior contract:
+
+- if transcript track discovery fails during future runtime selection, fail cleanly in the transcript stage;
+- if discovery succeeds but no track matches the policy, fail cleanly in the transcript stage;
+- when available, no-match errors should include available language codes without dumping raw library internals;
+- human output should stay short and actionable;
+- JSON failure output should stay structured and keep the existing failure envelope valid;
+- Notion export and note generation must not be responsible for transcript selection failures.
+
+`--transcript-file` behavior:
+
+- manual transcript-file mode should bypass YouTube track discovery and selection;
+- transcript-file metadata should use `origin: transcript_file`;
+- transcript-file mode should preserve the original URL as source metadata for prompt and note generation.
+
+Slice 3 boundaries:
+
+- docs-only;
+- no runtime fetching behavior change;
+- no code changes;
+- no test changes;
+- no CLI flags;
+- no README changes that present future behavior as current;
+- no Notion or n8n behavior changes;
+- no open-source licensing changes;
+- runtime wiring should happen in a later UX-6 Slice 4.
 
 UX-FINAL -- Public repository licensing gate: Deferred until numbered UX items are closed.
 

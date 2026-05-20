@@ -13,6 +13,7 @@ from youtube_notion_notes.services.transcript import (
     TranscriptTranslationLanguage,
     fetch_transcript,
     list_transcript_tracks,
+    select_transcript_track,
 )
 
 
@@ -56,6 +57,27 @@ class TranscriptServiceTests(unittest.TestCase):
         fake_module = types.ModuleType("youtube_transcript_api")
         fake_module.YouTubeTranscriptApi = api_class
         return fake_module
+
+    def track(
+        self,
+        language_code: str,
+        *,
+        is_generated: bool | None,
+        translations: list[str] | None = None,
+    ) -> TranscriptTrack:
+        return TranscriptTrack(
+            language_code=language_code,
+            language_name=None,
+            is_generated=is_generated,
+            is_translatable=bool(translations),
+            translation_languages=[
+                TranscriptTranslationLanguage(
+                    language_code=translation,
+                    language_name=None,
+                )
+                for translation in translations or []
+            ],
+        )
 
     def test_fetch_transcript_keeps_current_language_based_api_behavior(self) -> None:
         calls = []
@@ -197,6 +219,96 @@ class TranscriptServiceTests(unittest.TestCase):
                 "Could not list transcript tracks for abc123def45: captions unavailable",
             ):
                 list_transcript_tracks(VIDEO_ID)
+
+    def test_select_track_manual_preferred_language_wins_over_generated_preferred_language(self) -> None:
+        manual_english = self.track("en", is_generated=False)
+        generated_english = self.track("en", is_generated=True)
+
+        selection = select_transcript_track(
+            [generated_english, manual_english],
+            ["en"],
+        )
+
+        self.assertIsNotNone(selection)
+        assert selection is not None
+        self.assertEqual(selection.track, manual_english)
+        self.assertEqual(selection.selection_reason, "manual_preferred_language")
+        self.assertFalse(selection.requires_translation)
+
+    def test_select_track_manual_translatable_wins_over_generated_preferred_language(self) -> None:
+        manual_spanish = self.track("es", is_generated=False, translations=["en"])
+        generated_english = self.track("en", is_generated=True)
+
+        selection = select_transcript_track(
+            [generated_english, manual_spanish],
+            ["en"],
+        )
+
+        self.assertIsNotNone(selection)
+        assert selection is not None
+        self.assertEqual(selection.track, manual_spanish)
+        self.assertEqual(
+            selection.selection_reason,
+            "manual_translated_to_preferred_language",
+        )
+        self.assertTrue(selection.requires_translation)
+
+    def test_select_track_generated_preferred_language_wins_over_generated_translatable(self) -> None:
+        generated_spanish = self.track("es", is_generated=True, translations=["en"])
+        generated_english = self.track("en", is_generated=True)
+
+        selection = select_transcript_track(
+            [generated_spanish, generated_english],
+            ["en"],
+        )
+
+        self.assertIsNotNone(selection)
+        assert selection is not None
+        self.assertEqual(selection.track, generated_english)
+        self.assertEqual(selection.selection_reason, "generated_preferred_language")
+        self.assertFalse(selection.requires_translation)
+
+    def test_select_track_respects_preferred_language_order(self) -> None:
+        manual_english = self.track("en", is_generated=False)
+        manual_ukrainian = self.track("uk", is_generated=False)
+
+        selection = select_transcript_track(
+            [manual_english, manual_ukrainian],
+            ["uk", "en"],
+        )
+
+        self.assertIsNotNone(selection)
+        assert selection is not None
+        self.assertEqual(selection.track, manual_ukrainian)
+        self.assertEqual(selection.preferred_language_code, "uk")
+
+    def test_select_track_returns_none_when_no_track_matches_policy(self) -> None:
+        selection = select_transcript_track(
+            [
+                self.track("fr", is_generated=False),
+                self.track("de", is_generated=True),
+            ],
+            ["en"],
+        )
+
+        self.assertIsNone(selection)
+
+    def test_select_track_unknown_origin_does_not_outrank_known_generated_track(self) -> None:
+        unknown_english = self.track("en", is_generated=None)
+        generated_spanish = self.track("es", is_generated=True, translations=["en"])
+
+        selection = select_transcript_track(
+            [unknown_english, generated_spanish],
+            ["en"],
+        )
+
+        self.assertIsNotNone(selection)
+        assert selection is not None
+        self.assertEqual(selection.track, generated_spanish)
+        self.assertEqual(
+            selection.selection_reason,
+            "generated_translated_to_preferred_language",
+        )
 
 
 if __name__ == "__main__":

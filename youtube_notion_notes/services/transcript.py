@@ -49,6 +49,14 @@ class TranscriptTrack:
     translation_languages: list[TranscriptTranslationLanguage]
 
 
+@dataclass(frozen=True)
+class TranscriptTrackSelection:
+    track: TranscriptTrack
+    preferred_language_code: str
+    selection_reason: str
+    requires_translation: bool
+
+
 def parse_youtube_url(url: str) -> str:
     parsed = urlparse(url)
     host = parsed.netloc.lower().removeprefix("www.")
@@ -95,6 +103,42 @@ def list_transcript_tracks(video_id: str) -> list[TranscriptTrack]:
         raise TranscriptError(f"Could not list transcript tracks for {video_id}: {exc}") from exc
 
 
+def select_transcript_track(
+    tracks: list[TranscriptTrack],
+    preferred_language_codes: list[str],
+) -> TranscriptTrackSelection | None:
+    """Choose the best discovered track without fetching transcript snippets.
+
+    Tracks with unknown origin are not selected by this policy. That keeps them
+    from outranking known manual or generated transcripts until runtime behavior
+    can make an explicit choice about unknown metadata.
+    """
+
+    preferred_languages = [
+        language_code.strip()
+        for language_code in preferred_language_codes
+        if language_code.strip()
+    ]
+
+    for reason, origin, requires_translation in (
+        ("manual_preferred_language", False, False),
+        ("manual_translated_to_preferred_language", False, True),
+        ("generated_preferred_language", True, False),
+        ("generated_translated_to_preferred_language", True, True),
+    ):
+        selection = _select_first_matching_track(
+            tracks,
+            preferred_languages,
+            is_generated=origin,
+            requires_translation=requires_translation,
+            selection_reason=reason,
+        )
+        if selection is not None:
+            return selection
+
+    return None
+
+
 def _fetch_with_current_api(
     video_id: str,
     languages: list[str],
@@ -127,6 +171,46 @@ def _fetch_with_legacy_api(
         )
         for snippet in raw_snippets
     ]
+
+
+def _select_first_matching_track(
+    tracks: list[TranscriptTrack],
+    preferred_languages: list[str],
+    *,
+    is_generated: bool,
+    requires_translation: bool,
+    selection_reason: str,
+) -> TranscriptTrackSelection | None:
+    for preferred_language in preferred_languages:
+        for track in tracks:
+            if track.is_generated is not is_generated:
+                continue
+            if requires_translation:
+                if _track_can_translate_to(track, preferred_language):
+                    return TranscriptTrackSelection(
+                        track=track,
+                        preferred_language_code=preferred_language,
+                        selection_reason=selection_reason,
+                        requires_translation=True,
+                    )
+            elif track.language_code == preferred_language:
+                return TranscriptTrackSelection(
+                    track=track,
+                    preferred_language_code=preferred_language,
+                    selection_reason=selection_reason,
+                    requires_translation=False,
+                )
+
+    return None
+
+
+def _track_can_translate_to(track: TranscriptTrack, language_code: str) -> bool:
+    if track.is_translatable is False:
+        return False
+    return any(
+        language.language_code == language_code
+        for language in track.translation_languages
+    )
 
 
 def _normalize_transcript_track(track: Any) -> TranscriptTrack:

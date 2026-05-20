@@ -74,6 +74,7 @@ Current roadmap:
 - `v1.0.0` UX-3 Slice 2 is complete: `ynn init --output-dir PATH` can optionally collect missing OpenAI and Notion config values interactively while preserving existing user config values.
 - `v1.0.0` UX-3 transcript language follow-up is complete: `ynn init --output-dir PATH` can optionally append `YOUTUBE_TRANSCRIPT_LANGUAGES` to the user config while preserving runtime fallback to `en` when no language config is provided.
 - `v1.0.0` UX-5 is complete: release readiness checks were manually run and passed.
+- `v1.0.0` UX-6 Slice 1 is complete: transcript track discovery metadata can be listed internally without changing default transcript fetching behavior.
 - `v1.0.0` public repository release gate is deferred until numbered UX work is closed: publishing should use an All Rights Reserved / source-visible licensing posture unless a different license is explicitly decided later.
 
 Completed `v1.0.0` packaging slices:
@@ -243,10 +244,15 @@ The following release readiness checks were manually run and passed:
 - manual `ynn-prompt` smoke;
 - manual `ynn-notion` config failure smoke.
 
-UX-6 -- Transcript selection quality: Future numbered UX work after UX-1 through UX-5 are closed.
+UX-6 -- Transcript selection quality: Active; Slice 1 complete.
 
 - Current transcript fetching is language-preference based and should not be treated as a full transcript-quality selection system.
 - Future goal: inspect available transcript tracks and choose the best available track by origin and quality.
+- Slice 1 adds only the internal transcript track discovery contract.
+- Slice 1 keeps `fetch_transcript(video_id, languages)` behavior unchanged.
+- Slice 1 adds project-owned transcript track metadata structures near `./youtube_notion_notes/services/transcript.py`.
+- Slice 1 can list available transcript tracks through `youtube-transcript-api` and normalize available language code, language name, generated/manual status, translatability, and translation language metadata.
+- Slice 1 does not add CLI flags, JSON output fields, README instructions, Notion behavior, n8n behavior, or automatic best-track selection.
 - Preferred future priority:
   1. manual/author-provided transcript in preferred languages;
   2. manual/author-provided transcript translated to a preferred language;
@@ -254,7 +260,7 @@ UX-6 -- Transcript selection quality: Future numbered UX work after UX-1 through
   4. generated transcript translated to a preferred language.
 - Original spoken language detection is future best-effort only.
 - Do not require YouTube Data API, OAuth, `captions.list`, or quota-dependent behavior for `v1.0.0`.
-- Do not implement this in the current UX-1 through UX-5 release-readiness path.
+- Later UX-6 slices may use discovery metadata for selection quality, but Slice 1 is discovery-only.
 
 UX-FINAL -- Public repository licensing gate: Deferred until numbered UX items are closed.
 

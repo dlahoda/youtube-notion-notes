@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass
+from typing import Any
 from urllib.parse import parse_qs, urlparse
 
 
@@ -30,6 +32,21 @@ class Transcript:
             timestamp = format_timestamp(snippet.start)
             lines.append(f"[{timestamp}] {snippet.text}")
         return "\n".join(lines).strip() + "\n"
+
+
+@dataclass(frozen=True)
+class TranscriptTranslationLanguage:
+    language_code: str
+    language_name: str | None
+
+
+@dataclass(frozen=True)
+class TranscriptTrack:
+    language_code: str
+    language_name: str | None
+    is_generated: bool | None
+    is_translatable: bool | None
+    translation_languages: list[TranscriptTranslationLanguage]
 
 
 def parse_youtube_url(url: str) -> str:
@@ -68,6 +85,16 @@ def fetch_transcript(video_id: str, languages: list[str]) -> Transcript:
     return Transcript(video_id=video_id, snippets=snippets)
 
 
+def list_transcript_tracks(video_id: str) -> list[TranscriptTrack]:
+    try:
+        from youtube_transcript_api import YouTubeTranscriptApi
+
+        transcript_list = YouTubeTranscriptApi().list(video_id)
+        return [_normalize_transcript_track(track) for track in transcript_list]
+    except Exception as exc:
+        raise TranscriptError(f"Could not list transcript tracks for {video_id}: {exc}") from exc
+
+
 def _fetch_with_current_api(
     video_id: str,
     languages: list[str],
@@ -100,6 +127,48 @@ def _fetch_with_legacy_api(
         )
         for snippet in raw_snippets
     ]
+
+
+def _normalize_transcript_track(track: Any) -> TranscriptTrack:
+    translation_languages = _get_value(track, "translation_languages", [])
+    if translation_languages is None:
+        translation_languages = []
+
+    return TranscriptTrack(
+        language_code=str(_get_value(track, "language_code", "")),
+        language_name=_optional_str(_get_value(track, "language")),
+        is_generated=_optional_bool(_get_value(track, "is_generated")),
+        is_translatable=_optional_bool(_get_value(track, "is_translatable")),
+        translation_languages=[
+            _normalize_translation_language(language)
+            for language in translation_languages
+        ],
+    )
+
+
+def _normalize_translation_language(language: Any) -> TranscriptTranslationLanguage:
+    return TranscriptTranslationLanguage(
+        language_code=str(_get_value(language, "language_code", "")),
+        language_name=_optional_str(_get_value(language, "language")),
+    )
+
+
+def _get_value(source: Any, name: str, default: Any = None) -> Any:
+    if isinstance(source, Mapping):
+        return source.get(name, default)
+    return getattr(source, name, default)
+
+
+def _optional_str(value: Any) -> str | None:
+    if value is None:
+        return None
+    return str(value)
+
+
+def _optional_bool(value: Any) -> bool | None:
+    if value is None:
+        return None
+    return bool(value)
 
 
 def format_timestamp(seconds: float) -> str:

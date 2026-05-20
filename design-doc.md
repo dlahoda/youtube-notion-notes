@@ -248,6 +248,19 @@ UX-6 -- Public repository licensing gate:
 - Do not create `./LICENSE.md` until the public licensing posture and wording are intentionally chosen.
 - Before publishing publicly, audit for committed secrets, generated output files, Notion IDs, private URLs, generated artifacts, and dependency licenses.
 
+UX-7 -- Transcript selection quality: Future work after UX-1 through UX-6 are closed.
+
+- Current transcript fetching is language-preference based and should not be treated as a full transcript-quality selection system.
+- Future goal: inspect available transcript tracks and choose the best available track by origin and quality.
+- Preferred future priority:
+  1. manual/author-provided transcript in preferred languages;
+  2. manual/author-provided transcript translated to a preferred language;
+  3. generated transcript in preferred languages;
+  4. generated transcript translated to a preferred language.
+- Original spoken language detection is future best-effort only.
+- Do not require YouTube Data API, OAuth, `captions.list`, or quota-dependent behavior for `v1.0.0`.
+- Do not implement this in the current UX-1 through UX-6 release-readiness path.
+
 ---
 
 # 2. MVP Boundaries

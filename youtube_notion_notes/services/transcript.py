@@ -14,6 +14,10 @@ class TranscriptError(Exception):
     """Raised when a YouTube URL or transcript cannot be processed."""
 
 
+class _TranscriptDiscoveryUnavailable(Exception):
+    """Raised when the installed transcript API cannot list tracks."""
+
+
 @dataclass(frozen=True)
 class TranscriptSnippet:
     start: float
@@ -57,6 +61,12 @@ class TranscriptTrackSelection:
     requires_translation: bool
 
 
+@dataclass(frozen=True)
+class _DiscoveredTranscriptTrack:
+    raw_track: Any
+    metadata: TranscriptTrack
+
+
 def parse_youtube_url(url: str) -> str:
     parsed = urlparse(url)
     host = parsed.netloc.lower().removeprefix("www.")
@@ -81,11 +91,40 @@ def parse_youtube_url(url: str) -> str:
 
 def fetch_transcript(video_id: str, languages: list[str]) -> Transcript:
     try:
+        discovered_tracks = _discover_transcript_tracks(video_id)
+    except _TranscriptDiscoveryUnavailable:
+        return _fetch_transcript_by_language_preference(video_id, languages)
+
+    tracks = [discovered_track.metadata for discovered_track in discovered_tracks]
+    selection = select_transcript_track(tracks, languages)
+    if selection is None:
+        available_languages = _format_available_language_codes(tracks)
+        message = f"No transcript track matched preferred languages: {', '.join(languages)}."
+        if available_languages:
+            message = f"{message} Available languages: {available_languages}."
+        raise TranscriptError(message)
+
+    raw_track = _raw_track_for_selection(discovered_tracks, selection.track)
+    try:
+        if selection.requires_translation:
+            raw_track = raw_track.translate(selection.preferred_language_code)
+        snippets = _fetch_track_snippets(raw_track)
+    except Exception as exc:
+        raise TranscriptError(f"Could not fetch selected transcript for {video_id}.") from exc
+
+    if not snippets:
+        raise TranscriptError(f"No transcript snippets returned for {video_id}.")
+
+    return Transcript(video_id=video_id, snippets=snippets)
+
+
+def _fetch_transcript_by_language_preference(video_id: str, languages: list[str]) -> Transcript:
+    try:
         snippets = _fetch_with_current_api(video_id, languages)
     except AttributeError:
         snippets = _fetch_with_legacy_api(video_id, languages)
     except Exception as exc:
-        raise TranscriptError(f"Could not fetch transcript for {video_id}: {exc}") from exc
+        raise TranscriptError(f"Could not fetch transcript for {video_id}.") from exc
 
     if not snippets:
         raise TranscriptError(f"No transcript snippets returned for {video_id}.")
@@ -95,12 +134,34 @@ def fetch_transcript(video_id: str, languages: list[str]) -> Transcript:
 
 def list_transcript_tracks(video_id: str) -> list[TranscriptTrack]:
     try:
+        return [
+            discovered_track.metadata
+            for discovered_track in _discover_transcript_tracks(video_id)
+        ]
+    except _TranscriptDiscoveryUnavailable as exc:
+        raise TranscriptError(f"Could not list transcript tracks for {video_id}.") from exc
+
+
+def _discover_transcript_tracks(video_id: str) -> list[_DiscoveredTranscriptTrack]:
+    try:
         from youtube_transcript_api import YouTubeTranscriptApi
 
-        transcript_list = YouTubeTranscriptApi().list(video_id)
-        return [_normalize_transcript_track(track) for track in transcript_list]
+        api = YouTubeTranscriptApi()
+        list_tracks = getattr(api, "list")
+    except AttributeError:
+        raise _TranscriptDiscoveryUnavailable()
+
+    try:
+        transcript_list = list_tracks(video_id)
+        return [
+            _DiscoveredTranscriptTrack(
+                raw_track=track,
+                metadata=_normalize_transcript_track(track),
+            )
+            for track in transcript_list
+        ]
     except Exception as exc:
-        raise TranscriptError(f"Could not list transcript tracks for {video_id}: {exc}") from exc
+        raise TranscriptError(f"Could not list transcript tracks for {video_id}.") from exc
 
 
 def select_transcript_track(
@@ -147,13 +208,22 @@ def _fetch_with_current_api(
     from youtube_transcript_api import YouTubeTranscriptApi
 
     fetched = YouTubeTranscriptApi().fetch(video_id, languages=languages)
+    return _normalize_transcript_snippets(fetched)
+
+
+def _fetch_track_snippets(track: Any) -> list[TranscriptSnippet]:
+    fetched = track.fetch()
+    return _normalize_transcript_snippets(fetched)
+
+
+def _normalize_transcript_snippets(raw_snippets: Any) -> list[TranscriptSnippet]:
     return [
         TranscriptSnippet(
             start=float(snippet.start),
             duration=float(snippet.duration),
             text=str(snippet.text).replace("\n", " ").strip(),
         )
-        for snippet in fetched
+        for snippet in raw_snippets
     ]
 
 
@@ -212,6 +282,30 @@ def _track_can_translate_to(track: TranscriptTrack, language_code: str) -> bool:
         language.language_code == language_code
         for language in track.translation_languages
     )
+
+
+def _raw_track_for_selection(
+    discovered_tracks: list[_DiscoveredTranscriptTrack],
+    selected_track: TranscriptTrack,
+) -> Any:
+    for discovered_track in discovered_tracks:
+        if discovered_track.metadata is selected_track:
+            return discovered_track.raw_track
+    for discovered_track in discovered_tracks:
+        if discovered_track.metadata == selected_track:
+            return discovered_track.raw_track
+    raise TranscriptError("Selected transcript track was not available for fetching.")
+
+
+def _format_available_language_codes(tracks: list[TranscriptTrack]) -> str:
+    language_codes = sorted(
+        {
+            track.language_code
+            for track in tracks
+            if track.language_code.strip()
+        }
+    )
+    return ", ".join(language_codes)
 
 
 def _normalize_transcript_track(track: Any) -> TranscriptTrack:

@@ -77,7 +77,8 @@ Current roadmap:
 - `v1.0.0` UX-6 Slice 1 is complete: transcript track discovery metadata can be listed internally without changing default transcript fetching behavior.
 - `v1.0.0` UX-6 Slice 2 is complete: transcript track selection policy can choose from discovered metadata internally without changing default transcript fetching behavior.
 - `v1.0.0` UX-6 Slice 2.1 is complete: unknown-origin transcript tracks are last-resort selection fallbacks after known manual and generated matches.
-- `v1.0.0` UX-6 Slice 3 is planned as a docs-only contract for transcript selection runtime visibility before runtime fetching is changed.
+- `v1.0.0` UX-6 Slice 3 is complete: transcript selection runtime visibility and failure contracts are documented.
+- `v1.0.0` UX-6 Slice 4 is complete: normal YouTube transcript fetching uses project-owned discovery and selection before fetching the selected track.
 - `v1.0.0` public repository release gate is deferred until numbered UX work is closed: publishing should use an All Rights Reserved / source-visible licensing posture unless a different license is explicitly decided later.
 
 Completed `v1.0.0` packaging slices:
@@ -247,10 +248,10 @@ The following release readiness checks were manually run and passed:
 - manual `ynn-prompt` smoke;
 - manual `ynn-notion` config failure smoke.
 
-UX-6 -- Transcript selection quality: Active; Slices 1, 2, and 2.1 complete. Slice 3 planned docs-only.
+UX-6 -- Transcript selection quality: Active; Slices 1, 2, 2.1, 3, and 4 complete.
 
-- Current transcript fetching is language-preference based and should not be treated as a full transcript-quality selection system.
-- Future goal: inspect available transcript tracks and choose the best available track by origin and quality.
+- Current normal YouTube transcript fetching inspects available transcript tracks and chooses the best available track by origin and quality before fetching transcript snippets.
+- A narrow language-preference fetch fallback may remain only for older `youtube-transcript-api` shapes where transcript discovery is not available.
 - Slice 1 adds only the internal transcript track discovery contract.
 - Slice 1 keeps `fetch_transcript(video_id, languages)` behavior unchanged.
 - Slice 1 adds project-owned transcript track metadata structures near `./youtube_notion_notes/services/transcript.py`.
@@ -272,13 +273,15 @@ UX-6 -- Transcript selection quality: Active; Slices 1, 2, and 2.1 complete. Sli
   6. unknown-origin transcript translated to a preferred language.
 - Original spoken language detection is future best-effort only.
 - Do not require YouTube Data API, OAuth, `captions.list`, or quota-dependent behavior for `v1.0.0`.
-- Later UX-6 slices may connect discovery and selection metadata to runtime fetching.
+- Slice 4 connects discovery and selection metadata to normal runtime YouTube transcript fetching.
+- Slice 4 keeps `--transcript-file` behavior as a bypass of YouTube track discovery and selection.
+- Slice 4 keeps the existing transcript object shape for downstream prompt and note generation.
 
-UX-6 Slice 3 -- Transcript selection runtime visibility contract: Planned docs-only.
+UX-6 Slice 3 -- Transcript selection runtime visibility contract: Complete docs-only.
 
 This slice defines the future runtime visibility contract before connecting the UX-6 selection policy to transcript fetching.
 
-Current behavior:
+Behavior before Slice 4:
 
 - runtime transcript fetching remains unchanged;
 - discovery and selection metadata are not yet connected to CLI fetching;
@@ -329,7 +332,7 @@ Slice 3 boundaries:
 - no README changes that present future behavior as current;
 - no Notion or n8n behavior changes;
 - no open-source licensing changes;
-- runtime wiring should happen in a later UX-6 Slice 4.
+- runtime wiring happened in UX-6 Slice 4.
 
 UX-FINAL -- Public repository licensing gate: Deferred until numbered UX items are closed.
 

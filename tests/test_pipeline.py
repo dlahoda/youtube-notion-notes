@@ -10,6 +10,7 @@ from unittest.mock import Mock, patch
 
 import youtube_notion_notes.services as services
 import youtube_notion_notes.services.pipeline as pipeline
+import youtube_notion_notes.services.transcript as transcript_service
 from youtube_notion_notes.services.note_generator import PromptTemplateError
 
 
@@ -30,6 +31,7 @@ class PipelineServiceTests(unittest.TestCase):
         transcript_file_text: str | None = None,
         use_custom_output_dir: bool = False,
         use_env_output_dir: bool = False,
+        fetch_side_effect: Exception | None = None,
         prompt_side_effect: Exception | None = None,
         notion_config: dict[str, str] | None = None,
     ) -> tuple[int, dict, Mock, dict]:
@@ -87,7 +89,14 @@ class PipelineServiceTests(unittest.TestCase):
                 patch.object(pipeline, "PROMPT_DIR", temp_path / "prompts"),
                 patch.object(pipeline, "NOTES_DIR", temp_path / "notes"),
                 patch.object(pipeline, "parse_youtube_url", return_value=VIDEO_ID) as parse_mock,
-                patch.object(pipeline, "fetch_transcript", return_value=transcript) as fetch_mock,
+                patch.object(
+                    pipeline,
+                    "fetch_transcript",
+                    return_value=transcript,
+                    side_effect=fetch_side_effect,
+                ) as fetch_mock,
+                patch.object(transcript_service, "list_transcript_tracks") as discovery_mock,
+                patch.object(transcript_service, "select_transcript_track") as selection_mock,
                 patch.object(
                     pipeline,
                     "build_manual_prompt",
@@ -109,6 +118,8 @@ class PipelineServiceTests(unittest.TestCase):
                 "note_text": note_path.read_text(encoding="utf-8") if note_path.exists() else "",
                 "parse_called": parse_mock.called,
                 "fetch_called": fetch_mock.called,
+                "discovery_called": discovery_mock.called,
+                "selection_called": selection_mock.called,
                 "prompt_called": prompt_mock.called,
                 "prompt_kwargs": prompt_mock.call_args.kwargs if prompt_mock.call_args else {},
                 "note_called": note_mock.called,
@@ -226,6 +237,8 @@ class PipelineServiceTests(unittest.TestCase):
         self.assertTrue(result["ok"])
         self.assertTrue(snapshot["parse_called"])
         self.assertFalse(snapshot["fetch_called"])
+        self.assertFalse(snapshot["discovery_called"])
+        self.assertFalse(snapshot["selection_called"])
         export_mock.assert_not_called()
 
     def test_empty_transcript_file_fails_during_transcript_stage(self) -> None:
@@ -255,6 +268,25 @@ class PipelineServiceTests(unittest.TestCase):
         self.assertEqual(result["stage"], "transcript")
         self.assertIn("empty or contains only whitespace", result["error"])
         self.assertFalse(snapshot["fetch_called"])
+        self.assertFalse(snapshot["prompt_called"])
+        self.assertFalse(snapshot["note_called"])
+        self.assertFalse(snapshot["transcript_exists"])
+        self.assertFalse(snapshot["prompt_exists"])
+        self.assertFalse(snapshot["note_exists"])
+        export_mock.assert_not_called()
+
+    def test_youtube_transcript_selection_failure_returns_transcript_stage(self) -> None:
+        exit_code, result, export_mock, snapshot = self.run_pipeline(
+            fetch_side_effect=pipeline.TranscriptError(
+                "No transcript track matched preferred languages: en. Available languages: de, fr."
+            ),
+        )
+
+        self.assertEqual(exit_code, 1)
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["stage"], "transcript")
+        self.assertIn("No transcript track matched preferred languages", result["error"])
+        self.assertTrue(snapshot["fetch_called"])
         self.assertFalse(snapshot["prompt_called"])
         self.assertFalse(snapshot["note_called"])
         self.assertFalse(snapshot["transcript_exists"])

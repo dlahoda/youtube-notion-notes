@@ -52,6 +52,44 @@ class FakeTrack:
         return bool(self.translation_languages)
 
 
+class FakeRuntimeTrack(FakeTrack):
+    def __init__(
+        self,
+        *,
+        language_code: str,
+        language: str,
+        is_generated: bool | None,
+        calls: list[tuple[str, str]],
+        snippet_text: str,
+        translation_languages: list[FakeTranslationLanguage] | None = None,
+    ) -> None:
+        super().__init__(
+            language_code=language_code,
+            language=language,
+            is_generated=is_generated,  # type: ignore[arg-type]
+            translation_languages=translation_languages,
+        )
+        self.calls = calls
+        self.snippet_text = snippet_text
+        self.translated_to: str | None = None
+
+    def fetch(self) -> list[FakeSnippet]:
+        self.calls.append(("fetch", self.language_code))
+        return [FakeSnippet(start=3.0, duration=2.0, text=self.snippet_text)]
+
+    def translate(self, language_code: str) -> "FakeRuntimeTrack":
+        self.calls.append(("translate", language_code))
+        translated_track = FakeRuntimeTrack(
+            language_code=language_code,
+            language=f"Translated {language_code}",
+            is_generated=self.is_generated,
+            calls=self.calls,
+            snippet_text=f"{self.snippet_text} translated to {language_code}",
+        )
+        translated_track.translated_to = language_code
+        return translated_track
+
+
 class TranscriptServiceTests(unittest.TestCase):
     def fake_youtube_module(self, api_class: type) -> types.ModuleType:
         fake_module = types.ModuleType("youtube_transcript_api")
@@ -105,6 +143,30 @@ class TranscriptServiceTests(unittest.TestCase):
                 TranscriptSnippet(start=65.0, duration=2.0, text="Next line"),
             ],
         )
+
+    def test_fetch_transcript_does_not_fallback_when_list_method_raises_attribute_error(self) -> None:
+        calls = []
+
+        class FakeYouTubeTranscriptApi:
+            def list(self, video_id: str) -> list[FakeSnippet]:
+                calls.append(("list", video_id))
+                raise AttributeError("list failed internally")
+
+            def fetch(self, video_id: str, *, languages: list[str]) -> list[FakeSnippet]:
+                calls.append(("fetch", video_id))
+                return [FakeSnippet(start=0.0, duration=1.0, text="Fallback")]
+
+        with patch.dict(
+            sys.modules,
+            {"youtube_transcript_api": self.fake_youtube_module(FakeYouTubeTranscriptApi)},
+        ):
+            with self.assertRaisesRegex(
+                TranscriptError,
+                "Could not list transcript tracks for abc123def45.",
+            ):
+                fetch_transcript(VIDEO_ID, ["en"])
+
+        self.assertEqual(calls, [("list", VIDEO_ID)])
 
     def test_list_transcript_tracks_normalizes_available_track_metadata(self) -> None:
         calls = []
@@ -216,9 +278,142 @@ class TranscriptServiceTests(unittest.TestCase):
         ):
             with self.assertRaisesRegex(
                 TranscriptError,
-                "Could not list transcript tracks for abc123def45: captions unavailable",
+                "Could not list transcript tracks for abc123def45.",
             ):
                 list_transcript_tracks(VIDEO_ID)
+
+    def test_fetch_transcript_uses_discovery_selection_and_fetches_manual_preferred_language(self) -> None:
+        calls: list[tuple[str, str]] = []
+        manual_english = FakeRuntimeTrack(
+            language_code="en",
+            language="English",
+            is_generated=False,
+            calls=calls,
+            snippet_text="Manual English",
+        )
+        generated_english = FakeRuntimeTrack(
+            language_code="en",
+            language="English (auto-generated)",
+            is_generated=True,
+            calls=calls,
+            snippet_text="Generated English",
+        )
+
+        class FakeYouTubeTranscriptApi:
+            def list(self, video_id: str) -> list[FakeRuntimeTrack]:
+                calls.append(("list", video_id))
+                return [generated_english, manual_english]
+
+        with patch.dict(
+            sys.modules,
+            {"youtube_transcript_api": self.fake_youtube_module(FakeYouTubeTranscriptApi)},
+        ):
+            transcript = fetch_transcript(VIDEO_ID, ["en"])
+
+        self.assertEqual(calls, [("list", VIDEO_ID), ("fetch", "en")])
+        self.assertEqual(transcript.video_id, VIDEO_ID)
+        self.assertEqual(
+            transcript.snippets,
+            [TranscriptSnippet(start=3.0, duration=2.0, text="Manual English")],
+        )
+
+    def test_fetch_transcript_translates_manual_track_before_generated_preferred_language(self) -> None:
+        calls: list[tuple[str, str]] = []
+        manual_spanish = FakeRuntimeTrack(
+            language_code="es",
+            language="Spanish",
+            is_generated=False,
+            translation_languages=[
+                FakeTranslationLanguage(language_code="en", language="English"),
+            ],
+            calls=calls,
+            snippet_text="Manual Spanish",
+        )
+        generated_english = FakeRuntimeTrack(
+            language_code="en",
+            language="English (auto-generated)",
+            is_generated=True,
+            calls=calls,
+            snippet_text="Generated English",
+        )
+
+        class FakeYouTubeTranscriptApi:
+            def list(self, video_id: str) -> list[FakeRuntimeTrack]:
+                calls.append(("list", video_id))
+                return [generated_english, manual_spanish]
+
+        with patch.dict(
+            sys.modules,
+            {"youtube_transcript_api": self.fake_youtube_module(FakeYouTubeTranscriptApi)},
+        ):
+            transcript = fetch_transcript(VIDEO_ID, ["en"])
+
+        self.assertEqual(
+            calls,
+            [("list", VIDEO_ID), ("translate", "en"), ("fetch", "en")],
+        )
+        self.assertEqual(
+            transcript.snippets,
+            [
+                TranscriptSnippet(
+                    start=3.0,
+                    duration=2.0,
+                    text="Manual Spanish translated to en",
+                )
+            ],
+        )
+
+    def test_fetch_transcript_uses_unknown_origin_only_when_no_known_track_matches(self) -> None:
+        calls: list[tuple[str, str]] = []
+        unknown_english = FakeRuntimeTrack(
+            language_code="en",
+            language="English",
+            is_generated=None,
+            calls=calls,
+            snippet_text="Unknown English",
+        )
+        generated_german = FakeRuntimeTrack(
+            language_code="de",
+            language="German (auto-generated)",
+            is_generated=True,
+            calls=calls,
+            snippet_text="Generated German",
+        )
+
+        class FakeYouTubeTranscriptApi:
+            def list(self, video_id: str) -> list[FakeRuntimeTrack]:
+                calls.append(("list", video_id))
+                return [unknown_english, generated_german]
+
+        with patch.dict(
+            sys.modules,
+            {"youtube_transcript_api": self.fake_youtube_module(FakeYouTubeTranscriptApi)},
+        ):
+            transcript = fetch_transcript(VIDEO_ID, ["en"])
+
+        self.assertEqual(calls, [("list", VIDEO_ID), ("fetch", "en")])
+        self.assertEqual(
+            transcript.snippets,
+            [TranscriptSnippet(start=3.0, duration=2.0, text="Unknown English")],
+        )
+
+    def test_fetch_transcript_fails_cleanly_when_no_track_matches_policy(self) -> None:
+        class FakeYouTubeTranscriptApi:
+            def list(self, video_id: str) -> list[FakeTrack]:
+                return [
+                    FakeTrack(language_code="fr", language="French", is_generated=False),
+                    FakeTrack(language_code="de", language="German", is_generated=True),
+                ]
+
+        with patch.dict(
+            sys.modules,
+            {"youtube_transcript_api": self.fake_youtube_module(FakeYouTubeTranscriptApi)},
+        ):
+            with self.assertRaisesRegex(
+                TranscriptError,
+                "No transcript track matched preferred languages: en. Available languages: de, fr.",
+            ):
+                fetch_transcript(VIDEO_ID, ["en"])
 
     def test_select_track_manual_preferred_language_wins_over_generated_preferred_language(self) -> None:
         manual_english = self.track("en", is_generated=False)

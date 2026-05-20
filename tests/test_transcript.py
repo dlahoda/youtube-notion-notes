@@ -143,6 +143,13 @@ class TranscriptServiceTests(unittest.TestCase):
                 TranscriptSnippet(start=65.0, duration=2.0, text="Next line"),
             ],
         )
+        self.assertIsNotNone(transcript.selection_metadata)
+        assert transcript.selection_metadata is not None
+        self.assertEqual(transcript.selection_metadata.origin, "unknown")
+        self.assertEqual(
+            transcript.selection_metadata.selection_reason,
+            "language_preference_fallback",
+        )
 
     def test_fetch_transcript_does_not_fallback_when_list_method_raises_attribute_error(self) -> None:
         calls = []
@@ -316,6 +323,18 @@ class TranscriptServiceTests(unittest.TestCase):
             transcript.snippets,
             [TranscriptSnippet(start=3.0, duration=2.0, text="Manual English")],
         )
+        self.assertIsNotNone(transcript.selection_metadata)
+        assert transcript.selection_metadata is not None
+        self.assertEqual(
+            transcript.selection_metadata.as_dict(),
+            {
+                "origin": "manual",
+                "source_language": "English",
+                "selected_language": "English",
+                "requires_translation": False,
+                "selection_reason": "manual_preferred_language",
+            },
+        )
 
     def test_fetch_transcript_translates_manual_track_before_generated_preferred_language(self) -> None:
         calls: list[tuple[str, str]] = []
@@ -362,6 +381,48 @@ class TranscriptServiceTests(unittest.TestCase):
                 )
             ],
         )
+        self.assertIsNotNone(transcript.selection_metadata)
+        assert transcript.selection_metadata is not None
+        self.assertEqual(
+            transcript.selection_metadata.as_dict(),
+            {
+                "origin": "manual",
+                "source_language": "Spanish",
+                "selected_language": "English",
+                "requires_translation": True,
+                "selection_reason": "manual_translatable_to_preferred_language",
+            },
+        )
+
+    def test_fetch_transcript_maps_generated_selection_metadata(self) -> None:
+        calls: list[tuple[str, str]] = []
+        generated_english = FakeRuntimeTrack(
+            language_code="en",
+            language="English (auto-generated)",
+            is_generated=True,
+            calls=calls,
+            snippet_text="Generated English",
+        )
+
+        class FakeYouTubeTranscriptApi:
+            def list(self, video_id: str) -> list[FakeRuntimeTrack]:
+                calls.append(("list", video_id))
+                return [generated_english]
+
+        with patch.dict(
+            sys.modules,
+            {"youtube_transcript_api": self.fake_youtube_module(FakeYouTubeTranscriptApi)},
+        ):
+            transcript = fetch_transcript(VIDEO_ID, ["en"])
+
+        self.assertEqual(calls, [("list", VIDEO_ID), ("fetch", "en")])
+        self.assertIsNotNone(transcript.selection_metadata)
+        assert transcript.selection_metadata is not None
+        self.assertEqual(transcript.selection_metadata.origin, "generated")
+        self.assertEqual(
+            transcript.selection_metadata.selection_reason,
+            "generated_preferred_language",
+        )
 
     def test_fetch_transcript_uses_unknown_origin_only_when_no_known_track_matches(self) -> None:
         calls: list[tuple[str, str]] = []
@@ -395,6 +456,18 @@ class TranscriptServiceTests(unittest.TestCase):
         self.assertEqual(
             transcript.snippets,
             [TranscriptSnippet(start=3.0, duration=2.0, text="Unknown English")],
+        )
+        self.assertIsNotNone(transcript.selection_metadata)
+        assert transcript.selection_metadata is not None
+        self.assertEqual(
+            transcript.selection_metadata.as_dict(),
+            {
+                "origin": "unknown",
+                "source_language": "English",
+                "selected_language": "English",
+                "requires_translation": False,
+                "selection_reason": "unknown_origin_preferred_language",
+            },
         )
 
     def test_fetch_transcript_fails_cleanly_when_no_track_matches_policy(self) -> None:

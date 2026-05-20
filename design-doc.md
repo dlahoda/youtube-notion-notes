@@ -79,6 +79,7 @@ Current roadmap:
 - `v1.0.0` UX-6 Slice 2.1 is complete: unknown-origin transcript tracks are last-resort selection fallbacks after known manual and generated matches.
 - `v1.0.0` UX-6 Slice 3 is complete: transcript selection runtime visibility and failure contracts are documented.
 - `v1.0.0` UX-6 Slice 4 is complete: normal YouTube transcript fetching uses project-owned discovery and selection before fetching the selected track.
+- `v1.0.0` UX-6 Slice 5 is complete: transcript selection metadata is visible in concise human output and additive JSON output.
 - `v1.0.0` public repository release gate is deferred until numbered UX work is closed: publishing should use an All Rights Reserved / source-visible licensing posture unless a different license is explicitly decided later.
 
 Completed `v1.0.0` packaging slices:
@@ -248,7 +249,7 @@ The following release readiness checks were manually run and passed:
 - manual `ynn-prompt` smoke;
 - manual `ynn-notion` config failure smoke.
 
-UX-6 -- Transcript selection quality: Active; Slices 1, 2, 2.1, 3, and 4 complete.
+UX-6 -- Transcript selection quality: Active; Slices 1, 2, 2.1, 3, 4, and 5 complete.
 
 - Current normal YouTube transcript fetching inspects available transcript tracks and chooses the best available track by origin and quality before fetching transcript snippets.
 - A narrow language-preference fetch fallback may remain only for older `youtube-transcript-api` shapes where transcript discovery is not available.
@@ -276,12 +277,16 @@ UX-6 -- Transcript selection quality: Active; Slices 1, 2, 2.1, 3, and 4 complet
 - Slice 4 connects discovery and selection metadata to normal runtime YouTube transcript fetching.
 - Slice 4 keeps `--transcript-file` behavior as a bypass of YouTube track discovery and selection.
 - Slice 4 keeps the existing transcript object shape for downstream prompt and note generation.
+- Slice 5 exposes project-owned transcript selection metadata without changing selection priority or adding CLI flags.
+- Slice 5 adds concise human output when the transcript source is known.
+- Slice 5 adds an additive JSON result field named `transcript_selection`.
+- Slice 5 keeps existing JSON fields valid and keeps `--transcript-file` as a bypass of YouTube discovery and selection.
 
 UX-6 Slice 3 -- Transcript selection runtime visibility contract: Complete docs-only.
 
-This slice defines the future runtime visibility contract before connecting the UX-6 selection policy to transcript fetching.
+This slice defined the runtime visibility contract before connecting the UX-6 selection policy to transcript fetching.
 
-Behavior before Slice 4:
+Historical behavior before Slice 4:
 
 - runtime transcript fetching remains unchanged;
 - discovery and selection metadata are not yet connected to CLI fetching;

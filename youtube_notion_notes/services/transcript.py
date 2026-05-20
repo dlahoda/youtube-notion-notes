@@ -26,9 +26,28 @@ class TranscriptSnippet:
 
 
 @dataclass(frozen=True)
+class TranscriptSelectionMetadata:
+    origin: str
+    source_language: str | None
+    selected_language: str | None
+    requires_translation: bool
+    selection_reason: str
+
+    def as_dict(self) -> dict[str, str | bool | None]:
+        return {
+            "origin": self.origin,
+            "source_language": self.source_language,
+            "selected_language": self.selected_language,
+            "requires_translation": self.requires_translation,
+            "selection_reason": self.selection_reason,
+        }
+
+
+@dataclass(frozen=True)
 class Transcript:
     video_id: str
     snippets: list[TranscriptSnippet]
+    selection_metadata: TranscriptSelectionMetadata | None = None
 
     def as_text(self) -> str:
         lines = []
@@ -115,7 +134,11 @@ def fetch_transcript(video_id: str, languages: list[str]) -> Transcript:
     if not snippets:
         raise TranscriptError(f"No transcript snippets returned for {video_id}.")
 
-    return Transcript(video_id=video_id, snippets=snippets)
+    return Transcript(
+        video_id=video_id,
+        snippets=snippets,
+        selection_metadata=selection_metadata_for_track_selection(selection),
+    )
 
 
 def _fetch_transcript_by_language_preference(video_id: str, languages: list[str]) -> Transcript:
@@ -129,7 +152,42 @@ def _fetch_transcript_by_language_preference(video_id: str, languages: list[str]
     if not snippets:
         raise TranscriptError(f"No transcript snippets returned for {video_id}.")
 
-    return Transcript(video_id=video_id, snippets=snippets)
+    return Transcript(
+        video_id=video_id,
+        snippets=snippets,
+        selection_metadata=TranscriptSelectionMetadata(
+            origin="unknown",
+            source_language=None,
+            selected_language=None,
+            requires_translation=False,
+            selection_reason="language_preference_fallback",
+        ),
+    )
+
+
+def transcript_file_selection_metadata() -> TranscriptSelectionMetadata:
+    return TranscriptSelectionMetadata(
+        origin="transcript_file",
+        source_language=None,
+        selected_language=None,
+        requires_translation=False,
+        selection_reason="transcript_file",
+    )
+
+
+def selection_metadata_for_track_selection(
+    selection: TranscriptTrackSelection,
+) -> TranscriptSelectionMetadata:
+    return TranscriptSelectionMetadata(
+        origin=_track_origin(selection.track),
+        source_language=_language_label(
+            selection.track.language_code,
+            selection.track.language_name,
+        ),
+        selected_language=_selected_language_label(selection),
+        requires_translation=selection.requires_translation,
+        selection_reason=selection.selection_reason,
+    )
 
 
 def list_transcript_tracks(video_id: str) -> list[TranscriptTrack]:
@@ -282,6 +340,36 @@ def _track_can_translate_to(track: TranscriptTrack, language_code: str) -> bool:
         language.language_code == language_code
         for language in track.translation_languages
     )
+
+
+def _track_origin(track: TranscriptTrack) -> str:
+    if track.is_generated is False:
+        return "manual"
+    if track.is_generated is True:
+        return "generated"
+    return "unknown"
+
+
+def _selected_language_label(selection: TranscriptTrackSelection) -> str | None:
+    if not selection.requires_translation:
+        return _language_label(
+            selection.track.language_code,
+            selection.track.language_name,
+        )
+
+    for language in selection.track.translation_languages:
+        if language.language_code == selection.preferred_language_code:
+            return _language_label(language.language_code, language.language_name)
+
+    return _language_label(selection.preferred_language_code, None)
+
+
+def _language_label(language_code: str, language_name: str | None) -> str | None:
+    if language_name and language_name.strip():
+        return language_name
+    if language_code.strip():
+        return language_code
+    return None
 
 
 def _raw_track_for_selection(

@@ -34,6 +34,9 @@ class PipelineServiceTests(unittest.TestCase):
         fetch_side_effect: Exception | None = None,
         prompt_side_effect: Exception | None = None,
         notion_config: dict[str, str] | None = None,
+        transcript_selection_metadata: (
+            transcript_service.TranscriptSelectionMetadata | None
+        ) = None,
     ) -> tuple[int, dict, Mock, dict]:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
@@ -52,6 +55,7 @@ class PipelineServiceTests(unittest.TestCase):
                 transcript_file_path.write_text(transcript_file_text, encoding="utf-8")
             transcript = Mock()
             transcript.as_text.return_value = "[00:00] Transcript\n"
+            transcript.selection_metadata = transcript_selection_metadata
 
             def export_effect(markdown: str, url: str) -> types.SimpleNamespace:
                 if assert_note_saved_before_export:
@@ -239,6 +243,36 @@ class PipelineServiceTests(unittest.TestCase):
         self.assertFalse(snapshot["fetch_called"])
         self.assertFalse(snapshot["discovery_called"])
         self.assertFalse(snapshot["selection_called"])
+        self.assertEqual(
+            result["transcript_selection"],
+            {
+                "origin": "transcript_file",
+                "source_language": None,
+                "selected_language": None,
+                "requires_translation": False,
+                "selection_reason": "transcript_file",
+            },
+        )
+        export_mock.assert_not_called()
+
+    def test_youtube_transcript_selection_metadata_is_returned(self) -> None:
+        selection_metadata = transcript_service.TranscriptSelectionMetadata(
+            origin="manual",
+            source_language="Spanish",
+            selected_language="English",
+            requires_translation=True,
+            selection_reason="manual_translatable_to_preferred_language",
+        )
+
+        exit_code, result, export_mock, snapshot = self.run_pipeline(
+            no_note=True,
+            transcript_selection_metadata=selection_metadata,
+        )
+
+        self.assertEqual(exit_code, 0)
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["transcript_selection"], selection_metadata.as_dict())
+        self.assertTrue(snapshot["fetch_called"])
         export_mock.assert_not_called()
 
     def test_empty_transcript_file_fails_during_transcript_stage(self) -> None:

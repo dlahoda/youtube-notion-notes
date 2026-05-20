@@ -13,6 +13,7 @@ from unittest.mock import Mock, patch
 
 import youtube_notion_notes.services as services
 import youtube_notion_notes.services.pipeline as pipeline
+import youtube_notion_notes.services.transcript as transcript_service
 from youtube_notion_notes import ingest
 from youtube_notion_notes.services.note_generator import PromptTemplateError
 from youtube_notion_notes.services.notion import NotionPage
@@ -38,12 +39,16 @@ class IngestCliTests(unittest.TestCase):
         stdin_value: str = "",
         prompt_side_effect: Exception | None = None,
         notion_config: dict[str, str] | None = None,
+        transcript_selection_metadata: (
+            transcript_service.TranscriptSelectionMetadata | None
+        ) = None,
     ) -> tuple[int, str, str, Mock, bool, str]:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
             note_path = temp_path / "notes" / f"{VIDEO_ID}.md"
             transcript = Mock()
             transcript.as_text.return_value = "[00:00] Transcript\n"
+            transcript.selection_metadata = transcript_selection_metadata
 
             def export_effect(markdown: str, url: str) -> NotionPage:
                 if assert_note_saved_before_export:
@@ -291,10 +296,19 @@ class IngestCliTests(unittest.TestCase):
         export_mock.assert_not_called()
 
     def test_json_output_manual_fallback_writes_only_json_to_stdout(self) -> None:
+        selection_metadata = transcript_service.TranscriptSelectionMetadata(
+            origin="manual",
+            source_language="English",
+            selected_language="English",
+            requires_translation=False,
+            selection_reason="manual_preferred_language",
+        )
+
         exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
             "--output",
             "json",
             note_text=None,
+            transcript_selection_metadata=selection_metadata,
         )
 
         payload = json.loads(stdout)
@@ -308,9 +322,31 @@ class IngestCliTests(unittest.TestCase):
         self.assertTrue(payload["prompt_path"].endswith(f"prompts/{VIDEO_ID}_prompt.md"))
         self.assertIsNone(payload["note_path"])
         self.assertIsNone(payload["notion_page_id"])
+        self.assertEqual(payload["transcript_selection"], selection_metadata.as_dict())
         self.assertFalse(note_exists)
         self.assertNotIn("Transcript saved:", stdout)
         self.assertNotIn("Markdown note skipped:", stdout)
+        export_mock.assert_not_called()
+
+    def test_text_output_includes_concise_transcript_selection_line(self) -> None:
+        selection_metadata = transcript_service.TranscriptSelectionMetadata(
+            origin="manual",
+            source_language="Spanish",
+            selected_language="English",
+            requires_translation=True,
+            selection_reason="manual_translatable_to_preferred_language",
+        )
+
+        exit_code, stdout, stderr, export_mock, note_exists, _note_content = self.run_ingest(
+            "--no-note",
+            transcript_selection_metadata=selection_metadata,
+        )
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("Transcript selected: manual Spanish -> English", stdout)
+        self.assertIn("Transcript saved:", stdout)
+        self.assertEqual(stderr, "")
+        self.assertFalse(note_exists)
         export_mock.assert_not_called()
 
     def test_json_output_includes_notion_result_when_export_runs(self) -> None:

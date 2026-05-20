@@ -12,7 +12,13 @@ from youtube_notion_notes.services.note_generator import (
     build_manual_prompt,
     generate_note_if_available,
 )
-from youtube_notion_notes.services.transcript import TranscriptError, fetch_transcript, parse_youtube_url
+from youtube_notion_notes.services.transcript import (
+    TranscriptError,
+    TranscriptSelectionMetadata,
+    fetch_transcript,
+    parse_youtube_url,
+    transcript_file_selection_metadata,
+)
 
 
 OUTPUT_DIR = Path("output")
@@ -108,7 +114,24 @@ def result_contract(request: PipelineRequest) -> dict[str, Any]:
         "prompt_path": None,
         "note_path": None,
         "notion_page_id": None,
+        "transcript_selection": None,
     }
+
+
+def format_transcript_selection(metadata: TranscriptSelectionMetadata) -> str | None:
+    if metadata.origin == "transcript_file":
+        return "Transcript selected: transcript file"
+
+    if not metadata.source_language:
+        return None
+
+    if metadata.requires_translation and metadata.selected_language:
+        return (
+            f"Transcript selected: {metadata.origin} "
+            f"{metadata.source_language} -> {metadata.selected_language}"
+        )
+
+    return f"Transcript selected: {metadata.origin} {metadata.source_language}"
 
 
 def missing_notion_export_config() -> list[str]:
@@ -140,14 +163,27 @@ def run_pipeline(request: PipelineRequest, *, human_output: bool) -> tuple[int, 
         video_id = parse_youtube_url(request.url)
         if request.transcript_file:
             transcript_text = read_transcript_file(request.transcript_file)
+            selection_metadata = transcript_file_selection_metadata()
         else:
             transcript = fetch_transcript(video_id, language_preferences(request.languages))
             transcript_text = transcript.as_text()
+            raw_selection_metadata = getattr(transcript, "selection_metadata", None)
+            selection_metadata = (
+                raw_selection_metadata
+                if isinstance(raw_selection_metadata, TranscriptSelectionMetadata)
+                else None
+            )
     except TranscriptError as exc:
         result["stage"] = "transcript"
         result["error"] = str(exc)
         log(f"Transcript error: {exc}", error=True)
         return 1, result
+
+    if selection_metadata is not None:
+        result["transcript_selection"] = selection_metadata.as_dict()
+        selection_line = format_transcript_selection(selection_metadata)
+        if selection_line:
+            log(selection_line)
 
     output_name = safe_output_name(request.output_name or video_id)
     output_paths = output_paths_for_request(request)

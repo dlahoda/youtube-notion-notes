@@ -143,7 +143,7 @@ class IngestInputTests(unittest.TestCase):
             def assert_env_loaded(_request: PipelineRequest, *, human_output: bool) -> tuple[int, dict]:
                 self.assertFalse(human_output)
                 self.assertEqual(os.environ["YNN_ENV_FILE_TEST"], "loaded")
-                self.assertEqual(os.environ["EXISTING_KEY"], "already-present")
+                self.assertEqual(os.environ["EXISTING_KEY"], "from-file")
                 return 0, {"ok": True}
 
             run_pipeline_mock = Mock(side_effect=assert_env_loaded)

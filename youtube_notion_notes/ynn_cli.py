@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sys
 
-from youtube_notion_notes import ingest
+from youtube_notion_notes import ingest, init_config
 
 
 def run_with_appended_args(extra_args: list[str] | None = None) -> int:
@@ -15,6 +15,8 @@ def run_with_appended_args(extra_args: list[str] | None = None) -> int:
 
 
 def main() -> int:
+    if len(sys.argv) > 1 and sys.argv[1] == "init":
+        return init_config.main(sys.argv[2:])
     return run_with_appended_args()
 
 

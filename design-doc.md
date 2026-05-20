@@ -70,6 +70,7 @@ Current roadmap:
 - `v1.0.0` Slice 4.5 is complete: console script entrypoints point at package modules and transitional top-level `py-modules` packaging has been removed.
 - `v1.0.0` UX-1 is complete: Notion export config preflight fails before transcript, prompt, note, or Notion work when required config is incomplete.
 - `v1.0.0` UX hardening planning is active: the approved goal is to make installed CLI usage predictable after one setup path: install -> init/config -> use.
+- `v1.0.0` UX-3 Slice 1 is complete: `ynn init --output-dir PATH` creates or updates the user config fallback, and runtime config loading follows the UX-2 source priority contract.
 - `v1.0.0` public repository release gate is active: publishing should use an All Rights Reserved / source-visible licensing posture unless a different license is explicitly decided later.
 
 Completed `v1.0.0` packaging slices:
@@ -110,9 +111,9 @@ UX-1 -- Notion fail-fast: Complete.
 
 UX-2 -- `ynn init` config contract design: Complete docs-only planning.
 
-This UX-2 slice documents the planned config contract only. It does not describe current runtime behavior until UX-3 implementation lands.
+This UX-2 slice documented the planned config contract before UX-3 implementation.
 
-Current behavior remains the Slice 2 runtime path policy: the CLI can read a cwd `./.env`, can read an explicit `--env-file PATH`, and can use `YNN_OUTPUT_DIR`, but there is not yet a `ynn init` command or installed user config fallback.
+Current behavior includes the UX-3 Slice 1 runtime config priority: the CLI can read an explicit `--env-file PATH`, real process environment variables, cwd `./.env`, the user config fallback at `~/.config/youtube-notion-notes/.env`, and built-in defaults.
 
 Planned UX-2/UX-3 config source priority:
 
@@ -181,21 +182,29 @@ UX-2 boundaries:
 - no Notion behavior changes beyond documenting config requirements already introduced by UX-1;
 - no new config file format beyond dotenv.
 
-UX-3 -- `ynn init` implementation:
+UX-3 -- `ynn init` implementation: Active, Slice 1 complete.
 
 - Add an installed CLI setup command only after the config contract is documented.
 - The desired installed CLI flow is:
 
 ```bash
 python -m pip install -e .
-ynn init
+ynn init --output-dir ~/ynn-output
 ynn-prompt "https://www.youtube.com/watch?v=..."
 ynn-note "https://www.youtube.com/watch?v=..."
 ynn-notion "https://www.youtube.com/watch?v=..."
 ```
 
-- `ynn init` should make daily usage predictable from any directory.
-- `ynn init` should configure the output directory and optional OpenAI/Notion keys.
+UX-3 Slice 1:
+
+- `ynn init --output-dir PATH` creates or updates `~/.config/youtube-notion-notes/.env`;
+- existing user config values are preserved by default;
+- `YNN_OUTPUT_DIR` is added only when it is not already present;
+- `~` in the provided output path is expanded before writing;
+- the configured output directory is created idempotently;
+- runtime config loading follows the UX-2 priority contract.
+
+Later UX-3 slices may configure optional OpenAI/Notion keys.
 
 UX-4 -- README command/setup contract:
 
@@ -507,11 +516,12 @@ Note: For daily installed CLI usage, `YNN_OUTPUT_DIR` is the recommended persist
 
 Env-file policy:
 
-- default env loading remains optional `./.env` relative to the current working directory when that file exists;
-- when no `--env-file` is provided and `./.env` does not exist, the CLI continues without error;
-- `--env-file PATH` loads that env file instead of `./.env`;
+- runtime config priority is explicit `--env-file PATH`, then real process environment variables, then cwd `./.env`, then user config `~/.config/youtube-notion-notes/.env`, then built-in defaults;
+- explicit `--env-file PATH` values override matching real process environment variables for that run;
+- cwd `./.env` still participates below real process environment variables and above user config;
+- user config fills missing values only;
+- missing cwd `./.env` and missing user config do not fail;
 - an explicit `--env-file PATH` must exist or the CLI returns a clean input error;
-- env file values do not override environment variables that are already set;
 - `env_file` is not part of the JSON input schema in this slice.
 
 Slice 2 boundaries:

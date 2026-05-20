@@ -3,11 +3,11 @@ from __future__ import annotations
 import argparse
 import contextlib
 import json
-import os
 import sys
 from pathlib import Path
 from typing import Any
 
+from youtube_notion_notes.config import ConfigFileError, load_runtime_config
 from youtube_notion_notes.services.pipeline import PipelineRequest, run_pipeline
 
 
@@ -198,26 +198,11 @@ def build_pipeline_request(args: argparse.Namespace) -> PipelineRequest:
 
 
 def load_env_file(path: Path = Path(".env"), *, required: bool = False) -> None:
-    if not path.exists():
-        if required:
-            raise CliInputError(f"Unable to read --env-file '{path}': file does not exist.")
-        return
-
-    try:
-        lines = path.read_text(encoding="utf-8").splitlines()
-    except OSError as exc:
-        raise CliInputError(f"Unable to read --env-file '{path}': {exc.strerror}.") from exc
-
-    for raw_line in lines:
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-
-        key, value = line.split("=", 1)
-        key = key.strip()
-        value = value.strip().strip('"').strip("'")
-        if key and key not in os.environ:
-            os.environ[key] = value
+    load_runtime_config(
+        explicit_env_file=path if required else None,
+        cwd_env_file=Path(".env") if required else path,
+        include_user_config=required or path == Path(".env"),
+    )
 
 
 def main() -> int:
@@ -228,11 +213,11 @@ def main() -> int:
             load_env_file(Path(args.env_file), required=True)
         else:
             load_env_file(Path(".env"))
-    except CliInputError as exc:
+    except (CliInputError, ConfigFileError) as exc:
         if output_mode == "json":
             print(
                 json.dumps(
-                    input_error_result(str(exc), stage=exc.stage),
+                    input_error_result(str(exc), stage=getattr(exc, "stage", "input")),
                     indent=2,
                     sort_keys=True,
                 )

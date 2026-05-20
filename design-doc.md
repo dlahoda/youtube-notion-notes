@@ -74,7 +74,7 @@ Current roadmap:
 - `v1.0.0` UX-3 Slice 2 is complete: `ynn init --output-dir PATH` can optionally collect missing OpenAI and Notion config values interactively while preserving existing user config values.
 - `v1.0.0` UX-3 transcript language follow-up is complete: `ynn init --output-dir PATH` can optionally append `YOUTUBE_TRANSCRIPT_LANGUAGES` to the user config while preserving runtime fallback to `en` when no language config is provided.
 - `v1.0.0` UX-5 is complete: release readiness checks were manually run and passed.
-- `v1.0.0` public repository release gate is active: publishing should use an All Rights Reserved / source-visible licensing posture unless a different license is explicitly decided later.
+- `v1.0.0` public repository release gate is deferred until numbered UX work is closed: publishing should use an All Rights Reserved / source-visible licensing posture unless a different license is explicitly decided later.
 
 Completed `v1.0.0` packaging slices:
 
@@ -243,14 +243,7 @@ The following release readiness checks were manually run and passed:
 - manual `ynn-prompt` smoke;
 - manual `ynn-notion` config failure smoke.
 
-UX-6 -- Public repository licensing gate:
-
-- Before publishing the repository publicly for `v1.0.0`, use an All Rights Reserved / source-visible but not open-source licensing posture.
-- Do not add MIT, Apache, BSD, GPL, AGPL, or any other open-source license unless that is explicitly decided later.
-- Do not create `./LICENSE.md` until the public licensing posture and wording are intentionally chosen.
-- Before publishing publicly, audit for committed secrets, generated output files, Notion IDs, private URLs, generated artifacts, and dependency licenses.
-
-UX-7 -- Transcript selection quality: Future work after UX-1 through UX-6 are closed.
+UX-6 -- Transcript selection quality: Future numbered UX work after UX-1 through UX-5 are closed.
 
 - Current transcript fetching is language-preference based and should not be treated as a full transcript-quality selection system.
 - Future goal: inspect available transcript tracks and choose the best available track by origin and quality.
@@ -261,7 +254,14 @@ UX-7 -- Transcript selection quality: Future work after UX-1 through UX-6 are cl
   4. generated transcript translated to a preferred language.
 - Original spoken language detection is future best-effort only.
 - Do not require YouTube Data API, OAuth, `captions.list`, or quota-dependent behavior for `v1.0.0`.
-- Do not implement this in the current UX-1 through UX-6 release-readiness path.
+- Do not implement this in the current UX-1 through UX-5 release-readiness path.
+
+UX-FINAL -- Public repository licensing gate: Deferred until numbered UX items are closed.
+
+- Before publishing the repository publicly for `v1.0.0`, use an All Rights Reserved / source-visible but not open-source licensing posture.
+- Do not add MIT, Apache, BSD, GPL, AGPL, or any other open-source license unless that is explicitly decided later.
+- Do not create `./LICENSE.md` until the public licensing posture and wording are intentionally chosen.
+- Before publishing publicly, audit for committed secrets, generated output files, Notion IDs, private URLs, generated artifacts, and dependency licenses.
 
 ---
 

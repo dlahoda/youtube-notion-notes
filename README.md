@@ -1,10 +1,63 @@
 # YouTube Notion Notes
 
-Repo-local Python CLI that turns one YouTube URL into a local transcript and a ready-to-paste GPT prompt. If OpenAI API config is present, it can also generate a markdown note.
+Python CLI that turns one YouTube URL into a local transcript and a ready-to-paste ChatGPT prompt. If OpenAI API config is present, it can also generate a markdown note. Notion export is opt-in after a markdown note is generated locally.
 
-Notion export is opt-in after a markdown note is generated locally. Production n8n automation and web UI are intentionally not implemented.
+Production n8n automation and web UI are intentionally not implemented.
 
-## One-time setup: WSL/macOS/Linux
+## Platform support
+
+WSL/Linux is the primary supported path. On Windows, WSL is recommended because it uses the same Linux-style setup, launcher, environment, and shell workflow.
+
+macOS is expected to work, but should be smoke-tested separately before claiming strong support.
+
+Native Windows PowerShell support is best-effort and partial. Direct Python CLI usage and editable package console entrypoints may work when Python is installed on Windows. Repo-local shell launchers, bash wrappers, make-based developer shortcuts, and Unix-style environment examples are not the primary supported path on native Windows.
+
+## Recommended installed CLI setup
+
+From the repository root, use the installed CLI flow:
+
+```bash
+python -m pip install -e .
+ynn init --output-dir ~/ynn-output
+ynn-prompt "https://youtu.be/VIDEO_ID"
+ynn-note "https://youtu.be/VIDEO_ID"
+ynn-notion "https://youtu.be/VIDEO_ID"
+```
+
+The first command installs the editable package and console scripts. The `ynn init --output-dir ~/ynn-output` command is the first-time setup helper.
+
+`ynn init --output-dir PATH` creates or updates:
+
+```text
+~/.config/youtube-notion-notes/.env
+```
+
+During setup, `ynn init` can optionally collect transcript language preferences, `OPENAI_API_KEY`, `NOTION_API_KEY`, and `NOTION_DATABASE_ID`. Existing user config values are preserved by default. Empty prompt input skips that value.
+
+After setup, daily use is through `ynn-prompt`, `ynn-note`, and `ynn-notion`.
+
+`ynn` is also available as the default command:
+
+```bash
+ynn "https://youtu.be/VIDEO_ID"
+```
+
+Installed commands use the configured output root from `ynn init`, unless overridden for a run with `--output-dir PATH`.
+
+## Command requirements
+
+| Command | What it does | OpenAI required? | Notion required? |
+| --- | --- | --- | --- |
+| `ynn-prompt` | Builds the transcript and ChatGPT-ready prompt, then stops. It does not call OpenAI and does not create a Notion page. | No | No |
+| `ynn` | Runs the default local pipeline and can create a generated markdown note when OpenAI config is available. | Only for automatic markdown note generation | No |
+| `ynn-note` | Runs local note mode and can create a generated markdown note when OpenAI config is available. | Only for automatic markdown note generation | No |
+| `ynn-notion` | Generates a markdown note locally, then exports it to Notion. | Yes | Yes: `NOTION_API_KEY` and `NOTION_DATABASE_ID` |
+
+## Fallback/developer virtualenv setup
+
+Use this path for local development, tests, direct `python ingest.py` usage, n8n troubleshooting, or when you do not want to install editable console entrypoints.
+
+WSL/macOS/Linux:
 
 ```bash
 python3 -m venv .venv
@@ -13,7 +66,7 @@ python -m pip install -r requirements.txt
 cp .env.example .env
 ```
 
-## One-time setup: Windows PowerShell, only if Python is installed on Windows
+Windows PowerShell, only if Python is installed on Windows:
 
 ```powershell
 py -m venv .venv
@@ -21,34 +74,6 @@ py -m venv .venv
 py -m pip install -r requirements.txt
 Copy-Item .env.example .env
 ```
-
-## Platform support
-
-WSL/Linux is the primary supported path. On Windows, WSL is the recommended path because it uses the same Linux-style setup, launcher, environment, and shell workflow.
-
-macOS is expected to work and is likely supported, but should be smoke-tested separately before claiming strong support.
-
-Native Windows PowerShell support is best-effort and partial. Direct Python CLI usage and editable package console entrypoints may work when Python is installed on Windows. Repo-local shell launchers, bash wrappers, make-based developer shortcuts, and Unix-style environment examples are not the primary supported path on native Windows.
-
-## Default daily usage
-
-Default day-to-day usage is through thin launcher commands installed into your shell. They work from any terminal directory, but they still call back into this local repository.
-
-```bash
-ynn "https://youtu.be/VIDEO_ID"
-ynn-note "https://youtu.be/VIDEO_ID"
-ynn-notion "https://youtu.be/VIDEO_ID"
-ynn-prompt "https://youtu.be/VIDEO_ID"
-```
-
-Launcher behavior:
-
-- `ynn` runs the current default CLI behavior: `python ./ingest.py "URL"`
-- `ynn-note` explicitly runs local note mode: `python ./ingest.py "URL" --export local`
-- `ynn-notion` runs Notion export mode: `python ./ingest.py "URL" --export notion`
-- `ynn-prompt` runs prompt-only/manual-safe mode: `python ./ingest.py "URL" --no-note`
-
-These names can come from either the repo-local launcher setup or the local editable package install below. The repo-local launcher workflow remains supported.
 
 ## Direct repo-local CLI
 
@@ -70,7 +95,7 @@ Windows PowerShell, if Python is installed on Windows:
 python ingest.py "https://youtu.be/VIDEO_ID" --no-note
 ```
 
-When no output override is set, files are written under `./output` relative to the current working directory:
+When no output config is set, files are written under `./output` relative to the current working directory:
 
 - `output/transcripts/`
 - `output/prompts/`
@@ -113,33 +138,17 @@ bash ./scripts/install-launchers.sh
 
 The installed wrappers call `./scripts/ynn-run` in this repo by absolute path. `./scripts/ynn-run` changes to the repository root before invoking `./ingest.py`, so `.env` loading and output paths keep matching normal repo-local CLI usage.
 
-## Installable CLI package
+## Installed CLI details
 
-For local package-development usage, install the repository in editable mode:
-
-```bash
-python -m pip install -e .
-```
-
-This installs the same command names:
-
-```bash
-ynn "https://youtu.be/VIDEO_ID"
-ynn-note "https://youtu.be/VIDEO_ID"
-ynn-notion "https://youtu.be/VIDEO_ID"
-ynn-prompt "https://youtu.be/VIDEO_ID"
-```
-
-The editable package entrypoints run the packaged CLI implementation while preserving the existing `./ingest.py` CLI behavior. Installed commands use the current working directory for default `.env` and fallback `./output/`; `--env-file`, `--output-dir`, and `YNN_OUTPUT_DIR` can make runtime paths explicit for a run. The built-in prompt template is package-owned data, so installed commands do not require a repo-local `./prompts/comprehensive_note.md` file in the current working directory.
+The editable package entrypoints run the packaged CLI implementation while preserving the existing `./ingest.py` CLI behavior. The built-in prompt template is package-owned data, so installed commands do not require a repo-local `./prompts/comprehensive_note.md` file in the current working directory.
 
 Runtime path policy:
 
 - output root resolution order is `--output-dir PATH`, then `YNN_OUTPUT_DIR`, then `./output` relative to the current working directory
 - selected output roots write files under `OUTPUT_ROOT/transcripts/`, `OUTPUT_ROOT/prompts/`, and `OUTPUT_ROOT/notes/`
-- default env loading uses optional `./.env` relative to the current working directory when it exists
-- `--env-file PATH` loads that env file instead, and the explicit file must exist
-
-For daily installed CLI usage, set `YNN_OUTPUT_DIR` to avoid creating `./output` in whichever directory the command was run from.
+- config source priority is explicit `--env-file PATH`, real process environment variables, cwd `./.env`, user config `~/.config/youtube-notion-notes/.env`, then built-in defaults
+- user config fills missing values only; higher-priority sources still win for a run
+- `--env-file PATH` loads that env file for a run, and the explicit file must exist
 
 Optional editable-install smoke verification:
 
@@ -160,7 +169,7 @@ ynn-notion "https://youtu.be/VIDEO_ID" --env-file ./notion.env
 
 ## Optional OpenAI mode
 
-OpenAI mode is not required for `ynn-prompt`, `--no-note`, transcript capture, or prompt generation. Install it only if you want `ynn`, `ynn-note`, or direct `python ingest.py` usage to generate markdown notes automatically, then set `OPENAI_API_KEY` in `.env`.
+OpenAI mode is not required for `ynn-prompt`, `--no-note`, transcript capture, or prompt generation. Install it only if you want `ynn`, `ynn-note`, or direct `python ingest.py` usage to generate markdown notes automatically, then set `OPENAI_API_KEY` through `ynn init`, `.env`, or another supported config source.
 
 WSL/macOS/Linux:
 
@@ -176,7 +185,7 @@ py -m pip install -r requirements-openai.txt
 
 ## Environment
 
-`.env` is optional for local/manual usage.
+Config is optional for local/manual prompt usage. The recommended installed CLI setup writes user config to `~/.config/youtube-notion-notes/.env`; a cwd `./.env`, process environment variables, and explicit `--env-file PATH` are also supported.
 
 - `OPENAI_API_KEY`: optional API key for markdown note generation
 - `OPENAI_MODEL`: optional model name, defaults to `gpt-4.1-mini`
@@ -187,17 +196,18 @@ py -m pip install -r requirements-openai.txt
 
 `OPENAI_API_KEY` belongs only to optional OpenAI markdown note generation. It is not required for the Notion smoke test.
 
-By default, the CLI loads `./.env` from the current working directory when it exists and continues when it does not. Use `--env-file PATH` to load a different env file for that run; an explicit `--env-file` path must exist. Values in the env file do not override environment variables that are already set.
+Config source priority is `--env-file PATH`, then real process environment variables, cwd `./.env`, user config `~/.config/youtube-notion-notes/.env`, and built-in defaults. An explicit `--env-file` path must exist.
 
 ## Optional Notion export
 
 Default local behavior is unchanged. Notion export runs only when explicitly requested through `ynn-notion` or `--export notion`, and only after the markdown note has been generated and saved locally.
 
 ```bash
+ynn-notion "https://youtu.be/VIDEO_ID"
 python ingest.py "https://youtu.be/VIDEO_ID" --export notion
 ```
 
-Set `NOTION_API_KEY` and `NOTION_DATABASE_ID` in `.env` before using `--export notion`.
+Set `OPENAI_API_KEY`, `NOTION_API_KEY`, and `NOTION_DATABASE_ID` through `ynn init`, `.env`, or another supported config source before using generated-note Notion export.
 
 ## JSON result output
 

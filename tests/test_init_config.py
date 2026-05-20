@@ -85,7 +85,7 @@ class InitConfigTests(unittest.TestCase):
 
             with (
                 patch.object(init_config.getpass, "getpass", side_effect=["openai-key", "notion-key"]),
-                patch("builtins.input", side_effect=["notion-database-id", "en,fr"]),
+                patch("builtins.input", side_effect=["en,fr", "notion-database-id"]),
             ):
                 init_config.init_user_config(str(output_dir), config_path=config_path)
 
@@ -94,10 +94,10 @@ class InitConfigTests(unittest.TestCase):
                 "\n".join(
                     [
                         f"YNN_OUTPUT_DIR={output_dir}",
+                        "YOUTUBE_TRANSCRIPT_LANGUAGES=en,fr",
                         "OPENAI_API_KEY=openai-key",
                         "NOTION_API_KEY=notion-key",
                         "NOTION_DATABASE_ID=notion-database-id",
-                        "YOUTUBE_TRANSCRIPT_LANGUAGES=en,fr",
                         "",
                     ]
                 ),

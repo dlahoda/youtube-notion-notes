@@ -10,10 +10,10 @@ from youtube_notion_notes.services.pipeline import OUTPUT_DIR_ENV_VAR
 
 
 OPTIONAL_CONFIG_PROMPTS = (
+    ("YOUTUBE_TRANSCRIPT_LANGUAGES", "Transcript languages [en]: ", False),
     ("OPENAI_API_KEY", "OpenAI API key (optional, empty to skip): ", True),
     ("NOTION_API_KEY", "Notion API key (optional, empty to skip): ", True),
     ("NOTION_DATABASE_ID", "Notion database ID (optional, empty to skip): ", False),
-    ("YOUTUBE_TRANSCRIPT_LANGUAGES", "Transcript languages [en]: ", False),
 )
 
 

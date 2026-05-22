@@ -23,8 +23,6 @@ From the repository root, use the installed CLI flow:
 python -m pip install -e .
 ynn init --output-dir ~/ynn-output
 ynn-prompt "https://youtu.be/VIDEO_ID"
-ynn-note "https://youtu.be/VIDEO_ID"
-ynn-notion "https://youtu.be/VIDEO_ID"
 ```
 
 The first command installs the editable package and console scripts. This is the recommended editable/developer install path while working from the repository checkout. Because an editable install depends on that checkout path, do not delete or move the repository after `python -m pip install -e .` if you want its installed console scripts to keep working.
@@ -45,7 +43,11 @@ The `ynn init --output-dir ~/ynn-output` command is the first-time setup helper.
 
 During setup, `ynn init` can optionally collect transcript language preferences, `OPENAI_API_KEY`, `NOTION_API_KEY`, and `NOTION_DATABASE_ID`. Existing user config values are preserved by default. Empty prompt input skips that value.
 
-After setup, daily use is through `ynn-prompt`, `ynn-note`, and `ynn-notion`.
+The minimal first successful path stops at `ynn-prompt`.
+
+`ynn-note` is optional and needs OpenAI config for automatic markdown note generation. `ynn-notion` is optional and needs OpenAI plus Notion config.
+
+After setup, daily use can continue through `ynn-prompt`, `ynn-note`, and `ynn-notion` as needed.
 
 `ynn` is also available as the default command:
 

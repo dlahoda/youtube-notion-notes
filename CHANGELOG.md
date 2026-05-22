@@ -16,6 +16,8 @@ All notable changes to this project will be documented in this file.
   and Notion config.
 - Added optional regular-install smoke verification.
 - Added transcript selection metadata in human and JSON output.
+- Added the All Rights Reserved / source-visible licensing notice.
+- Added third-party dependency notices.
 
 ### Changed
 

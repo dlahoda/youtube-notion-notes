@@ -53,9 +53,8 @@ For `v1.0.0`, editable installs expose these command names as console script ent
 Current release state:
 
 - Milestones 1-9 are complete and tagged through `v0.9.0`.
-- `v1.0.0` packaging, numbered UX hardening, UX-6 transcript selection quality, docs truth sync, and CHANGELOG readiness are complete.
-- UX-FINAL release/publication audit, publication hygiene docs fix, secrets/history/publication sweep, tracked artifact cleanup, and licensing gate are complete.
-- The first public repository licensing gate slice is complete: `./LICENSE.md` records the source-visible but not open-source notice.
+- `v1.0.0` release-candidate scope is complete.
+- The repository uses an All Rights Reserved / source-visible but not open-source publication posture.
 
 Current `v1.0.0` packaging behavior:
 
@@ -105,11 +104,10 @@ Selection priority:
 
 `--transcript-file` and JSON `transcript_file` input bypass YouTube track discovery and selection while preserving the original URL as source metadata. Human output can show one concise transcript selection line when the transcript source is known. JSON output keeps existing fields valid and adds `transcript_selection` metadata additively when known, including `origin: transcript_file` for transcript-file input.
 
-UX-FINAL -- Public repository licensing gate: Complete.
+UX-FINAL -- Release/publication state: Complete.
 
-- `./LICENSE.md` records the All Rights Reserved / source-visible but not open-source licensing posture for portfolio and review publication.
+- `./LICENSE.md` and `./THIRD_PARTY_NOTICES.md` are the publication-facing licensing files.
 - Do not add MIT, Apache, BSD, GPL, AGPL, or any other open-source license unless that is explicitly decided later.
-- Before publishing publicly, audit for committed secrets, generated output files, Notion IDs, private URLs, generated artifacts, and dependency licenses.
 
 ---
 
@@ -636,8 +634,7 @@ Backlog themes currently parked in `./docs/ideas.md` include:
 - long-video handling;
 - n8n orchestration improvements;
 - transcript input and provider expansion;
-- hosted, remote, or HTTP execution options;
-- post-`v1.0.0` packaging polish if release review finds gaps.
+- hosted, remote, or HTTP execution options.
 
 ---
 
@@ -659,8 +656,8 @@ Default branch: `main`.
 
 Repository access rule:
 
-- The repository is private.
-- Use the GitHub connector/integration for repository access.
+- The repository is source-visible/public for portfolio and review purposes.
+- Inspect repository contents through the GitHub connector/integration during project work.
 - Do not use web search to inspect repository contents.
 - If GitHub connector access is unavailable, ask the user for a branch, PR, diff, or uploaded files instead of searching the web.
 

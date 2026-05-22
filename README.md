@@ -114,13 +114,14 @@ python ingest.py "https://youtu.be/VIDEO_ID" --output json
 
 Transcript selection:
 
-Normal YouTube fetching discovers available transcript tracks and chooses the best available track by origin and preferred language. Selection priority is:
+Normal YouTube fetching discovers available transcript tracks and chooses the best available track by origin and preferred language. Manual/author transcript quality wins over generated-track convenience, so a translated manual track may beat a generated track that already matches a preferred language. Selection priority is:
 
-1. manual transcript in a preferred language;
-2. manual transcript translated to a preferred language;
+1. manual/author transcript in a preferred language;
+2. manual/author transcript translated to a preferred language;
 3. generated transcript in a preferred language;
 4. generated transcript translated to a preferred language;
-5. unknown-origin fallback.
+5. unknown-origin YouTube transcript track in a preferred language;
+6. unknown-origin YouTube transcript track with API-provided translation to a preferred language.
 
 Human output may include a concise line such as:
 

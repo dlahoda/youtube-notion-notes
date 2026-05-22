@@ -107,7 +107,26 @@ Markdown-to-Notion conversion is intentionally simple. Supported markdown shapes
 
 ---
 
-# 6. Design Principle
+# 6. Transcript Selection Quality
+
+Normal YouTube transcript fetching prefers manual/author transcript quality over generated transcript convenience.
+
+Project-owned discovery and selection prioritize tracks in this order:
+
+1. manual/author transcript in a preferred language;
+2. manual/author transcript translated to a preferred language;
+3. generated transcript in a preferred language;
+4. generated transcript translated to a preferred language;
+5. unknown-origin YouTube transcript track in a preferred language;
+6. unknown-origin YouTube transcript track with API-provided translation to a preferred language.
+
+A manual/author transcript that requires translation may beat a generated transcript that already matches a preferred language by design. Unknown-origin track are last-resort fallbacks after known manual and generated matches.
+
+Manual transcript-file input bypasses YouTube transcript discovery and selection.
+
+---
+
+# 7. Design Principle
 
 The pipeline should be boring.
 

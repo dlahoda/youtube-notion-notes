@@ -2,7 +2,7 @@
 
 Build a small Python CLI tool that turns a YouTube URL into a local transcript and a markdown note.
 
-Later milestones may export to Notion and be wrapped by n8n, but do not implement those unless explicitly requested.
+Opt-in Notion export and the n8n integration contract already exist. Do not add new Notion or n8n behavior unless explicitly requested.
 
 ## Current working mode
 

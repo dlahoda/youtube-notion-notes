@@ -639,3 +639,19 @@ Out of scope:
 - no Notion behavior changes;
 - no n8n behavior changes;
 - no design-doc decomposition.
+
+---
+
+# v1.0.0 UX-6: Transcript Selection Quality
+
+## Status
+
+UX-6 is complete before the separate UX-FINAL release/publication audit.
+
+## Completion Note
+
+- normal YouTube transcript fetching uses project-owned discovery and selection before fetching the chosen track;
+- selection prefers known manual/author tracks over generated tracks, including translated manual tracks before generated preferred-language tracks;
+- unknown-origin tracks remain last-resort fallbacks;
+- transcript-file input bypasses YouTube discovery and selection;
+- JSON success output may include additive `transcript_selection` metadata.

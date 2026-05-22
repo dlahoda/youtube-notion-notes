@@ -142,13 +142,14 @@ Optional Notion export payload:
 Supported fields:
 
 - `url`: required YouTube URL string.
+- `transcript_file`: optional path to a UTF-8 local transcript file.
 - `export`: optional export target. Supported values are `local` and `notion`.
 
 Unknown fields should be treated as input errors by `./ingest.py`. Keep the n8n payload small so typos fail visibly.
 
 ## Expected JSON-Only Stdout
 
-On success, stdout contains a JSON object with `ok: true` and result metadata such as the source URL, export mode, and created local output paths. When Notion export runs, the result may also include Notion page details.
+On success, stdout contains a JSON object with `ok: true` and result metadata such as the source URL, export mode, and created local output paths. When Notion export runs, the result may also include Notion page details. Current success payloads may also include additive `transcript_selection` metadata, which does not change the smoke workflow branch contract.
 
 Success shape:
 
@@ -280,7 +281,7 @@ Manual review checklist:
 - `./docs/n8n-smoke-workflow.json` is a manual smoke workflow template, not production automation.
 - The workflow assumes n8n can run a local command in the project environment.
 - The workflow assumes dependencies are already installed for `./ingest.py`.
-- Videos still require available YouTube transcripts or captions.
+- YouTube fetching still requires available transcripts or captions unless `transcript_file` supplies a local transcript file.
 - OpenAI note generation remains optional and requires OpenAI configuration.
 - Notion export remains opt-in and requires Notion configuration.
 - There is no HTTP server, queue, or retry system in this slice.

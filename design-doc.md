@@ -69,7 +69,7 @@ Current roadmap:
 - `v1.0.0` Slice 4.4 is complete: package data handling for `comprehensive_note.md` was verified after the services move, including editable-install smoke coverage from a non-repo cwd.
 - `v1.0.0` Slice 4.5 is complete: console script entrypoints point at package modules and transitional top-level `py-modules` packaging has been removed.
 - `v1.0.0` UX-1 is complete: Notion export config preflight fails before transcript, prompt, note, or Notion work when required config is incomplete.
-- `v1.0.0` UX hardening planning is active: the approved goal is to make installed CLI usage predictable after one setup path: install -> init/config -> use.
+- `v1.0.0` numbered UX hardening work is complete: installed CLI usage is documented around one setup path: install -> init/config -> use.
 - `v1.0.0` UX-3 Slice 1 is complete: `ynn init --output-dir PATH` creates or updates the user config fallback, and runtime config loading follows the UX-2 source priority contract.
 - `v1.0.0` UX-3 Slice 2 is complete: `ynn init --output-dir PATH` can optionally collect missing OpenAI and Notion config values interactively while preserving existing user config values.
 - `v1.0.0` UX-3 transcript language follow-up is complete: `ynn init --output-dir PATH` can optionally append `YOUTUBE_TRANSCRIPT_LANGUAGES` to the user config while preserving runtime fallback to `en` when no language config is provided.
@@ -81,7 +81,7 @@ Current roadmap:
 - `v1.0.0` UX-6 Slice 4 is complete: normal YouTube transcript fetching uses project-owned discovery and selection before fetching the selected track.
 - `v1.0.0` UX-6 Slice 5 is complete: transcript selection metadata is visible in concise human output and additive JSON output.
 - `v1.0.0` UX-6 is complete: README/docs truth alignment and the closeout smoke checklist are recorded.
-- `v1.0.0` public repository release gate is deferred until numbered UX work is closed: publishing should use an All Rights Reserved / source-visible licensing posture unless a different license is explicitly decided later.
+- `v1.0.0` UX-FINAL release/publication audit has not started yet: publishing should use an All Rights Reserved / source-visible licensing posture unless a different license is explicitly decided later.
 
 Completed `v1.0.0` packaging slices:
 
@@ -91,7 +91,7 @@ Completed `v1.0.0` packaging slices:
 - Slice 4: proper package layout using the real import package `youtube_notion_notes`.
   Slice 4 replaces the temporary flat-repo packaging shape from Slice 1. Slice 4.2 moved service modules into `youtube_notion_notes.services`. Slice 4.3 moved CLI implementation modules into `youtube_notion_notes` while keeping top-level compatibility wrappers. Slice 4.4 verified package data handling for `comprehensive_note.md` after the services move. Slice 4.5 moved console scripts to `youtube_notion_notes.ynn_cli:*` and removed transitional top-level `py-modules` packaging.
 
-Active `v1.0.0` UX hardening plan:
+Completed `v1.0.0` numbered UX hardening work:
 
 The approved UX milestone goal is to make the installed CLI predictable from any directory after one setup path:
 
@@ -101,7 +101,7 @@ install
 -> use
 ```
 
-`ynn init` is included in `v1.0.0` scope. This section records both implemented behavior and remaining planned UX hardening work.
+`ynn init` is included in `v1.0.0` scope. This section records the completed numbered UX hardening work before the separate UX-FINAL release/publication audit.
 
 Milestone-level boundaries for UX hardening:
 
@@ -192,7 +192,7 @@ UX-2 boundaries:
 - no Notion behavior changes beyond documenting config requirements already introduced by UX-1;
 - no new config file format beyond dotenv.
 
-UX-3 -- `ynn init` implementation: Active; Slices 1, 2, and transcript language follow-up complete.
+UX-3 -- `ynn init` implementation: Complete.
 
 - Add an installed CLI setup command only after the config contract is documented.
 - The desired installed CLI flow is:
@@ -234,12 +234,12 @@ UX-3 transcript language follow-up:
 - runtime fallback remains `en` when no language config is provided;
 - runtime config priority and pipeline behavior remain unchanged.
 
-UX-4 -- README command/setup contract:
+UX-4 -- README command/setup contract: Complete.
 
-- After UX-1 and UX-3 behavior exists, restructure `./README.md` around what this does, platform support, recommended installed CLI setup, first run, daily commands, command requirements and expected outcomes, repo-local/developer/fallback usage, automation/n8n notes, and limitations.
+- `./README.md` is structured around what this does, platform support, recommended installed CLI setup, first run, daily commands, command requirements and expected outcomes, repo-local/developer/fallback usage, automation/n8n notes, and limitations.
 - Add a command requirements table.
 - Explain `ynn-prompt` clearly: it builds the ChatGPT-ready prompt file and stops. It does not call OpenAI and does not create a Notion page.
-- Do not restructure `./README.md` as if the UX work is already implemented before the corresponding runtime behavior exists.
+- Keep `./README.md` aligned to current runtime behavior rather than future UX plans.
 
 UX-5 -- Release readiness check: Complete.
 
@@ -305,7 +305,7 @@ Historical behavior before Slice 4:
 
 Human output visibility contract:
 
-- when runtime selection is later connected, human CLI output should show one short transcript selection line;
+- normal runtime selection shows one short transcript selection line when the transcript source is known;
 - the line should be concise and useful for debugging;
 - example shape: `Transcript selected: manual Spanish -> English`;
 - the line should not be noisy during normal successful runs;
@@ -325,7 +325,7 @@ JSON output metadata contract:
 
 Failure behavior contract:
 
-- if transcript track discovery fails during future runtime selection, fail cleanly in the transcript stage;
+- if transcript track discovery fails during runtime selection, fail cleanly in the transcript stage;
 - if discovery succeeds but no track matches the policy, fail cleanly in the transcript stage;
 - when available, no-match errors should include available language codes without dumping raw library internals;
 - human output should stay short and actionable;
@@ -350,7 +350,7 @@ Slice 3 boundaries:
 - no open-source licensing changes;
 - runtime wiring happened in UX-6 Slice 4.
 
-UX-FINAL -- Public repository licensing gate: Deferred until numbered UX items are closed.
+UX-FINAL -- Public repository licensing gate: Not started.
 
 - Before publishing the repository publicly for `v1.0.0`, use an All Rights Reserved / source-visible but not open-source licensing posture.
 - Do not add MIT, Apache, BSD, GPL, AGPL, or any other open-source license unless that is explicitly decided later.
@@ -1010,6 +1010,7 @@ Completed milestones:
 - `v1.0.0` Slice 4.3: CLI package module move into `youtube_notion_notes.ingest` and `youtube_notion_notes.ynn_cli` — complete.
 - `v1.0.0` Slice 4.4: package data verification after the services move — complete.
 - `v1.0.0` Slice 4.5: package console script entrypoint cleanup — complete.
+- `v1.0.0` numbered UX work: UX-1 through UX-6 — complete. UX-FINAL release/publication audit has not started yet.
 
 ---
 
@@ -1036,6 +1037,7 @@ Current summary:
 - JSON stdin/stdout is the current automation boundary.
 - Notion export stays inside Python.
 - Manual transcript-file input still requires a source YouTube URL.
+- Normal YouTube transcript selection prefers manual/author transcript quality over generated transcript convenience.
 - Manual GPT bridge mode remains a durable fallback.
 - Future local model support remains possible but is not implemented yet.
 - Markdown-to-Notion conversion stays intentionally simple.

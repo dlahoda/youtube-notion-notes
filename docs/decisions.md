@@ -27,7 +27,7 @@ Notion is final storage for exported notes, not the center of application logic.
 
 # 2. Automation Boundary
 
-JSON stdin/stdout is the current automation boundary.
+JSON stdin/stdout is the automation boundary.
 
 The local automation shape is:
 
@@ -49,9 +49,9 @@ Manual transcript-file input still requires a source YouTube URL.
 
 The source YouTube URL remains required because it is used for source metadata, `video_id` parsing, and default output naming. Manual transcript text is an alternate transcript source, not a replacement for source identity.
 
-There is no URL-less transcript mode yet.
+There is no URL-less transcript mode.
 
-Current transcript input boundaries:
+Transcript input boundaries:
 
 - no inline transcript text in JSON;
 - no transcript from stdin;
@@ -70,7 +70,7 @@ Supported generation paths include manual GPT bridge mode and optional OpenAI AP
 
 Future local model support should remain possible, but should not be implemented until explicitly scoped.
 
-The note shape stays in the built-in prompt template at `./services/resources/comprehensive_note.md`: title, source URL, overview, key ideas, detailed notes, memorable phrasing, practical takeaways, and tags.
+The note shape stays in the built-in prompt template at `./youtube_notion_notes/services/resources/comprehensive_note.md`: title, source URL, overview, key ideas, detailed notes, memorable phrasing, practical takeaways, and tags.
 
 ---
 
@@ -93,7 +93,7 @@ Recommended `Status` values are `Draft`, `Reviewed`, and `Archived`.
 
 The recommended `Source` value for this pipeline is `YouTube`.
 
-`./services/notion.py` allows empty tags so it can stay a small reusable Notion adapter.
+`./youtube_notion_notes/services/notion.py` allows empty tags so it can stay a small reusable Notion adapter.
 
 Markdown note metadata convention:
 
@@ -120,7 +120,7 @@ Project-owned discovery and selection prioritize tracks in this order:
 5. unknown-origin YouTube transcript track in a preferred language;
 6. unknown-origin YouTube transcript track with API-provided translation to a preferred language.
 
-A manual/author transcript that requires translation may beat a generated transcript that already matches a preferred language by design. Unknown-origin track are last-resort fallbacks after known manual and generated matches.
+A manual/author transcript that requires translation may beat a generated transcript that already matches a preferred language by design. Unknown-origin tracks are last-resort fallbacks after known manual and generated matches.
 
 Manual transcript-file input bypasses YouTube transcript discovery and selection.
 

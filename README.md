@@ -24,7 +24,15 @@ ynn-note "https://youtu.be/VIDEO_ID"
 ynn-notion "https://youtu.be/VIDEO_ID"
 ```
 
-The first command installs the editable package and console scripts. The `ynn init --output-dir ~/ynn-output` command is the first-time setup helper.
+The first command installs the editable package and console scripts. This is the recommended editable/developer install path while working from the repository checkout. Because an editable install depends on that checkout path, do not delete or move the repository after `python -m pip install -e .` if you want its installed console scripts to keep working.
+
+Use a regular local install when you want console scripts copied into the environment without depending on this checkout after installation:
+
+```bash
+python -m pip install .
+```
+
+The `ynn init --output-dir ~/ynn-output` command is the first-time setup helper.
 
 `ynn init --output-dir PATH` creates or updates:
 
@@ -145,27 +153,24 @@ Expected result without OpenAI mode:
 
 ## Daily launcher setup
 
-This launcher setup is for WSL/macOS/Linux shell usage.
-
-For daily local usage, install thin launcher commands into `~/.local/bin`:
+The editable installed CLI setup above is the recommended `v1.0.0` path. Repo-local launcher wrappers remain available for WSL/macOS/Linux shell compatibility:
 
 ```bash
 bash ./scripts/install-launchers.sh
 ```
 
-The installed wrappers call `./scripts/ynn-run` in this repo by absolute path. `./scripts/ynn-run` changes to the repository root before invoking `./ingest.py`, so `.env` loading and output paths keep matching normal repo-local CLI usage.
+The wrappers install into `~/.local/bin`, call `./scripts/ynn-run` in this repo by absolute path, and change to the repository root before invoking `./ingest.py`. That keeps `.env` loading and output paths aligned with normal repo-local CLI usage. Because the wrappers point back to this repo by absolute path, they are not portable after the repository is deleted or moved.
 
 ## Installed CLI details
 
-The editable package entrypoints run the packaged CLI implementation while preserving the existing `./ingest.py` CLI behavior. The built-in prompt template is package-owned data, so installed commands do not require a repo-local `./prompts/comprehensive_note.md` file in the current working directory.
+Editable package entrypoints run the packaged CLI implementation. The built-in prompt template is package-owned data, so installed commands do not require a repo-local `./prompts/comprehensive_note.md` file in the current working directory.
 
-Runtime path policy:
+Output and config priority summary:
 
-- output root resolution order is `--output-dir PATH`, then `YNN_OUTPUT_DIR`, then `./output` relative to the current working directory
+- output root priority is `--output-dir PATH`, then `YNN_OUTPUT_DIR`, then `./output` relative to the current working directory
 - selected output roots write files under `OUTPUT_ROOT/transcripts/`, `OUTPUT_ROOT/prompts/`, and `OUTPUT_ROOT/notes/`
-- config source priority is explicit `--env-file PATH`, real process environment variables, cwd `./.env`, user config `~/.config/youtube-notion-notes/.env`, then built-in defaults
-- user config fills missing values only; higher-priority sources still win for a run
-- `--env-file PATH` loads that env file for a run, and the explicit file must exist
+- config priority is explicit `--env-file PATH`, real process environment variables, cwd `./.env`, user config `~/.config/youtube-notion-notes/.env`, then built-in defaults
+- user config fills missing values only; an explicit `--env-file PATH` must exist
 
 Optional editable-install smoke verification:
 
@@ -174,6 +179,12 @@ YNN_RUN_EDITABLE_INSTALL_SMOKE=1 python -m unittest tests.test_editable_install_
 ```
 
 This smoke creates a temporary virtual environment and skips itself if local Python venv support is unavailable.
+
+Optional regular-install smoke verification:
+
+```bash
+YNN_RUN_REGULAR_INSTALL_SMOKE=1 python -m unittest tests.test_regular_install_smoke
+```
 
 Examples:
 
@@ -187,6 +198,14 @@ ynn-notion "https://youtu.be/VIDEO_ID" --env-file ./notion.env
 ## Optional OpenAI mode
 
 OpenAI mode is not required for `ynn-prompt`, `--no-note`, transcript capture, or prompt generation. Install it only if you want `ynn`, `ynn-note`, or direct `python ingest.py` usage to generate markdown notes automatically, then set `OPENAI_API_KEY` through `ynn init`, `.env`, or another supported config source.
+
+For the installed-package path from the repository root, install the optional OpenAI dependency with:
+
+```bash
+python -m pip install ".[openai]"
+```
+
+For the direct repo-local developer path, install the OpenAI requirements file:
 
 WSL/macOS/Linux:
 
@@ -204,6 +223,8 @@ py -m pip install -r requirements-openai.txt
 
 Config is optional for local/manual prompt usage. The recommended installed CLI setup writes user config to `~/.config/youtube-notion-notes/.env`; a cwd `./.env`, process environment variables, and explicit `--env-file PATH` are also supported.
 
+For portable installed usage, keep config in `ynn init` user config, process environment variables, or an explicit `--env-file PATH`. A repo-local `./.env` disappears with the repository checkout.
+
 - `OPENAI_API_KEY`: optional API key for markdown note generation
 - `OPENAI_MODEL`: optional model name, defaults to `gpt-4.1-mini`
 - `YOUTUBE_TRANSCRIPT_LANGUAGES`: optional comma-separated language preference list, defaults to `en`
@@ -217,14 +238,28 @@ Config source priority is `--env-file PATH`, then real process environment varia
 
 ## Optional Notion export
 
-Default local behavior is unchanged. Notion export runs only when explicitly requested through `ynn-notion` or `--export notion`, and only after the markdown note has been generated and saved locally.
+Default local behavior is unchanged. Notion export runs only when explicitly requested through `ynn-notion` or `--export notion`, and only after a markdown note has been generated and saved locally.
 
 ```bash
 ynn-notion "https://youtu.be/VIDEO_ID"
 python ingest.py "https://youtu.be/VIDEO_ID" --export notion
+python ingest.py "https://youtu.be/VIDEO_ID" --export local
 ```
 
 Set `OPENAI_API_KEY`, `NOTION_API_KEY`, and `NOTION_DATABASE_ID` through `ynn init`, `.env`, or another supported config source before using generated-note Notion export.
+
+Required Notion database properties:
+
+- `Name`: title
+- `URL`: url
+- `Tags`: multi_select
+- `Status`: select
+- `Source`: select
+- `Created`: created_time
+
+Recommended values are `Draft`, `Reviewed`, and `Archived` for `Status`, and `YouTube` for `Source`.
+
+Markdown note metadata convention for export: the first H1 heading, formatted as `# Note title`, is the Notion page `Name`; tags should be written as `Tags: tag one, tag two` with comma-separated tags.
 
 ## JSON result output
 
@@ -302,7 +337,7 @@ make notion-sample
 
 ## Manual Notion smoke test
 
-The smoke test is opt-in and does not change the default local CLI behavior. It creates one minimal page in the configured Notion database using properties only.
+For a compact developer/debug smoke test, create one minimal properties-only page in the configured Notion database.
 
 Set `NOTION_API_KEY` and `NOTION_DATABASE_ID` in `.env`, then run:
 
@@ -310,47 +345,7 @@ Set `NOTION_API_KEY` and `NOTION_DATABASE_ID` in `.env`, then run:
 python -m youtube_notion_notes.services.notion
 ```
 
-The created page uses:
-
-- `Name`: `Notion smoke test`
-- `URL`: `https://www.youtube.com/watch?v=notion-smoke-test`
-- `Source`: `YouTube`
-- `Status`: `Draft`
-- `Tags`: `smoke-test`
-
-No markdown body blocks are appended yet.
-
-## Notion export contract
-
-Notion export is available as an opt-in CLI mode. The existing local/manual behavior remains the default.
-
-Required Notion database properties:
-
-- `Name`: title
-- `URL`: url
-- `Tags`: multi_select
-- `Status`: select
-- `Source`: select
-- `Created`: created_time
-
-Recommended `Status` values:
-
-- `Draft`
-- `Reviewed`
-- `Archived`
-
-Recommended `Source` value for this pipeline:
-
-- `YouTube`
-
-CLI shape:
-
-```bash
-python ingest.py "https://youtu.be/VIDEO_ID" --export notion
-python ingest.py "https://youtu.be/VIDEO_ID" --export local
-```
-
-Markdown note metadata convention for export: the first H1 heading, formatted as `# Note title`, is the Notion page `Name`; tags should be written as `Tags: tag one, tag two` with comma-separated tags.
+The page uses `Name: Notion smoke test`, `Source: YouTube`, `Status: Draft`, `Tags: smoke-test`, and the smoke-test URL. No markdown body blocks are appended yet.
 
 ## Limitations
 
@@ -358,4 +353,4 @@ Markdown note metadata convention for export: the first H1 heading, formatted as
 - Video titles are not fetched yet; output filenames use the video id unless `--output-name` is provided.
 - OpenAI mode is optional and intentionally simple.
 - Notion export requires a generated markdown note; prompt-only/manual mode does not export.
-- No queueing or web UI exists in this milestone.
+- No queueing or web UI exists.

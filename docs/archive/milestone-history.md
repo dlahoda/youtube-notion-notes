@@ -642,6 +642,56 @@ Out of scope:
 
 ---
 
+# Milestone 9: Repo-local Launcher Usability Closeout
+
+## Status
+
+Complete and tagged `v0.9.0`.
+
+## Goal
+
+Make day-to-day repo-local MVP usage comfortable through `ynn`, `ynn-note`, `ynn-notion`, and `ynn-prompt`.
+
+## Summary
+
+- repo-local launchers call back into this repository as thin wrappers;
+- `./ingest.py` remains the underlying direct CLI contract for fallback use, tests, local development, n8n, and packaging work;
+- launcher usability was a repo-local closeout before `v1.0.0` installable CLI packaging;
+- `v1.0.0` later kept the same command names as editable-install console script entrypoints.
+
+---
+
+# v1.0.0 Packaging Slices
+
+## Status
+
+Complete before the numbered UX hardening work.
+
+## Slice Summary
+
+- Slice 1 added the minimal editable-install packaging skeleton and the `ynn`, `ynn-note`, `ynn-notion`, and `ynn-prompt` console script entrypoints.
+- Slice 2 defined runtime output and config-path policy for repo-local and editable-installed CLI usage.
+- Slice 3 moved the built-in prompt template into package-owned resources.
+- Slice 4 replaced the transitional flat-repo packaging shape with the `youtube_notion_notes` package: Slice 4.2 moved service modules, Slice 4.3 moved CLI implementation modules while keeping top-level compatibility wrappers, Slice 4.4 verified prompt template package data after the services move, and Slice 4.5 moved console scripts to package modules and removed transitional top-level `py-modules` packaging.
+
+---
+
+# v1.0.0 Numbered UX Hardening
+
+## Status
+
+Complete before the separate UX-FINAL release/publication audit.
+
+## Slice Summary
+
+- UX-1 added the Notion export config preflight before transcript, note-generation, or Notion work for generated-note export.
+- UX-2 documented the installed CLI config contract, including the `ynn init` role and runtime config priority, before implementation.
+- UX-3 implemented `ynn init` user-config and output-directory setup, then added optional prompts for missing OpenAI and Notion config values and transcript language preferences.
+- UX-4 aligned user-facing setup and command guidance to the installed CLI flow.
+- UX-5 recorded release-readiness verification before UX-6 transcript selection quality work.
+
+---
+
 # v1.0.0 UX-6: Transcript Selection Quality
 
 ## Status
@@ -655,3 +705,9 @@ UX-6 is complete before the separate UX-FINAL release/publication audit.
 - unknown-origin tracks remain last-resort fallbacks;
 - transcript-file input bypasses YouTube discovery and selection;
 - JSON success output may include additive `transcript_selection` metadata.
+
+## Slice Summary
+
+- Early slices added project-owned transcript track discovery metadata and selection policy, including unknown-origin tracks as last-resort fallbacks.
+- Runtime slices connected discovery and selection to normal YouTube transcript fetching and exposed concise human selection output plus additive JSON selection metadata.
+- Closeout aligned current docs with the completed transcript selection behavior before the separate UX-FINAL release/publication audit.

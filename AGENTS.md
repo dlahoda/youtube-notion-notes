@@ -51,8 +51,8 @@ When describing files, always include the project-relative path from the reposit
 Good examples:
 - `./review`
 - `./README.md`
-- `./services/transcript.py`
-- `./services/resources/comprehensive_note.md`
+- `./youtube_notion_notes/services/transcript.py`
+- `./youtube_notion_notes/services/resources/comprehensive_note.md`
 
 Avoid vague references like:
 - "the review file"

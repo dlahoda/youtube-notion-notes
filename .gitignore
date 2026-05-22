@@ -11,3 +11,6 @@ output/
 review-stat.txt
 review.patch
 .local.mk
+
+build/
+dist/

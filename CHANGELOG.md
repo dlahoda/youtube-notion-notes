@@ -6,12 +6,15 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- Added installable editable package support with console script entrypoints:
-  `ynn`, `ynn-note`, `ynn-notion`, and `ynn-prompt`.
+- Added local package install support with console script entrypoints:
+  `ynn`, `ynn-note`, `ynn-notion`, and `ynn-prompt`. Editable installs
+  depend on the repository checkout; regular `python -m pip install .` is the
+  portable local install path.
 - Added the `ynn init` setup helper.
 - Added user config fallback at `~/.config/youtube-notion-notes/.env`.
 - Added optional `ynn init` prompts for transcript languages, OpenAI config,
   and Notion config.
+- Added optional regular-install smoke verification.
 - Added transcript selection metadata in human and JSON output.
 
 ### Changed
@@ -21,6 +24,9 @@ All notable changes to this project will be documented in this file.
 - Switched prompt template handling to package-owned resources.
 - Updated output and config path policy for installed CLI use.
 - Aligned README setup guidance around installed CLI usage.
+- Focused `./design-doc.md` on current contracts and source-of-truth material;
+  completed milestone and slice history now lives in
+  `./docs/archive/milestone-history.md`.
 - Normal YouTube transcript fetching now uses project-owned discovery and
   selection.
 
@@ -82,8 +88,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- Added opt-in Notion export, its official Python client dependency, and a
-  manual Notion smoke test in `./services/notion.py`.
+- Added opt-in Notion export, its official Python client dependency, and the manual Notion smoke test.
 - Documented the Notion export contract before the integration was added.
 
 ## v0.1.0 - 2026-05-14

@@ -1,6 +1,6 @@
 # n8n Smoke Workflow
 
-This document describes the first small n8n smoke workflow for the YouTube Notion Notes pipeline.
+This document describes the manual n8n smoke workflow for the YouTube Notion Notes pipeline.
 
 The goal is to prove that n8n can call the existing local Python CLI, pass one JSON payload through stdin, receive JSON-only stdout, and branch on the result. This is a contract, manual build guide, and exported smoke workflow template. It is not production automation.
 
@@ -20,11 +20,11 @@ cd /path/to/youtube-notion-notes && sh ./scripts/n8n-ingest.sh
 - follows the success path when `ok` is `true`;
 - follows the failure path when `ok` is `false`.
 
-The smoke workflow should prove the handoff between n8n and `./ingest.py`. It should not duplicate transcript fetching, note generation, markdown conversion, or Notion export logic.
+The smoke workflow should prove the handoff between n8n and `./ingest.py`. n8n orchestrates only; Python owns transcript fetching, note generation, markdown conversion, Notion export, and JSON result shaping.
 
 ## Minimal n8n node chain
 
-Build the first workflow manually with a small node chain:
+Build the workflow manually with a small node chain:
 
 1. Manual Trigger
 2. Execute Command node that pipes or provides one JSON payload to `./scripts/n8n-ingest.sh`
@@ -35,7 +35,7 @@ Build the first workflow manually with a small node chain:
 
 The exact n8n node names may vary by version, but the workflow should stay this small.
 
-For the first smoke test, the JSON payload may be hardcoded in the Execute Command shell pipe. A later workflow can add a Set or Edit Fields node upstream to construct the payload before calling `./scripts/n8n-ingest.sh`.
+For the smoke test, the JSON payload may be hardcoded in the Execute Command shell pipe. A later workflow can add a Set or Edit Fields node upstream to construct the payload before calling `./scripts/n8n-ingest.sh`.
 
 ## Exported Smoke Template
 
@@ -102,7 +102,7 @@ Run the wrapper from the repository root so relative output paths are created un
 cd /path/to/youtube-notion-notes && printf '%s\n' '{"url":"https://youtu.be/VIDEO_ID"}' | sh ./scripts/n8n-ingest.sh
 ```
 
-For this first smoke workflow, the `printf` payload is intentionally hardcoded so the node chain stays minimal: Trigger Manually to Execute Command to Code to IF to success/failure branches.
+For this smoke workflow, the `printf` payload is intentionally hardcoded so the node chain stays minimal: Trigger Manually to Execute Command to Code to IF to success/failure branches.
 
 The wrapper exists because n8n Execute Command can fail the node on a non-zero process exit before later Code and IF nodes can parse stdout and branch on `ok`. It keeps the command short while preserving the `./ingest.py` JSON stdin/stdout contract.
 
@@ -250,21 +250,13 @@ printf '%s\n' '{"url":"not-a-youtube-url"}' | sh ./scripts/n8n-ingest.sh
 
 Expected behavior: stdout is valid JSON, the wrapper exits `0`, and the parsed JSON contains `ok: false` with `stage` and `error`. This lets n8n continue to the Code node and route through the IF node's false branch.
 
-For Notion export, after the normal OpenAI and Notion environment variables are configured:
+Generated-note Notion export requires OpenAI config plus Notion config. After those environment variables are configured:
 
 ```bash
 printf '%s\n' '{"url":"https://youtu.be/VIDEO_ID","export":"notion"}' | sh ./scripts/n8n-ingest.sh
 ```
 
-Review the n8n smoke workflow files before committing or tagging:
-
-```bash
-git status --short
-git diff --stat
-git diff -- docs/n8n-smoke-workflow.md docs/n8n-smoke-workflow.json design-doc.md
-```
-
-Manual review checklist:
+Smoke workflow checklist:
 
 - stdout is valid JSON and contains no human-readable text outside the JSON object;
 - successful runs include `ok: true`;
@@ -284,4 +276,4 @@ Manual review checklist:
 - YouTube fetching still requires available transcripts or captions unless `transcript_file` supplies a local transcript file.
 - OpenAI note generation remains optional and requires OpenAI configuration.
 - Notion export remains opt-in and requires Notion configuration.
-- There is no HTTP server, queue, or retry system in this slice.
+- There is no HTTP server, queue, or retry system in this workflow.

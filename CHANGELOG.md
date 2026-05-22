@@ -6,12 +6,85 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- Added a manual Notion smoke test in `./services/notion.py`.
-- Added the official Notion Python client dependency.
+- Added installable editable package support with console script entrypoints:
+  `ynn`, `ynn-note`, `ynn-notion`, and `ynn-prompt`.
+- Added the `ynn init` setup helper.
+- Added user config fallback at `~/.config/youtube-notion-notes/.env`.
+- Added optional `ynn init` prompts for transcript languages, OpenAI config,
+  and Notion config.
+- Added transcript selection metadata in human and JSON output.
 
-### Planning
+### Changed
 
-- Documented the future Notion export contract without implementing the integration.
+- Packaged CLI modules under `./youtube_notion_notes/`.
+- Moved service modules under `./youtube_notion_notes/services/`.
+- Switched prompt template handling to package-owned resources.
+- Updated output and config path policy for installed CLI use.
+- Aligned README setup guidance around installed CLI usage.
+- Normal YouTube transcript fetching now uses project-owned discovery and
+  selection.
+
+### Fixed / Hardened
+
+- Notion export config preflight fails before transcript, prompt, note, or
+  Notion work when required config is missing.
+- Manual and author YouTube tracks are preferred over generated tracks.
+- Translated manual tracks may beat generated preferred-language tracks by
+  design.
+- Unknown-origin YouTube tracks are last-resort fallbacks.
+- `--transcript-file` bypasses YouTube discovery and selection.
+- JSON output keeps existing fields valid and adds `transcript_selection`
+  additively.
+
+## v0.9.0
+
+### Changed
+
+- Closed out repo-local launcher usability for day-to-day CLI use.
+
+## v0.8.0
+
+### Changed
+
+- Split ingest CLI tests by responsibility.
+
+## v0.7.0
+
+### Added
+
+- Added JSON transcript-file fallback input.
+
+## v0.6.0
+
+### Added
+
+- Added manual transcript-file fallback input.
+
+## v0.5.0
+
+### Changed
+
+- Refactored the pipeline core into clearer responsibilities.
+
+## v0.4.0
+
+### Added
+
+- Added the n8n integration contract and smoke workflow.
+
+## v0.3.0
+
+### Added
+
+- Added the local CLI automation contract with JSON input and output.
+
+## v0.2.0
+
+### Added
+
+- Added opt-in Notion export, its official Python client dependency, and a
+  manual Notion smoke test in `./services/notion.py`.
+- Documented the Notion export contract before the integration was added.
 
 ## v0.1.0 - 2026-05-14
 

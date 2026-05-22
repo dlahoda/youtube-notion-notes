@@ -14,6 +14,9 @@ Native Windows PowerShell support is best-effort and partial. Direct Python CLI 
 
 ## Recommended installed CLI setup
 
+Requires Python 3.10+.
+Using a virtual environment is recommended, especially on Linux/WSL systems with externally managed Python environments.
+
 From the repository root, use the installed CLI flow:
 
 ```bash
@@ -263,7 +266,7 @@ Markdown note metadata convention for export: the first H1 heading, formatted as
 
 ## JSON result output
 
-For future automation, the CLI can accept structured JSON input and emit a machine-readable JSON result. Human-readable positional-URL behavior remains the default.
+For local automation and n8n integration, the CLI can accept structured JSON input and emit a machine-readable JSON result. Human-readable positional-URL behavior remains the default.
 
 ```bash
 python ingest.py "https://youtu.be/VIDEO_ID" --output json

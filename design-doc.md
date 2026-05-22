@@ -39,7 +39,7 @@ Historical reference:
 
 The project is a Python pipeline that takes a YouTube link and creates a readable note that can be saved locally and optionally exported to Notion.
 
-Current day-to-day local usage goes through global launcher commands installed into the user's shell:
+Current day-to-day command names are:
 
 ```bash
 ynn "https://www.youtube.com/watch?v=..."
@@ -48,52 +48,25 @@ ynn-notion "https://www.youtube.com/watch?v=..."
 ynn-prompt "https://www.youtube.com/watch?v=..."
 ```
 
-These repo-local launchers remain thin wrappers over this repository. `./ingest.py` is still the underlying direct CLI contract for fallback use, tests, local development, n8n, and packaging work.
+For `v1.0.0`, editable installs expose these command names as console script entrypoints. Repo-local launcher scripts remain supported as thin wrappers over this repository. `./ingest.py` is still the underlying direct CLI contract for fallback use, tests, local development, n8n, and packaging work.
 
-Current roadmap:
+Current release state:
 
-- Milestone 1 is complete: local transcript and markdown note.
-- Milestone 2 is complete and tagged `v0.2.0`: opt-in Notion export.
-- Milestone 3 is complete and tagged `v0.3.0`: local CLI automation contract.
-- Milestone 4 is complete and tagged `v0.4.0`: n8n integration contract and smoke workflow.
-- Milestone 5 is complete and tagged `v0.5.0`: pipeline core refactor.
-- Milestone 6 is complete and tagged `v0.6.0`: transcript fallback input.
-- Milestone 7 Slice 1 is complete and tagged `v0.7.0`: JSON transcript-file fallback input.
-- Milestone 8 Slice 1 is complete and tagged `v0.8.0`: ingest CLI tests split by responsibility.
-- Milestone 9 is complete and tagged `v0.9.0`: repo-local launcher usability closeout.
-- `v1.0.0` Slice 1 is complete: minimal installable CLI packaging skeleton and console script entrypoints for local editable installs.
-- `v1.0.0` Slice 2 is complete: runtime output/config path policy for repo-local and editable-installed CLI usage.
-- `v1.0.0` Slice 3 is complete: package data and prompt template resource handling.
-- `v1.0.0` Slice 4.2 is complete: service modules moved under `./youtube_notion_notes/services/` with internal service imports and service tests migrated.
-- `v1.0.0` Slice 4.3 is complete: CLI implementation modules moved under `./youtube_notion_notes/` while top-level compatibility wrappers remain.
-- `v1.0.0` Slice 4.4 is complete: package data handling for `comprehensive_note.md` was verified after the services move, including editable-install smoke coverage from a non-repo cwd.
-- `v1.0.0` Slice 4.5 is complete: console script entrypoints point at package modules and transitional top-level `py-modules` packaging has been removed.
-- `v1.0.0` UX-1 is complete: Notion export config preflight fails before transcript, prompt, note, or Notion work when required config is incomplete.
-- `v1.0.0` numbered UX hardening work is complete: installed CLI usage is documented around one setup path: install -> init/config -> use.
-- `v1.0.0` UX-3 Slice 1 is complete: `ynn init --output-dir PATH` creates or updates the user config fallback, and runtime config loading follows the UX-2 source priority contract.
-- `v1.0.0` UX-3 Slice 2 is complete: `ynn init --output-dir PATH` can optionally collect missing OpenAI and Notion config values interactively while preserving existing user config values.
-- `v1.0.0` UX-3 transcript language follow-up is complete: `ynn init --output-dir PATH` can optionally append `YOUTUBE_TRANSCRIPT_LANGUAGES` to the user config while preserving runtime fallback to `en` when no language config is provided.
-- `v1.0.0` UX-5 is complete: release readiness checks were manually run and passed.
-- `v1.0.0` UX-6 Slice 1 is complete: transcript track discovery metadata can be listed internally without changing default transcript fetching behavior.
-- `v1.0.0` UX-6 Slice 2 is complete: transcript track selection policy can choose from discovered metadata internally without changing default transcript fetching behavior.
-- `v1.0.0` UX-6 Slice 2.1 is complete: unknown-origin transcript tracks are last-resort selection fallbacks after known manual and generated matches.
-- `v1.0.0` UX-6 Slice 3 is complete: transcript selection runtime visibility and failure contracts are documented.
-- `v1.0.0` UX-6 Slice 4 is complete: normal YouTube transcript fetching uses project-owned discovery and selection before fetching the selected track.
-- `v1.0.0` UX-6 Slice 5 is complete: transcript selection metadata is visible in concise human output and additive JSON output.
-- `v1.0.0` UX-6 is complete: README/docs truth alignment and the closeout smoke checklist are recorded.
-- `v1.0.0` UX-FINAL release/publication audit has not started yet: publishing should use an All Rights Reserved / source-visible licensing posture unless a different license is explicitly decided later.
+- Milestones 1-9 are complete and tagged through `v0.9.0`.
+- `v1.0.0` packaging, numbered UX hardening, UX-6 transcript selection quality, docs truth sync, and CHANGELOG readiness are complete.
+- UX-FINAL release/publication audit has not started.
+- The public repository licensing gate remains deferred until final audit/publication steps.
 
-Completed `v1.0.0` packaging slices:
+Current `v1.0.0` packaging behavior:
 
-- Slice 1: minimal packaging skeleton and console script entrypoints. Complete.
-- Slice 2: output/config path policy for installed CLI runtime behavior. Complete.
-- Slice 3: package data and prompt template resource handling. Complete.
-- Slice 4: proper package layout using the real import package `youtube_notion_notes`.
-  Slice 4 replaces the temporary flat-repo packaging shape from Slice 1. Slice 4.2 moved service modules into `youtube_notion_notes.services`. Slice 4.3 moved CLI implementation modules into `youtube_notion_notes` while keeping top-level compatibility wrappers. Slice 4.4 verified package data handling for `comprehensive_note.md` after the services move. Slice 4.5 moved console scripts to `youtube_notion_notes.ynn_cli:*` and removed transitional top-level `py-modules` packaging.
+- local editable installs expose the same `ynn`, `ynn-note`, `ynn-notion`, and `ynn-prompt` command names as the repo-local launchers;
+- installed entrypoints use package modules under `./youtube_notion_notes/`;
+- top-level `./ingest.py` and `./ynn_cli.py` remain compatibility wrappers for direct CLI, n8n, tests, and repo-local usage;
+- the built-in prompt template is package-owned data under `./youtube_notion_notes/services/resources/`.
 
-Completed `v1.0.0` numbered UX hardening work:
+Current installed CLI UX contracts:
 
-The approved UX milestone goal is to make the installed CLI predictable from any directory after one setup path:
+The installed CLI setup path is:
 
 ```text
 install
@@ -101,31 +74,9 @@ install
 -> use
 ```
 
-`ynn init` is included in `v1.0.0` scope. This section records the completed numbered UX hardening work before the separate UX-FINAL release/publication audit.
+`ynn init` is a setup helper that creates or updates the user config fallback without making it the only supported config path. Process environment variables, cwd `./.env`, explicit `--env-file PATH`, and manual user-config edits remain supported.
 
-Milestone-level boundaries for UX hardening:
-
-- no web UI;
-- no new n8n behavior;
-- no new Notion behavior beyond config validation needed for predictable Notion export;
-- no runtime code, tests, or packaging config changes in the docs-only planning slice;
-- no README restructure that presents future UX behavior as already implemented.
-
-UX-1 -- Notion fail-fast: Complete.
-
-- `--export notion` and `ynn-notion` should fail before transcript fetching, OpenAI calls, or Notion calls if required config is incomplete.
-- For generated-note Notion export in the `v1.0.0` UX contract, `ynn-notion` requires `OPENAI_API_KEY`, `NOTION_API_KEY`, and `NOTION_DATABASE_ID`.
-- Local and manual modes must not become strict.
-- Missing `OPENAI_API_KEY` remains a non-error for `ynn`, `ynn-note`, and `ynn-prompt`.
-- The implementation slice should keep human and JSON failure output clean and predictable.
-
-UX-2 -- `ynn init` config contract design: Complete docs-only planning.
-
-This UX-2 slice documented the planned config contract before UX-3 implementation.
-
-Current behavior includes the UX-3 Slice 1 runtime config priority: the CLI can read an explicit `--env-file PATH`, real process environment variables, cwd `./.env`, the user config fallback at `~/.config/youtube-notion-notes/.env`, and built-in defaults.
-
-UX-2/UX-3 config source priority:
+Runtime config priority:
 
 1. explicit `--env-file PATH`;
 2. real process environment variables;
@@ -133,222 +84,26 @@ UX-2/UX-3 config source priority:
 4. user config `~/.config/youtube-notion-notes/.env`;
 5. built-in defaults.
 
-Priority semantics:
+The user config file is a dotenv file at `~/.config/youtube-notion-notes/.env`. `ynn init --output-dir PATH` may store `YNN_OUTPUT_DIR` there, preserve existing values by default, create the configured output directory idempotently, and collect missing transcript-language, OpenAI, or Notion config values without calling those services.
 
-- explicit `--env-file PATH` is the highest-priority config source for that run;
-- values loaded from an explicit `--env-file PATH` should override matching real process environment variables;
-- real process environment variables should override cwd `./.env`, user config, and built-in defaults;
-- cwd `./.env` should override user config and built-in defaults;
-- user config is the installed CLI fallback created by `ynn init`;
-- built-in defaults are used only when no higher-priority source provides a value.
+Output root resolution remains explicit `--output-dir PATH`, then `YNN_OUTPUT_DIR`, then `./output` relative to cwd. Regular pipeline runs create `transcripts/`, `prompts/`, and `notes/` under the resolved output root as needed.
 
-User config file contract:
+For generated-note Notion export, `--export notion` and `ynn-notion` fail before transcript fetching, OpenAI calls, or Notion calls when `OPENAI_API_KEY`, `NOTION_API_KEY`, or `NOTION_DATABASE_ID` is missing. Missing `OPENAI_API_KEY` remains a non-error for `ynn`, `ynn-note`, and `ynn-prompt`.
 
-- the preferred user config path is `~/.config/youtube-notion-notes/.env`;
-- the file is a plain dotenv text file;
-- manual editing of this file is officially supported;
-- no new config file format is introduced in this slice.
+Current UX-6 transcript selection contract:
 
-`ynn init` role:
+Normal YouTube transcript fetching inspects available transcript tracks and chooses the best available track by origin and quality before fetching transcript snippets. A narrow language-preference fetch fallback may remain for older `youtube-transcript-api` shapes where transcript discovery is unavailable.
 
-- `ynn init` is a setup helper, not the only supported way to manage config;
-- users may still use process environment variables, cwd `./.env`, explicit `--env-file PATH`, or manual edits to the user config file;
-- `ynn init` should create or update the user config file so installed CLI usage is predictable from any directory.
+Selection priority:
 
-Re-run and overwrite behavior:
+1. manual/author-provided transcript in preferred languages;
+2. manual/author-provided transcript translated to a preferred language;
+3. generated transcript in preferred languages;
+4. generated transcript translated to a preferred language;
+5. unknown-origin transcript in preferred languages;
+6. unknown-origin transcript translated to a preferred language.
 
-- the first run should create `~/.config/youtube-notion-notes/.env` if it does not exist;
-- re-running `ynn init` should not silently overwrite existing secret values;
-- if the user config file already exists, `ynn init` should preserve existing values by default;
-- a future implementation may support explicit overwrite or update behavior;
-- silent destructive overwrite is out of scope.
-
-Secrets:
-
-- secrets are stored as plain text in the local user config file for the MVP;
-- users should not commit this file;
-- this is acceptable for the local MVP, but it is not a production secret-management story.
-
-Output directory config contract:
-
-- `YNN_OUTPUT_DIR` may be stored in the user config file;
-- explicit `--output-dir PATH` remains the highest-priority output directory override;
-- process environment `YNN_OUTPUT_DIR` remains above config-file fallback behavior unless the command uses an explicit `--env-file PATH`, which intentionally overrides matching process environment values according to the UX-2 config priority contract;
-- default output remains `./output` relative to cwd when no output setting is provided;
-- `ynn init` may create the configured output directory when the user chooses or accepts an output path;
-- output directory creation should be idempotent, preserving existing directories;
-- `ynn init` must not delete, clean, or move existing output files;
-- parent directory creation is allowed for the selected output path;
-- regular pipeline runs keep creating `transcripts/`, `prompts/`, and `notes/` under the resolved output root as needed.
-
-UX-2 boundaries:
-
-- no implementation;
-- no runtime code changes;
-- no test changes;
-- no packaging config changes;
-- no README restructure;
-- no n8n behavior changes;
-- no Notion behavior changes beyond documenting config requirements already introduced by UX-1;
-- no new config file format beyond dotenv.
-
-UX-3 -- `ynn init` implementation: Complete.
-
-- Add an installed CLI setup command only after the config contract is documented.
-- The desired installed CLI flow is:
-
-```bash
-python -m pip install -e .
-ynn init --output-dir ~/ynn-output
-ynn-prompt "https://www.youtube.com/watch?v=..."
-ynn-note "https://www.youtube.com/watch?v=..."
-ynn-notion "https://www.youtube.com/watch?v=..."
-```
-
-UX-3 Slice 1:
-
-- `ynn init --output-dir PATH` creates or updates `~/.config/youtube-notion-notes/.env`;
-- existing user config values are preserved by default;
-- `YNN_OUTPUT_DIR` is added only when it is not already present;
-- `~` in the provided output path is expanded before writing;
-- the configured output directory is created idempotently;
-- runtime config loading follows the UX-2 priority contract.
-
-UX-3 Slice 2:
-
-- after configuring the output directory, `ynn init --output-dir PATH` prompts for optional `OPENAI_API_KEY`, `NOTION_API_KEY`, and `NOTION_DATABASE_ID`;
-- empty prompt input skips that value;
-- existing user config values are preserved by default and are not duplicated;
-- missing provided values are appended to the existing dotenv file;
-- API key prompts use hidden input;
-- manual editing of the user config dotenv file remains supported;
-- runtime config priority remains unchanged;
-- `ynn init` does not call OpenAI or Notion and does not validate keys.
-
-UX-3 transcript language follow-up:
-
-- `ynn init --output-dir PATH` prompts for optional transcript language preferences as `YOUTUBE_TRANSCRIPT_LANGUAGES`;
-- the prompt makes the runtime default clear as `Transcript languages [en]: `;
-- empty prompt input skips writing `YOUTUBE_TRANSCRIPT_LANGUAGES`;
-- existing `YOUTUBE_TRANSCRIPT_LANGUAGES` values are preserved and not duplicated;
-- runtime fallback remains `en` when no language config is provided;
-- runtime config priority and pipeline behavior remain unchanged.
-
-UX-4 -- README command/setup contract: Complete.
-
-- `./README.md` is structured around what this does, platform support, recommended installed CLI setup, first run, daily commands, command requirements and expected outcomes, repo-local/developer/fallback usage, automation/n8n notes, and limitations.
-- Add a command requirements table.
-- Explain `ynn-prompt` clearly: it builds the ChatGPT-ready prompt file and stops. It does not call OpenAI and does not create a Notion page.
-- Keep `./README.md` aligned to current runtime behavior rather than future UX plans.
-
-UX-5 -- Release readiness check: Complete.
-
-The following release readiness checks were manually run and passed:
-
-- `make test`;
-- editable-install smoke test;
-- manual `ynn-prompt` smoke;
-- manual `ynn-notion` config failure smoke.
-
-UX-6 -- Transcript selection quality: Complete.
-
-- Current normal YouTube transcript fetching inspects available transcript tracks and chooses the best available track by origin and quality before fetching transcript snippets.
-- A narrow language-preference fetch fallback may remain only for older `youtube-transcript-api` shapes where transcript discovery is not available.
-- Slice 1 adds only the internal transcript track discovery contract.
-- Slice 1 keeps `fetch_transcript(video_id, languages)` behavior unchanged.
-- Slice 1 adds project-owned transcript track metadata structures near `./youtube_notion_notes/services/transcript.py`.
-- Slice 1 can list available transcript tracks through `youtube-transcript-api` and normalize available language code, language name, generated/manual status, translatability, and translation language metadata.
-- Slice 1 does not add CLI flags, JSON output fields, README instructions, Notion behavior, n8n behavior, or automatic best-track selection.
-- Slice 2 adds only the internal transcript track selection policy.
-- Slice 2 keeps `fetch_transcript(video_id, languages)` behavior unchanged.
-- Slice 2 can choose from discovered `TranscriptTrack` metadata by origin, direct language match, translation language match, and preferred language order.
-- Slice 2 returns the selected track plus selection metadata, or no selection when no track matches the policy.
-- Slice 2 does not connect selection to CLI flags, JSON output, README instructions, Notion behavior, n8n behavior, or automatic best-track fetching.
-- Slice 2.1 makes unknown-origin tracks a last-resort fallback instead of ignoring them completely.
-- Slice 2.1 keeps unknown-origin tracks lower priority than known manual or generated tracks.
-- Current internal selection priority:
-  1. manual/author-provided transcript in preferred languages;
-  2. manual/author-provided transcript translated to a preferred language;
-  3. generated transcript in preferred languages;
-  4. generated transcript translated to a preferred language;
-  5. unknown-origin transcript in preferred languages;
-  6. unknown-origin transcript translated to a preferred language.
-- Original spoken language detection is future best-effort only.
-- Do not require YouTube Data API, OAuth, `captions.list`, or quota-dependent behavior for `v1.0.0`.
-- Slice 4 connects discovery and selection metadata to normal runtime YouTube transcript fetching.
-- Slice 4 keeps `--transcript-file` behavior as a bypass of YouTube track discovery and selection.
-- Slice 4 keeps the existing transcript object shape for downstream prompt and note generation.
-- Slice 5 exposes project-owned transcript selection metadata without changing selection priority or adding CLI flags.
-- Slice 5 adds concise human output when the transcript source is known.
-- Slice 5 adds an additive JSON result field named `transcript_selection`.
-- Slice 5 keeps existing JSON fields valid and keeps `--transcript-file` as a bypass of YouTube discovery and selection.
-- Closeout updates `./README.md` to describe current transcript selection behavior, additive JSON `transcript_selection` metadata, and transcript-file bypass behavior.
-- Closeout does not change runtime code, tests, Notion behavior, n8n behavior, CLI flags, or licensing.
-
-UX-6 smoke checklist:
-
-- `make test`;
-- `ynn-prompt "https://youtu.be/VIDEO_ID"`;
-- `python ingest.py "https://youtu.be/VIDEO_ID" --no-note --output json` and check that `transcript_selection` exists;
-- `python ingest.py "https://youtu.be/VIDEO_ID" --transcript-file ./manual-transcript.txt --no-note --output json` and check that `transcript_selection.origin` is `transcript_file`;
-- optional release-readiness recheck: `ynn-notion "https://youtu.be/VIDEO_ID"` should fail cleanly when required Notion/OpenAI config is missing.
-
-UX-6 Slice 3 -- Transcript selection runtime visibility contract: Complete docs-only.
-
-This slice defined the runtime visibility contract before connecting the UX-6 selection policy to transcript fetching.
-
-Historical behavior before Slice 4:
-
-- runtime transcript fetching remains unchanged;
-- discovery and selection metadata are not yet connected to CLI fetching;
-- no new human output line or JSON metadata field exists yet.
-
-Human output visibility contract:
-
-- normal runtime selection shows one short transcript selection line when the transcript source is known;
-- the line should be concise and useful for debugging;
-- example shape: `Transcript selected: manual Spanish -> English`;
-- the line should not be noisy during normal successful runs;
-- the line should not expose low-level `youtube-transcript-api` object names, exception classes, or other library internals.
-
-JSON output metadata contract:
-
-- JSON changes must be additive only so existing automation and n8n consumers keep working;
-- existing JSON fields must remain valid;
-- add one compact metadata field, preferably `transcript_selection`;
-- `transcript_selection` should include enough information to debug runtime selection:
-  - `origin`: `manual`, `generated`, `unknown`, or `transcript_file`;
-  - `source_language`;
-  - `selected_language`;
-  - `requires_translation`;
-  - `selection_reason`.
-
-Failure behavior contract:
-
-- if transcript track discovery fails during runtime selection, fail cleanly in the transcript stage;
-- if discovery succeeds but no track matches the policy, fail cleanly in the transcript stage;
-- when available, no-match errors should include available language codes without dumping raw library internals;
-- human output should stay short and actionable;
-- JSON failure output should stay structured and keep the existing failure envelope valid;
-- Notion export and note generation must not be responsible for transcript selection failures.
-
-`--transcript-file` behavior:
-
-- manual transcript-file mode should bypass YouTube track discovery and selection;
-- transcript-file metadata should use `origin: transcript_file`;
-- transcript-file mode should preserve the original URL as source metadata for prompt and note generation.
-
-Slice 3 boundaries:
-
-- docs-only;
-- no runtime fetching behavior change;
-- no code changes;
-- no test changes;
-- no CLI flags;
-- no README changes that present future behavior as current;
-- no Notion or n8n behavior changes;
-- no open-source licensing changes;
-- runtime wiring happened in UX-6 Slice 4.
+`--transcript-file` and JSON `transcript_file` input bypass YouTube track discovery and selection while preserving the original URL as source metadata. Human output can show one concise transcript selection line when the transcript source is known. JSON output keeps existing fields valid and adds `transcript_selection` metadata additively when known, including `origin: transcript_file` for transcript-file input.
 
 UX-FINAL -- Public repository licensing gate: Not started.
 
@@ -378,7 +133,7 @@ The current MVP answers one question:
 
 > Can we reliably turn a YouTube link into a high-quality markdown note?
 
-The `v0.9.0` MVP is repo-local. The launcher commands make that repo-local workflow comfortable for daily use. `v1.0.0` began by turning the same command names into installable package entrypoints through small slices, then hardens the installed CLI setup path so daily use is predictable from any directory.
+The `v0.9.0` MVP is repo-local. The launcher commands make that repo-local workflow comfortable for daily use. `v1.0.0` keeps those command names as installable package entrypoints and hardens the installed CLI setup path so daily use is predictable from any directory.
 
 ---
 
@@ -573,7 +328,7 @@ A local transcript file can be used when YouTube transcript fetching is unavaila
 python ingest.py "https://www.youtube.com/watch?v=..." --transcript-file ./manual-transcript.txt
 ```
 
-Daily local launcher commands are part of local MVP usability. They call back into this repository and remain thin wrappers over the existing direct CLI contract:
+These daily command names are part of local MVP usability. For `v1.0.0`, editable installs expose them as console script entrypoints:
 
 ```bash
 ynn "https://www.youtube.com/watch?v=..."
@@ -582,7 +337,9 @@ ynn-notion "https://www.youtube.com/watch?v=..."
 ynn-prompt "https://www.youtube.com/watch?v=..."
 ```
 
-Launcher behavior:
+Repo-local launcher scripts remain supported as thin wrappers over the existing direct CLI contract.
+
+Repo-local launcher behavior:
 
 - `ynn` calls `python ./ingest.py "URL"`;
 - `ynn-note` calls `python ./ingest.py "URL" --export local`;
@@ -591,9 +348,9 @@ Launcher behavior:
 
 The launcher layer must not change pipeline behavior, the JSON input/output contract, or n8n behavior.
 
-## Installable CLI Package Slice 1
+## Installed CLI Package Contract
 
-`v1.0.0` Slice 1 added a minimal Python packaging layer for local editable installs:
+Local editable installs expose the packaged CLI entrypoints:
 
 ```bash
 python -m pip install -e .
@@ -615,22 +372,9 @@ Installed entrypoint behavior:
 - `ynn-notion` delegates to the packaged ingest CLI implementation with `"URL" --export notion`;
 - `ynn-prompt` delegates to the packaged ingest CLI implementation with `"URL" --no-note`.
 
-Slice 1 boundaries:
+`./ingest.py` remains the direct CLI contract, repo-local launcher scripts remain supported, and installed entrypoints must preserve pipeline behavior, JSON input/output contracts, n8n behavior, and Notion export behavior.
 
-- `./ingest.py` remains the direct CLI contract;
-- repo-local launcher scripts remain supported;
-- no pipeline behavior changes;
-- no JSON input/output changes;
-- no n8n behavior changes;
-- no Notion export behavior changes;
-- no output directory policy changes;
-- no `.env` loading policy changes;
-- no prompt template package-resource handling;
-- no `src/` layout or full package refactor.
-
-## Runtime Path Policy Slice 2
-
-`v1.0.0` Slice 2 made output and env-file behavior explicit for both repo-local CLI usage and editable-installed console script usage, without changing pipeline behavior.
+## Runtime Path Policy
 
 Output policy:
 
@@ -639,7 +383,7 @@ Output policy:
 - if neither `--output-dir` nor `YNN_OUTPUT_DIR` is set, the compatibility default remains `./output` relative to the current working directory;
 - when an output root is selected, transcript, prompt, and note files are written under `OUTPUT_ROOT/transcripts/`, `OUTPUT_ROOT/prompts/`, and `OUTPUT_ROOT/notes/`;
 - output paths returned in JSON output mode reflect the actual filesystem paths used;
-- `output_dir` is not part of the JSON input schema in this slice.
+- `output_dir` is not part of the JSON input schema.
 
 Note: For daily installed CLI usage, `YNN_OUTPUT_DIR` is the recommended persistent output root. The `./output` fallback exists for backward compatibility and simple local runs.
 
@@ -651,20 +395,9 @@ Env-file policy:
 - user config fills missing values only;
 - missing cwd `./.env` and missing user config do not fail;
 - an explicit `--env-file PATH` must exist or the CLI returns a clean input error;
-- `env_file` is not part of the JSON input schema in this slice.
+- `env_file` is not part of the JSON input schema.
 
-Slice 2 boundaries:
-
-- no JSON input/output schema changes;
-- no n8n behavior changes;
-- no Notion export behavior changes;
-- no transcript fetching behavior changes;
-- no note generation behavior changes;
-- no `src/` layout or package refactor.
-
-## Package Data Prompt Template Slice 3
-
-`v1.0.0` Slice 3 moved the built-in manual prompt template into package-owned data while preserving the existing CLI behavior and output contracts.
+## Prompt Template Resource Contract
 
 Prompt template policy:
 
@@ -673,122 +406,6 @@ Prompt template policy:
 - `./youtube_notion_notes/services/note_generator.py` loads the default template with standard-library `importlib.resources`;
 - `build_manual_prompt` still accepts an explicit template path for tests or future use;
 - `./youtube_notion_notes/services/pipeline.py` uses the package-owned default template and no longer passes a cwd-relative `./prompts/comprehensive_note.md` path.
-
-Slice 3 boundaries:
-
-- no CLI behavior changes;
-- no JSON input/output schema changes;
-- no n8n behavior changes;
-- no Notion export behavior changes;
-- no output directory or env-file behavior changes;
-- no custom prompt selection, prompt profiles, prompt env vars, or prompt CLI flag;
-- no `src/` layout or package refactor.
-
-## Package Layout Planning Slice 4.1
-
-`v1.0.0` Slice 4.1 is a docs-only planning slice for replacing the transitional flat-repo packaging shape with a real package layout. It must not move files, change imports, update runtime behavior, or change `./pyproject.toml` entrypoints.
-
-Target package layout:
-
-```text
-youtube-notion-notes/
-  pyproject.toml
-  ingest.py
-  ynn_cli.py
-  youtube_notion_notes/
-    __init__.py
-    ingest.py
-    ynn_cli.py
-    services/
-      __init__.py
-      pipeline.py
-      transcript.py
-      note_generator.py
-      resources/
-        comprehensive_note.md
-      notion.py
-      markdown_to_notion.py
-      note_metadata.py
-      notion_export.py
-  scripts/
-    n8n-ingest.sh
-    ynn-run
-    install-launchers.sh
-  tests/
-```
-
-Target import map:
-
-- `./ingest.py` becomes a compatibility wrapper around `youtube_notion_notes.ingest.main`;
-- `./ynn_cli.py` becomes a compatibility adapter around `youtube_notion_notes.ynn_cli`;
-- `./services/pipeline.py` moves to `./youtube_notion_notes/services/pipeline.py`;
-- `./services/note_generator.py` moves to `./youtube_notion_notes/services/note_generator.py`;
-- all internal imports move from `services.*` to `youtube_notion_notes.services.*`;
-- the lazy Notion export import inside pipeline moves from `services.notion_export` to `youtube_notion_notes.services.notion_export`;
-- console scripts point to `youtube_notion_notes.ynn_cli:*`;
-- tests that exercise real package modules should import `youtube_notion_notes.*`, not only the top-level wrappers.
-
-Compatibility policy for `./ingest.py`:
-
-- `./ingest.py` remains the long-term compatibility wrapper for direct CLI, n8n, tests, local fallback usage, and existing repo-local launchers;
-- `python ./ingest.py ...` must preserve the current human CLI behavior, JSON input/output contract, output-dir policy, env-file policy, transcript-file behavior, and Notion behavior;
-- after the package move, real CLI implementation should live in `./youtube_notion_notes/ingest.py`, with `./ingest.py` delegating without adding behavior;
-- do not create a long-term top-level `services` compatibility package to support old internal imports.
-
-Compatibility policy for `./ynn_cli.py`:
-
-- top-level `./ynn_cli.py` is a migration compatibility adapter for the current editable install entrypoints and tests;
-- after console script entrypoints point to `youtube_notion_notes.ynn_cli`, all real wrapper behavior should live in `./youtube_notion_notes/ynn_cli.py`;
-- direct behavior of `ynn`, `ynn-note`, `ynn-notion`, and `ynn-prompt` must stay unchanged while the adapter exists;
-- `./ynn_cli.py` is not the long-term implementation module once package entrypoints have migrated.
-
-n8n wrapper compatibility policy:
-
-- `./scripts/n8n-ingest.sh` should keep calling `python ./ingest.py --input-json-file - --output json` unless there is a separately justified reason to change it;
-- the wrapper must continue to accept JSON on stdin, return valid JSON on stdout, validate stdout JSON, and allow valid `ok: false` CLI results to reach n8n;
-- n8n must continue to depend on the Python CLI boundary, not on package internals.
-
-Import migration strategy:
-
-- migrate internal imports fully to `youtube_notion_notes.services.*`;
-- avoid dual import paths inside runtime code;
-- move tests in the same slice as their corresponding runtime module so mocks and patches target the active import path;
-- keep wrapper-focused tests small and explicit so they prove compatibility without accidentally becoming the only coverage;
-- add or adjust package-module tests so failures in `youtube_notion_notes.ingest`, `youtube_notion_notes.ynn_cli`, and `youtube_notion_notes.services.*` are visible even if top-level wrappers still work.
-
-Package data strategy after moving services:
-
-- move the built-in template from `./services/resources/comprehensive_note.md` to `./youtube_notion_notes/services/resources/comprehensive_note.md`;
-- keep the default template loaded through `importlib.resources`, not cwd-relative paths;
-- update the moved note generator module after the move to read from package `youtube_notion_notes.services`;
-- update `./pyproject.toml` package data from `services = ["resources/*.md"]` to package data for `youtube_notion_notes.services`;
-- keep explicit `template_path` support in `build_manual_prompt` for tests and future use;
-- preserve installed and editable package behavior when the current working directory does not contain prompt files.
-
-Proposed Slice 4.2-4.5 boundaries:
-
-- Slice 4.2: create ./youtube_notion_notes/ package skeleton and move ./services/ into ./youtube_notion_notes/services/, migrate internal service imports and service tests. Complete.
-- Slice 4.3: move CLI implementation into ./youtube_notion_notes/ingest.py and ./youtube_notion_notes/ynn_cli.py while keeping top-level ./ingest.py and ./ynn_cli.py as wrappers. Complete.
-- Slice 4.4: verify package data handling for comprehensive_note.md after the services move, clean up any remaining transitional package-data assumptions, and smoke-test editable install from a non-repo cwd. Complete.
-- Slice 4.5: update console script entrypoints, clean py-modules/packages transitional packaging, and update editable-install smoke docs. Complete.
-
-Affected tests:
-
-- `./tests/test_ingest_cli.py`, `./tests/test_pipeline.py`, `./tests/test_note_generator.py`, `./tests/test_notion_export.py`, `./tests/test_notion.py`, `./tests/test_markdown_to_notion.py`, and `./tests/test_note_metadata.py` now import and patch `youtube_notion_notes.services.*`.
-- `./tests/test_ingest_input.py` imports `youtube_notion_notes.ingest` for real CLI module coverage and imports `PipelineRequest` from `youtube_notion_notes.services.pipeline`.
-- `./tests/test_ynn_cli.py` imports `youtube_notion_notes.ynn_cli` for real launcher adapter coverage.
-- `./tests/test_cli_wrappers.py` keeps small compatibility checks for top-level `./ingest.py` and `./ynn_cli.py`.
-
-Risks and guardrails:
-
-- Tests may accidentally keep testing top-level wrappers instead of the real package modules after CLI code moves.
-- Tests that patch `sys.modules` or fake `services.notion_export` must migrate to the new `youtube_notion_notes.services.*` module paths.
-- The built-in prompt template must remain package data after moving from `./services/resources/comprehensive_note.md` to `./youtube_notion_notes/services/resources/comprehensive_note.md`.
-- `./scripts/n8n-ingest.sh` should keep calling `python ./ingest.py --input-json-file - --output json` unless there is a separately justified reason to change it.
-- Do not create a long-term top-level `services` compatibility package. Migrate internal imports fully.
-- `./ingest.py` remains the long-term compatibility wrapper for direct CLI, n8n, tests, and local fallback usage.
-- `./pyproject.toml` changes should land only in implementation slices, not in Slice 4.1.
-- Package layout work must preserve direct CLI behavior, JSON input/output contracts, n8n wrapper behavior, Notion behavior, output-dir policy, env-file policy, and prompt template package-data behavior.
 
 ## JSON Input Contract
 
@@ -938,7 +555,7 @@ Current Notion database details:
 - `Created` is managed by Notion as `created_time` and should not be set manually by the client;
 - recommended `Status` values are `Draft`, `Reviewed`, and `Archived`;
 - recommended `Source` value for this pipeline is `YouTube`;
-- `./services/notion.py` allows empty tags so it can stay a small reusable Notion adapter.
+- `./youtube_notion_notes/services/notion.py` allows empty tags so it can stay a small reusable Notion adapter.
 
 Markdown note metadata convention:
 
@@ -990,27 +607,7 @@ Optional future n8n expansion belongs in backlog unless local command execution 
 
 # 8. Completed Milestone Summary
 
-Detailed completed milestone and slice history lives in `./docs/archive/milestone-history.md`. That archive is historical context only and is not current source of truth.
-
-Completed milestones:
-
-- Milestone 1: Local note without Notion — complete. The pipeline can turn a YouTube URL into local transcript and markdown note outputs.
-- Milestone 2: Notion export — complete and tagged `v0.2.0`. Notion export is opt-in and handled inside Python.
-- Milestone 3: n8n preparation — complete and tagged `v0.3.0`. The CLI supports JSON input/output contracts for automation.
-- Milestone 4: n8n integration contract and smoke workflow — complete and tagged `v0.4.0`. n8n integration is local-first through JSON stdin/stdout and a small wrapper.
-- Milestone 5: Pipeline core refactor — complete and tagged `v0.5.0`. Pipeline orchestration lives in `./youtube_notion_notes/services/pipeline.py` behind `PipelineRequest`.
-- Milestone 6: Transcript fallback input — complete and tagged `v0.6.0`. Human CLI usage supports local UTF-8 transcript files.
-- Milestone 7: JSON transcript fallback input — Slice 1 complete and tagged `v0.7.0`. JSON input supports the same local transcript-file fallback.
-- Milestone 8: Test suite maintenance — Slice 1 complete and tagged `v0.8.0`. Ingest CLI tests are split by responsibility without runtime behavior changes.
-- Milestone 9: Repo-local launcher usability closeout — complete and tagged `v0.9.0`. Day-to-day MVP usage works through `ynn`, `ynn-note`, `ynn-notion`, and `ynn-prompt` while `./ingest.py` remains the underlying CLI contract.
-- `v1.0.0` Slice 1: minimal installable CLI packaging entrypoints for local editable installs — complete.
-- `v1.0.0` Slice 2: runtime output/config path policy for repo-local and editable-installed CLI usage — complete.
-- `v1.0.0` Slice 3: package data and prompt template resource handling — complete.
-- `v1.0.0` Slice 4.2: service package move into `youtube_notion_notes.services` — complete.
-- `v1.0.0` Slice 4.3: CLI package module move into `youtube_notion_notes.ingest` and `youtube_notion_notes.ynn_cli` — complete.
-- `v1.0.0` Slice 4.4: package data verification after the services move — complete.
-- `v1.0.0` Slice 4.5: package console script entrypoint cleanup — complete.
-- `v1.0.0` numbered UX work: UX-1 through UX-6 — complete. UX-FINAL release/publication audit has not started yet.
+Detailed completed milestone and slice history lives in `./docs/archive/milestone-history.md`. That archive is historical context only and is not current source of truth. Current release state is summarized in section 1.
 
 ---
 
@@ -1031,16 +628,7 @@ Those ideas are not current scope, active contracts, or implementation instructi
 
 Durable project decisions live in `./docs/decisions.md`.
 
-Current summary:
-
-- Python owns pipeline logic; n8n orchestrates only.
-- JSON stdin/stdout is the current automation boundary.
-- Notion export stays inside Python.
-- Manual transcript-file input still requires a source YouTube URL.
-- Normal YouTube transcript selection prefers manual/author transcript quality over generated transcript convenience.
-- Manual GPT bridge mode remains a durable fallback.
-- Future local model support remains possible but is not implemented yet.
-- Markdown-to-Notion conversion stays intentionally simple.
+Read `./docs/decisions.md` before changing pipeline ownership, automation boundaries, transcript acquisition boundaries, generation paths, Notion export shape, or transcript selection policy.
 
 ## Future Options
 

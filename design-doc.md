@@ -54,8 +54,8 @@ Current release state:
 
 - Milestones 1-9 are complete and tagged through `v0.9.0`.
 - `v1.0.0` packaging, numbered UX hardening, UX-6 transcript selection quality, docs truth sync, and CHANGELOG readiness are complete.
-- UX-FINAL release/publication audit has not started.
-- The public repository licensing gate remains deferred until final audit/publication steps.
+- UX-FINAL release/publication audit, publication hygiene docs fix, secrets/history/publication sweep, tracked artifact cleanup, and licensing gate are complete.
+- The first public repository licensing gate slice is complete: `./LICENSE.md` records the source-visible but not open-source notice.
 
 Current `v1.0.0` packaging behavior:
 
@@ -105,11 +105,10 @@ Selection priority:
 
 `--transcript-file` and JSON `transcript_file` input bypass YouTube track discovery and selection while preserving the original URL as source metadata. Human output can show one concise transcript selection line when the transcript source is known. JSON output keeps existing fields valid and adds `transcript_selection` metadata additively when known, including `origin: transcript_file` for transcript-file input.
 
-UX-FINAL -- Public repository licensing gate: Not started.
+UX-FINAL -- Public repository licensing gate: Complete.
 
-- Before publishing the repository publicly for `v1.0.0`, use an All Rights Reserved / source-visible but not open-source licensing posture.
+- `./LICENSE.md` records the All Rights Reserved / source-visible but not open-source licensing posture for portfolio and review publication.
 - Do not add MIT, Apache, BSD, GPL, AGPL, or any other open-source license unless that is explicitly decided later.
-- Do not create `./LICENSE.md` until the public licensing posture and wording are intentionally chosen.
 - Before publishing publicly, audit for committed secrets, generated output files, Notion IDs, private URLs, generated artifacts, and dependency licenses.
 
 ---

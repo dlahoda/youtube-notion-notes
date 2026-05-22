@@ -350,6 +350,14 @@ python -m youtube_notion_notes.services.notion
 
 The page uses `Name: Notion smoke test`, `Source: YouTube`, `Status: Draft`, `Tags: smoke-test`, and the smoke-test URL. No markdown body blocks are appended yet.
 
+## License
+
+This repository is source-visible for portfolio and review purposes only.
+
+The project is not open source. No permission is granted to use, copy, modify, redistribute, sublicense, or reuse the code without explicit written permission from the copyright holder.
+
+See `./LICENSE.md` and `./THIRD_PARTY_NOTICES.md` for details.
+
 ## Limitations
 
 - YouTube transcript fetching depends on available captions unless `--transcript-file` is used.

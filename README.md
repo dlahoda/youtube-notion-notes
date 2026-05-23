@@ -164,7 +164,9 @@ The editable installed CLI setup above is the recommended `v1.0.0` path. Repo-lo
 bash ./scripts/install-launchers.sh
 ```
 
-The wrappers install into `~/.local/bin`, call `./scripts/ynn-run` in this repo by absolute path, and change to the repository root before invoking `./ingest.py`. That keeps `.env` loading and output paths aligned with normal repo-local CLI usage. Because the wrappers point back to this repo by absolute path, they are not portable after the repository is deleted or moved.
+The wrappers install into `~/.local/bin`, call `./scripts/ynn-run` in this repo by absolute path, and change to the repository root before invoking `./ingest.py` for normal pipeline runs. `ynn init` is routed to the same config setup flow as the installed console script. That keeps `.env` loading and output paths aligned with normal repo-local CLI usage. Because the wrappers point back to this repo by absolute path, they are not portable after the repository is deleted or moved.
+
+If `ynn init --output-dir PATH` reports a transcript or YouTube URL error, check `command -v ynn`. A stale `~/.local/bin/ynn` can appear before an editable-install console script on `PATH`; reinstall the repo-local wrappers with `bash ./scripts/install-launchers.sh`, remove the stale launcher, or put the editable-install environment earlier on `PATH`.
 
 ## Installed CLI details
 

@@ -10,10 +10,22 @@ if [ -z "$launcher_name" ]; then
     echo "ynn-run: missing launcher name." >&2
     exit 2
 fi
+cd "$repo_root"
+
+if [ -x ./.venv/bin/python ]; then
+    python_cmd=./.venv/bin/python
+else
+    python_cmd=python
+fi
+
 shift
 
 case "$launcher_name" in
     ynn)
+        if [ "${1:-}" = "init" ]; then
+            shift
+            exec "$python_cmd" -c 'import sys; from youtube_notion_notes import init_config; raise SystemExit(init_config.main(sys.argv[1:]))' "$@"
+        fi
         ;;
     ynn-note)
         set -- "$@" --export local
@@ -29,13 +41,5 @@ case "$launcher_name" in
         exit 2
         ;;
 esac
-
-cd "$repo_root"
-
-if [ -x ./.venv/bin/python ]; then
-    python_cmd=./.venv/bin/python
-else
-    python_cmd=python
-fi
 
 exec "$python_cmd" ./ingest.py "$@"

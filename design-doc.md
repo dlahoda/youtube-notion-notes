@@ -28,6 +28,18 @@ Current decisions:
 Optional ideas:
 - ./docs/ideas.md — future ideas and optional backlog items; not current scope unless explicitly promoted into ./design-doc.md.
 
+User-facing docs:
+- ./README.md — concise landing page and quickstart.
+- ./docs/installation.md — installation paths, platform notes, launcher setup, and installed CLI details.
+- ./docs/configuration.md — setup helper, config sources, environment variables, and output root behavior.
+- ./docs/usage.md — human CLI commands, direct CLI fallback, options, and transcript selection.
+- ./docs/notion-setup.md — Notion export prerequisites, database setup, and manual smoke test.
+- ./docs/automation-json.md — JSON input/output and n8n-facing automation contract.
+- ./docs/development.md — local developer shortcuts and smoke tests.
+- ./docs/troubleshooting.md — practical user-facing troubleshooting notes.
+
+These user-facing docs explain current usage. This design doc remains the canonical technical source of truth.
+
 Archive docs, if present under ./docs/archive/, are historical context only. Do not read them by default. They are not current source of truth.
 
 Historical reference:

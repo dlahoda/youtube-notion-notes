@@ -23,7 +23,7 @@
 
 | # | Scenario | Status | Notes |
 | --- | --- | --- | --- |
-| 1 | Install/config smoke | PASS / FAIL / BLOCKED / SKIPPED |  |
+| 1 | Install/config smoke | PASS | Editable install succeeded. Installed mise console scripts work when their bin dir is first on PATH; existing ~/.local/bin launchers otherwise shadow them. |
 | 2 | Prompt-only happy path | PASS / FAIL / BLOCKED / SKIPPED |  |
 | 3 | Local note happy path | PASS / FAIL / BLOCKED / SKIPPED |  |
 | 4 | Output root behavior | PASS / FAIL / BLOCKED / SKIPPED |  |
@@ -46,16 +46,30 @@ Status key:
 
 ### 1. Install/config smoke
 
-- Status: `PASS / FAIL / BLOCKED / SKIPPED`
+- Status: `PASS`
 - Commands run:
   - `python -m pip install -e .`
-  - `ynn init --output-dir <absolute-path>`
+  - `ynn --help`
+  - `ynn-prompt --help`
+  - `ynn-note --help`
+  - `ynn-notion --help`
+  - `ynn init --output-dir /mnt/d/dev/youtube-notion-notes/tmp/rc1-output-a`
 - Persisted `YNN_OUTPUT_DIR` value:
+  - `/mnt/d/dev/youtube-notion-notes/tmp/rc1-output-a`
 - User config backup path:
-- User config restore needed: `yes/no`
+  - `./tmp/rc1-user-config-before-stage-1.env`
+  - `./tmp/rc1-user-config-hidden-for-stage-1.env`
+- User config restore needed: `no`
 - Observed output:
+  - Editable install completed successfully.
+  - Installed console scripts resolved from `/home/denys/.local/share/mise/installs/python/3.13.13/bin/`.
+  - `ynn init` completed and wrote config to `/home/denys/.config/youtube-notion-notes/.env`.
 - Files/config checked:
+  - `/mnt/d/dev/youtube-notion-notes/tmp/rc1-output-a`
+  - `/home/denys/.config/youtube-notion-notes/.env`
 - Issues:
+  - Initial shell `PATH` resolved `ynn*` commands from `/home/denys/.local/bin`, not from the editable-install mise bin directory.
+  - pip warned that `/home/denys/.local/share/mise/installs/python/3.13.13/bin` is not on `PATH`.
 
 ### 2. Prompt-only happy path
 

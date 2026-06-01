@@ -31,7 +31,7 @@
 | 6 | Notion fail-fast | PASS | Missing OpenAI/Notion config produced a clean config error with non-zero exit before creating new output files. |
 | 7 | Notion happy path | PASS | Generated transcript, prompt, local markdown note, and created a Notion page; manual Notion check confirmed the page content is visible. |
 | 8 | JSON success | PASS | Successful `--output json` run produced valid machine-readable JSON with expected local output paths and transcript selection metadata. |
-| 9 | JSON failure | PASS / FAIL / BLOCKED / SKIPPED |  |
+| 9 | JSON failure | PASS | Invalid `--input-json` produced valid machine-readable JSON with `ok: false`, `stage: input`, and a clear error message. |
 | 10 | Optional repo-local launcher sanity | PASS / FAIL / BLOCKED / SKIPPED |  |
 | 11 | Optional n8n wrapper sanity | PASS / FAIL / BLOCKED / SKIPPED |  |
 
@@ -204,16 +204,19 @@ Status key:
 
 ### 9. JSON failure
 
-- Status: `PASS / FAIL / BLOCKED / SKIPPED`
+- Status: `PASS`
 - Command run:
-  - `python ingest.py --input-json '{"url":"<url>","unexpected":true}' --output json`
+  - `python ingest.py --input-json '{"url":"https://youtu.be/KquM_52cAIE","unexpected":true}' --output json`
 - JSON output file:
+  - `./tmp/rc1-failure.json`
 - `python -m json.tool` result:
+  - Parsed successfully.
 - Fields checked:
-  - `ok`:
-  - `stage`:
-  - `error`:
+  - `ok`: `false`
+  - `stage`: `input`
+  - `error`: `Invalid --input-json: unsupported field 'unexpected'.`
 - Issues:
+  - None.
 
 ### 10. Optional repo-local launcher sanity
 

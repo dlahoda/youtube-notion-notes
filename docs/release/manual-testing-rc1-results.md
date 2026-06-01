@@ -33,7 +33,8 @@
 | 8 | JSON success | PASS | Successful `--output json` run produced valid machine-readable JSON with expected local output paths and transcript selection metadata. |
 | 9 | JSON failure | PASS | Invalid `--input-json` produced valid machine-readable JSON with `ok: false`, `stage: input`, and a clear error message. |
 | 10 | Optional repo-local launcher sanity | PASS | Repo-local launcher install succeeded and one `ynn-prompt` run created transcript and prompt outputs. |
-| 11 | Optional n8n wrapper sanity | PASS / FAIL / BLOCKED / SKIPPED |  |
+```md
+| 11 | Optional n8n wrapper sanity | PASS | n8n wrapper returned valid JSON for both success and input-failure cases; failure remained automation-safe with `ok: false`, `stage`, and `error`. |
 
 Status key:
 
@@ -233,15 +234,24 @@ Status key:
 
 ### 11. Optional n8n wrapper sanity
 
-- Status: `PASS / FAIL / BLOCKED / SKIPPED`
+- Status: `PASS`
 - Success command:
-  - `printf '%s\n' '{"url":"<url>"}' | ./scripts/n8n-ingest.sh`
+  - `printf '%s\n' '{"url":"https://youtu.be/KquM_52cAIE"}' | ./scripts/n8n-ingest.sh`
 - Success JSON output file:
+  - `./tmp/rc1-n8n-success.json`
 - Failure command:
-  - `printf '%s\n' '{"url":"<url>","unexpected":true}' | ./scripts/n8n-ingest.sh`
+  - `printf '%s\n' '{"url":"https://youtu.be/KquM_52cAIE","unexpected":true}' | ./scripts/n8n-ingest.sh`
 - Failure JSON output file:
+  - `./tmp/rc1-n8n-failure.json`
 - `python -m json.tool` results:
+  - Success JSON parsed successfully.
+  - Failure JSON parsed successfully.
+  - Success `ok`: `true`
+  - Failure `ok`: `false`
+  - Failure `stage`: `input`
+  - Failure `error`: `Invalid --input-json-file: unsupported field 'unexpected'.`
 - Issues:
+  - Success run used the configured output root `/home/denys/ynn-output`, which is expected for the n8n wrapper when no explicit output directory is provided.
 
 ## Final RC Decision
 

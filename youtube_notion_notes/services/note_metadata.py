@@ -39,11 +39,31 @@ def extract_note_title(markdown: str) -> str:
 def extract_note_tags(markdown: str) -> list[str]:
     for line in _metadata_lines(markdown):
         stripped = line.strip()
-        if stripped.lower().startswith("tags:"):
+        if _is_tags_metadata_line(stripped):
             raw_tags = stripped.split(":", 1)[1]
             return [tag.strip() for tag in raw_tags.split(",") if tag.strip()]
 
     return []
+
+
+def remove_tags_metadata_lines(markdown: str) -> str:
+    lines: list[str] = []
+    in_code_block = False
+
+    for line in markdown.splitlines(keepends=True):
+        stripped = line.strip()
+
+        if stripped.startswith("```"):
+            in_code_block = not in_code_block
+            lines.append(line)
+            continue
+
+        if not in_code_block and _is_tags_metadata_line(stripped):
+            continue
+
+        lines.append(line)
+
+    return "".join(lines)
 
 
 def _metadata_lines(markdown: str) -> list[str]:
@@ -59,3 +79,7 @@ def _metadata_lines(markdown: str) -> list[str]:
             lines.append(line)
 
     return lines
+
+
+def _is_tags_metadata_line(stripped_line: str) -> bool:
+    return stripped_line.lower().startswith("tags:")

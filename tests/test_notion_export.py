@@ -10,6 +10,7 @@ from youtube_notion_notes.services.notion import NotionPage
 class NotionExportTests(unittest.TestCase):
     def test_exports_markdown_note_with_extracted_title_tags_and_blocks(self) -> None:
         markdown = "# My Video Note\n\nTags: python, note taking\n\nBody"
+        body_markdown = "# My Video Note\n\n\nBody"
         blocks = [{"type": "paragraph"}]
 
         with (
@@ -23,7 +24,7 @@ class NotionExportTests(unittest.TestCase):
 
         self.assertEqual(page.id, "page-123")
         self.assertEqual(page.url, "https://www.notion.so/page-123")
-        markdown_to_blocks.assert_called_once_with(markdown)
+        markdown_to_blocks.assert_called_once_with(body_markdown)
         create_notion_page.assert_called_once_with(
             title="My Video Note",
             url="https://youtu.be/example",

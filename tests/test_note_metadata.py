@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import unittest
 
-from youtube_notion_notes.services.note_metadata import extract_note_metadata, extract_note_tags, extract_note_title
+from youtube_notion_notes.services.note_metadata import (
+    extract_note_metadata,
+    extract_note_tags,
+    extract_note_title,
+    remove_tags_metadata_lines,
+)
 
 
 class NoteMetadataTests(unittest.TestCase):
@@ -58,6 +63,16 @@ class NoteMetadataTests(unittest.TestCase):
 
         self.assertEqual(metadata.title, "Title")
         self.assertEqual(metadata.tags, ["one", "two"])
+
+    def test_remove_tags_metadata_lines_removes_tags_outside_fenced_code_blocks(self) -> None:
+        markdown = "# Title\n\nTags: python, notes\n\nBody\n  Tags: spaced\nDone"
+
+        self.assertEqual(remove_tags_metadata_lines(markdown), "# Title\n\n\nBody\nDone")
+
+    def test_remove_tags_metadata_lines_preserves_tags_inside_fenced_code_blocks(self) -> None:
+        markdown = "# Title\n\n```text\nTags: keep this\n```\n\nTags: remove this\n\nBody"
+
+        self.assertEqual(remove_tags_metadata_lines(markdown), "# Title\n\n```text\nTags: keep this\n```\n\n\nBody")
 
 
 if __name__ == "__main__":

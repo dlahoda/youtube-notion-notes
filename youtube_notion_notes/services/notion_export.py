@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 from youtube_notion_notes.services.markdown_to_notion import markdown_to_blocks
-from youtube_notion_notes.services.note_metadata import extract_note_metadata
+from youtube_notion_notes.services.note_metadata import extract_note_metadata, remove_tags_metadata_lines
 from youtube_notion_notes.services.notion import NotionPage, create_notion_page
 
 
 def export_markdown_note_to_notion(markdown: str, url: str, status: str = "Draft") -> NotionPage:
     metadata = extract_note_metadata(markdown)
-    blocks = markdown_to_blocks(markdown)
+    body_markdown = remove_tags_metadata_lines(markdown)
+    blocks = markdown_to_blocks(body_markdown)
 
     return create_notion_page(
         title=metadata.title,

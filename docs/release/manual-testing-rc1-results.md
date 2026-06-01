@@ -30,7 +30,7 @@
 | 5 | Transcript-file fallback | PASS | Local transcript fixture was used; output reported `Transcript selected: transcript file`, saved transcript contained fixture text, and prompt was generated. |
 | 6 | Notion fail-fast | PASS | Missing OpenAI/Notion config produced a clean config error with non-zero exit before creating new output files. |
 | 7 | Notion happy path | PASS | Generated transcript, prompt, local markdown note, and created a Notion page; manual Notion check confirmed the page content is visible. |
-| 8 | JSON success | PASS / FAIL / BLOCKED / SKIPPED |  |
+| 8 | JSON success | PASS | Successful `--output json` run produced valid machine-readable JSON with expected local output paths and transcript selection metadata. |
 | 9 | JSON failure | PASS / FAIL / BLOCKED / SKIPPED |  |
 | 10 | Optional repo-local launcher sanity | PASS / FAIL / BLOCKED / SKIPPED |  |
 | 11 | Optional n8n wrapper sanity | PASS / FAIL / BLOCKED / SKIPPED |  |
@@ -179,18 +179,28 @@ Status key:
 
 ### 8. JSON success
 
-- Status: `PASS / FAIL / BLOCKED / SKIPPED`
+- Status: `PASS`
 - Command run:
-  - `python ingest.py "<url>" --no-note --output json --output-dir <path>`
+  - `python ingest.py "https://youtu.be/KquM_52cAIE" --no-note --output json --output-dir ./tmp/rc1-output-a`
 - JSON output file:
+  - `./tmp/rc1-success.json`
 - `python -m json.tool` result:
+  - Parsed successfully.
 - Fields checked:
-  - `ok`:
-  - `url`:
-  - `export_mode`:
+  - `ok`: `true`
+  - `url`: `https://youtu.be/KquM_52cAIE`
+  - `export_mode`: `local`
   - output paths:
+    - `transcript_path`: `tmp/rc1-output-a/transcripts/KquM_52cAIE.txt`
+    - `prompt_path`: `tmp/rc1-output-a/prompts/KquM_52cAIE_prompt.md`
+    - `note_path`: `null`
   - Notion fields only when applicable:
+    - `notion_page_id`: `null`
+  - additional metadata:
+    - `transcript_selection.origin`: `generated`
+    - `transcript_selection.selection_reason`: `generated_preferred_language`
 - Issues:
+  - None.
 
 ### 9. JSON failure
 

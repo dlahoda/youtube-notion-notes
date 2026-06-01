@@ -14,7 +14,7 @@ The `ynn init --output-dir ~/ynn-output` command is the first-time setup helper.
 ~/.config/youtube-notion-notes/.env
 ```
 
-During setup, `ynn init` can optionally collect transcript language preferences, `OPENAI_API_KEY`, `NOTION_API_KEY`, and `NOTION_DATABASE_ID`. Existing user config values are preserved by default. Empty prompt input skips that value.
+During setup, `ynn init` can optionally collect transcript language preferences, `OPENAI_API_KEY`, `NOTION_API_KEY`, and `NOTION_DATABASE_ID`. It can also store a persistent prompt template with `--prompt-template PATH`. Existing user config values are preserved by default. Empty prompt input skips that value.
 
 ## Config priority
 
@@ -34,6 +34,7 @@ User config fills missing values only. An explicit `--env-file PATH` must exist.
 - `OPENAI_MODEL`: optional model name, defaults to `gpt-4.1-mini`
 - `YOUTUBE_TRANSCRIPT_LANGUAGES`: optional comma-separated language preference list, defaults to `en`
 - `YNN_OUTPUT_DIR`: optional output root used when `--output-dir` is not provided
+- `YNN_PROMPT_TEMPLATE`: optional prompt template path used when `--prompt-template` is not provided
 - `NOTION_API_KEY`: required only for Notion export and the manual Notion smoke test
 - `NOTION_DATABASE_ID`: required only for Notion export and the manual Notion smoke test
 
@@ -42,6 +43,8 @@ User config fills missing values only. An explicit `--env-file PATH` must exist.
 ## Output root
 
 Output root priority is `--output-dir PATH`, then `YNN_OUTPUT_DIR`, then `./output` relative to the current working directory.
+
+Prompt template priority is `--prompt-template PATH`, then `YNN_PROMPT_TEMPLATE`, then the built-in package template.
 
 Selected output roots write files under:
 

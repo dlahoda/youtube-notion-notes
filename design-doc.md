@@ -95,7 +95,7 @@ Runtime config priority:
 4. user config `~/.config/youtube-notion-notes/.env`;
 5. built-in defaults.
 
-The user config file is a dotenv file at `~/.config/youtube-notion-notes/.env`. `ynn init --output-dir PATH` may store `YNN_OUTPUT_DIR` there, preserve existing values by default, create the configured output directory idempotently, and collect missing transcript-language, OpenAI, or Notion config values without calling those services.
+The user config file is a dotenv file at `~/.config/youtube-notion-notes/.env`. `ynn init --output-dir PATH` may store `YNN_OUTPUT_DIR` there, `ynn init --prompt-template PATH` may store `YNN_PROMPT_TEMPLATE` there, preserve existing values by default, create the configured output directory idempotently, and collect missing transcript-language, OpenAI, or Notion config values without calling those services.
 
 Output root resolution remains explicit `--output-dir PATH`, then `YNN_OUTPUT_DIR`, then `./output` relative to cwd. Regular pipeline runs create `transcripts/`, `prompts/`, and `notes/` under the resolved output root as needed.
 
@@ -420,8 +420,9 @@ Prompt template policy:
 - `./pyproject.toml` includes the markdown template as package data for `youtube_notion_notes.services`;
 - `./youtube_notion_notes/services/note_generator.py` loads the default template with standard-library `importlib.resources`;
 - the direct CLI accepts `--prompt-template PATH` for human prompt generation workflows;
+- prompt template path resolution order is explicit `--prompt-template PATH`, then `YNN_PROMPT_TEMPLATE`, then the built-in package prompt template;
 - `build_manual_prompt` accepts an explicit template path and reuses the existing prompt template validation;
-- `./youtube_notion_notes/services/pipeline.py` uses the package-owned default template when no custom prompt template path is provided and no longer passes a cwd-relative `./prompts/comprehensive_note.md` path.
+- `./youtube_notion_notes/services/pipeline.py` uses the package-owned default template when no CLI or env prompt template path is provided and no longer passes a cwd-relative `./prompts/comprehensive_note.md` path.
 
 ## JSON Input Contract
 

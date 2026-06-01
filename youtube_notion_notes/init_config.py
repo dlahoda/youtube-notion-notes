@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 from youtube_notion_notes.config import ConfigFileError, parse_dotenv, user_config_path
-from youtube_notion_notes.services.pipeline import OUTPUT_DIR_ENV_VAR
+from youtube_notion_notes.services.pipeline import OUTPUT_DIR_ENV_VAR, PROMPT_TEMPLATE_ENV_VAR
 
 
 OPTIONAL_CONFIG_PROMPTS = (
@@ -28,6 +28,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--output-dir",
         required=True,
         help="Persistent output root for transcript, prompt, and note files.",
+    )
+    parser.add_argument(
+        "--prompt-template",
+        default=None,
+        help="Persistent default prompt template path used when --prompt-template is not provided.",
     )
     return parser.parse_args(argv)
 
@@ -59,6 +64,18 @@ def init_output_dir(output_dir: str, *, config_path: Path | None = None) -> Path
     return path
 
 
+def init_prompt_template(prompt_template: str | None, *, config_path: Path) -> None:
+    if not prompt_template:
+        return
+
+    existing_values = parse_dotenv(config_path) if config_path.exists() else {}
+    if PROMPT_TEMPLATE_ENV_VAR in existing_values:
+        print(f"{PROMPT_TEMPLATE_ENV_VAR} already configured; leaving existing value unchanged.")
+        return
+
+    append_env_value(config_path, PROMPT_TEMPLATE_ENV_VAR, prompt_template)
+
+
 def init_optional_config(config_path: Path) -> None:
     existing_values = parse_dotenv(config_path) if config_path.exists() else {}
 
@@ -75,8 +92,14 @@ def init_optional_config(config_path: Path) -> None:
         existing_values[key] = value
 
 
-def init_user_config(output_dir: str, *, config_path: Path | None = None) -> Path:
+def init_user_config(
+    output_dir: str,
+    *,
+    prompt_template: str | None = None,
+    config_path: Path | None = None,
+) -> Path:
     path = init_output_dir(output_dir, config_path=config_path)
+    init_prompt_template(prompt_template, config_path=path)
     init_optional_config(path)
     return path
 
@@ -84,7 +107,7 @@ def init_user_config(output_dir: str, *, config_path: Path | None = None) -> Pat
 def main(argv: list[str] | None = None) -> int:
     try:
         args = parse_args(argv)
-        config_path = init_user_config(args.output_dir)
+        config_path = init_user_config(args.output_dir, prompt_template=args.prompt_template)
     except ValueError as exc:
         print(f"Input error: {exc}", file=sys.stderr)
         return 2

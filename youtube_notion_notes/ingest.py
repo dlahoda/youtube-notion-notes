@@ -3,12 +3,13 @@ from __future__ import annotations
 import argparse
 import contextlib
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any
 
 from youtube_notion_notes.config import ConfigFileError, load_runtime_config
-from youtube_notion_notes.services.pipeline import PipelineRequest, run_pipeline
+from youtube_notion_notes.services.pipeline import PROMPT_TEMPLATE_ENV_VAR, PipelineRequest, run_pipeline
 
 
 JSON_INPUT_FIELDS = {"url", "transcript_file", "export"}
@@ -191,13 +192,14 @@ def resolve_cli_input(args: argparse.Namespace) -> argparse.Namespace:
 
 
 def build_pipeline_request(args: argparse.Namespace) -> PipelineRequest:
+    prompt_template = args.prompt_template or os.getenv(PROMPT_TEMPLATE_ENV_VAR) or None
     return PipelineRequest(
         url=args.url,
         export_mode=args.export,
         languages=args.languages,
         output_name=args.output_name,
         no_note=args.no_note,
-        prompt_template=args.prompt_template,
+        prompt_template=prompt_template,
         transcript_file=args.transcript_file,
         output_dir=args.output_dir,
     )

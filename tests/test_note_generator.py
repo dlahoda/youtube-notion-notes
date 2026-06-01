@@ -86,6 +86,29 @@ class NoteGeneratorTests(unittest.TestCase):
             "URL=https://youtu.be/abc123def45\nID=abc123def45\nTranscript=Custom transcript.",
         )
 
+    def test_build_manual_prompt_expands_home_in_custom_template_path(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            fake_home = Path(temp_dir) / "home"
+            template_path = fake_home / "prompts" / "youtube-note-current.md"
+            template_path.parent.mkdir(parents=True)
+            template_path.write_text(
+                "URL={video_url}\nID={video_id}\nTranscript={transcript}",
+                encoding="utf-8",
+            )
+
+            with patch.dict(os.environ, {"HOME": str(fake_home)}):
+                prompt = build_manual_prompt(
+                    "https://youtu.be/abc123def45",
+                    "abc123def45",
+                    "Home-expanded transcript.",
+                    "~/prompts/youtube-note-current.md",
+                )
+
+        self.assertEqual(
+            prompt,
+            "URL=https://youtu.be/abc123def45\nID=abc123def45\nTranscript=Home-expanded transcript.",
+        )
+
     def test_read_default_prompt_template_wraps_missing_resource_error(self) -> None:
         resource = Mock()
         resource.joinpath.return_value.read_text.side_effect = FileNotFoundError("missing template")

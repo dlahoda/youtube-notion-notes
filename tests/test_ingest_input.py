@@ -11,7 +11,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 from youtube_notion_notes import ingest
-from youtube_notion_notes.services.pipeline import PipelineRequest
+from youtube_notion_notes.services.pipeline import PROMPT_TEMPLATE_ENV_VAR, PipelineRequest
 
 
 VIDEO_ID = "abc123def45"
@@ -24,6 +24,7 @@ class IngestInputTests(unittest.TestCase):
         *extra_args: str,
         include_positional_url: bool = False,
         stdin_value: str = "",
+        prompt_template_env: str = "",
     ) -> tuple[int, str, str, Mock]:
         argv = ["ingest.py"]
         if include_positional_url:
@@ -34,6 +35,7 @@ class IngestInputTests(unittest.TestCase):
         run_pipeline_mock = Mock(return_value=(0, {"ok": True}))
 
         with (
+            patch.dict(os.environ, {PROMPT_TEMPLATE_ENV_VAR: prompt_template_env}),
             patch.object(sys, "argv", argv),
             patch.object(sys, "stdin", io.StringIO(stdin_value)),
             patch.object(ingest, "load_env_file"),
@@ -130,10 +132,58 @@ class IngestInputTests(unittest.TestCase):
             human_output=False,
         )
 
-    def test_main_converts_prompt_template_flag_to_pipeline_request(self) -> None:
+    def test_prompt_template_flag_wins_over_env_config(self) -> None:
         exit_code, stdout, stderr, run_pipeline_mock = self.run_ingest(
             "--prompt-template",
             "./my-prompt.md",
+            "--no-note",
+            "--output",
+            "json",
+            include_positional_url=True,
+            prompt_template_env="./env-prompt.md",
+        )
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(stderr, "")
+        self.assertEqual(json.loads(stdout), {"ok": True})
+        run_pipeline_mock.assert_called_once_with(
+            PipelineRequest(
+                url=VIDEO_URL,
+                export_mode="local",
+                languages=None,
+                output_name=None,
+                no_note=True,
+                prompt_template="./my-prompt.md",
+            ),
+            human_output=False,
+        )
+
+    def test_prompt_template_env_config_is_used_when_flag_is_omitted(self) -> None:
+        exit_code, stdout, stderr, run_pipeline_mock = self.run_ingest(
+            "--no-note",
+            "--output",
+            "json",
+            include_positional_url=True,
+            prompt_template_env="./env-prompt.md",
+        )
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(stderr, "")
+        self.assertEqual(json.loads(stdout), {"ok": True})
+        run_pipeline_mock.assert_called_once_with(
+            PipelineRequest(
+                url=VIDEO_URL,
+                export_mode="local",
+                languages=None,
+                output_name=None,
+                no_note=True,
+                prompt_template="./env-prompt.md",
+            ),
+            human_output=False,
+        )
+
+    def test_prompt_template_defaults_to_builtin_when_no_flag_or_env_config(self) -> None:
+        exit_code, stdout, stderr, run_pipeline_mock = self.run_ingest(
             "--no-note",
             "--output",
             "json",
@@ -150,7 +200,6 @@ class IngestInputTests(unittest.TestCase):
                 languages=None,
                 output_name=None,
                 no_note=True,
-                prompt_template="./my-prompt.md",
             ),
             human_output=False,
         )

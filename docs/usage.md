@@ -72,6 +72,12 @@ python ingest.py "https://youtu.be/VIDEO_ID" --export notion
 python ingest.py "https://youtu.be/VIDEO_ID" --export local
 ```
 
+To make a custom prompt template the default for normal runs:
+
+```bash
+ynn init --output-dir ~/ynn-output --prompt-template ~/prompts/youtube-note-current.md
+```
+
 ## Transcript selection
 
 Normal YouTube fetching discovers available transcript tracks and chooses the best available track by origin and preferred language. Manual/author transcript quality wins over generated-track convenience, so a translated manual track may beat a generated track that already matches a preferred language. Selection priority is:

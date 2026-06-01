@@ -61,6 +61,68 @@ class InitConfigTests(unittest.TestCase):
             )
             self.assertTrue(output_dir.is_dir())
 
+    def test_init_appends_prompt_template_when_provided(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            config_path = temp_path / "config" / ".env"
+            output_dir = temp_path / "output"
+
+            with (
+                patch.object(init_config, "user_config_path", return_value=config_path),
+                patch.object(init_config.getpass, "getpass", side_effect=["", ""]),
+                patch("builtins.input", return_value=""),
+                contextlib.redirect_stdout(io.StringIO()),
+                contextlib.redirect_stderr(io.StringIO()),
+            ):
+                exit_code = init_config.main(
+                    [
+                        "--output-dir",
+                        str(output_dir),
+                        "--prompt-template",
+                        "~/prompts/youtube-note-current.md",
+                    ]
+                )
+
+            self.assertEqual(exit_code, 0)
+            self.assertEqual(
+                config_path.read_text(encoding="utf-8"),
+                "\n".join(
+                    [
+                        f"YNN_OUTPUT_DIR={output_dir}",
+                        "YNN_PROMPT_TEMPLATE=~/prompts/youtube-note-current.md",
+                        "",
+                    ]
+                ),
+            )
+
+    def test_init_preserves_existing_prompt_template_value(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            config_path = temp_path / "config" / ".env"
+            output_dir = temp_path / "output"
+            config_path.parent.mkdir(parents=True)
+            config_text = "\n".join(
+                [
+                    f"YNN_OUTPUT_DIR={output_dir}",
+                    "YNN_PROMPT_TEMPLATE=./existing-prompt.md",
+                    "",
+                ]
+            )
+            config_path.write_text(config_text, encoding="utf-8")
+
+            with (
+                patch.object(init_config.getpass, "getpass", side_effect=["", ""]),
+                patch("builtins.input", return_value=""),
+                contextlib.redirect_stdout(io.StringIO()),
+            ):
+                init_config.init_user_config(
+                    str(temp_path / "requested-output"),
+                    prompt_template="./new-prompt.md",
+                    config_path=config_path,
+                )
+
+            self.assertEqual(config_path.read_text(encoding="utf-8"), config_text)
+
     def test_init_expands_home_in_output_dir_before_writing(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)

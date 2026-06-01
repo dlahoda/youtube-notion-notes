@@ -58,7 +58,7 @@ def build_manual_prompt(
         template = read_default_prompt_template()
         template_source = f"built-in template '{DEFAULT_PROMPT_TEMPLATE}'"
     else:
-        prompt_template_path = Path(template_path)
+        prompt_template_path = Path(template_path).expanduser()
         template_source = f"template '{prompt_template_path}'"
         try:
             template = prompt_template_path.read_text(encoding="utf-8")

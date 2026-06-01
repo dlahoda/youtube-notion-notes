@@ -255,11 +255,15 @@ Status key:
 
 ## Final RC Decision
 
-- Decision: `PASS / FAIL / BLOCKED`
-- Decision date: `YYYY-MM-DD`
+- Decision: `PASS`
+- Decision date: `2026-06-01`
 - Summary:
+  - `v1.0.0-rc.1` manual smoke passed on WSL/Linux.
+  - Core stages 1-9 passed.
+  - Optional repo-local launcher sanity and n8n wrapper sanity also passed.
+  - Installed CLI, config initialization, prompt-only output, OpenAI-backed local note generation, output-root precedence, transcript-file fallback, Notion fail-fast, Notion happy path, JSON success, and JSON failure behavior were verified.
 - Required follow-up before release:
-- Follow-up can wait until after release:
+  - None.
 
 ## Known Not-Tested Areas
 

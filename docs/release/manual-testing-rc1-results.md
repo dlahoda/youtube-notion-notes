@@ -32,7 +32,7 @@
 | 7 | Notion happy path | PASS | Generated transcript, prompt, local markdown note, and created a Notion page; manual Notion check confirmed the page content is visible. |
 | 8 | JSON success | PASS | Successful `--output json` run produced valid machine-readable JSON with expected local output paths and transcript selection metadata. |
 | 9 | JSON failure | PASS | Invalid `--input-json` produced valid machine-readable JSON with `ok: false`, `stage: input`, and a clear error message. |
-| 10 | Optional repo-local launcher sanity | PASS / FAIL / BLOCKED / SKIPPED |  |
+| 10 | Optional repo-local launcher sanity | PASS | Repo-local launcher install succeeded and one `ynn-prompt` run created transcript and prompt outputs. |
 | 11 | Optional n8n wrapper sanity | PASS / FAIL / BLOCKED / SKIPPED |  |
 
 Status key:
@@ -220,13 +220,16 @@ Status key:
 
 ### 10. Optional repo-local launcher sanity
 
-- Status: `PASS / FAIL / BLOCKED / SKIPPED`
+- Status: `PASS`
 - Commands run:
   - `bash ./scripts/install-launchers.sh`
-  - `ynn-prompt "<url>" --output-dir <path>`
+  - `ynn-prompt "https://youtu.be/KquM_52cAIE" --output-dir ./tmp/rc1-output-a`
 - Transcript path:
+  - `./tmp/rc1-output-a/transcripts/KquM_52cAIE.txt`
 - Prompt path:
+  - `./tmp/rc1-output-a/prompts/KquM_52cAIE_prompt.md`
 - Issues:
+  - None.
 
 ### 11. Optional n8n wrapper sanity
 

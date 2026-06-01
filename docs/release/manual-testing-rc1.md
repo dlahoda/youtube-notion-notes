@@ -83,8 +83,14 @@ Why it matters:
 
 Steps:
 
+- If editable-install scripts are installed into a Python or mise bin directory that is not on `PATH`, temporarily prepend that bin directory to `PATH` and confirm `command -v` resolves to the editable-install scripts before running help checks.
+
 ```bash
 python -m pip install -e .
+command -v ynn
+command -v ynn-prompt
+command -v ynn-note
+command -v ynn-notion
 ynn --help
 ynn-prompt --help
 ynn-note --help
@@ -168,7 +174,7 @@ Setup:
 - Install optional OpenAI support if needed:
 
 ```bash
-python -m pip install ".[openai]"
+python -m pip install -e ".[openai]"
 ```
 
 Steps:

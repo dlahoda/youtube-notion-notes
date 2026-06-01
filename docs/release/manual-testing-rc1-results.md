@@ -33,7 +33,6 @@
 | 8 | JSON success | PASS | Successful `--output json` run produced valid machine-readable JSON with expected local output paths and transcript selection metadata. |
 | 9 | JSON failure | PASS | Invalid `--input-json` produced valid machine-readable JSON with `ok: false`, `stage: input`, and a clear error message. |
 | 10 | Optional repo-local launcher sanity | PASS | Repo-local launcher install succeeded and one `ynn-prompt` run created transcript and prompt outputs. |
-```md
 | 11 | Optional n8n wrapper sanity | PASS | n8n wrapper returned valid JSON for both success and input-failure cases; failure remained automation-safe with `ok: false`, `stage`, and `error`. |
 
 Status key:
@@ -262,8 +261,8 @@ Status key:
   - Core stages 1-9 passed.
   - Optional repo-local launcher sanity and n8n wrapper sanity also passed.
   - Installed CLI, config initialization, prompt-only output, OpenAI-backed local note generation, output-root precedence, transcript-file fallback, Notion fail-fast, Notion happy path, JSON success, and JSON failure behavior were verified.
-- Required follow-up before release:
-  - None.
+- Required follow-up before release: `None.`
+- Follow-up can wait until after release: `None.`
 
 ## Known Not-Tested Areas
 

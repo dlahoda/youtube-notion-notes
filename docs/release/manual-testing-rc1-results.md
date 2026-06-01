@@ -29,7 +29,7 @@
 | 4 | Output root behavior | PASS | `YNN_OUTPUT_DIR` was used when no explicit output dir was provided; `--output-dir` correctly overrode it for a single run. |
 | 5 | Transcript-file fallback | PASS | Local transcript fixture was used; output reported `Transcript selected: transcript file`, saved transcript contained fixture text, and prompt was generated. |
 | 6 | Notion fail-fast | PASS | Missing OpenAI/Notion config produced a clean config error with non-zero exit before creating new output files. |
-| 7 | Notion happy path | PASS / FAIL / BLOCKED / SKIPPED |  |
+| 7 | Notion happy path | PASS | Generated transcript, prompt, local markdown note, and created a Notion page; manual Notion check confirmed the page content is visible. |
 | 8 | JSON success | PASS / FAIL / BLOCKED / SKIPPED |  |
 | 9 | JSON failure | PASS / FAIL / BLOCKED / SKIPPED |  |
 | 10 | Optional repo-local launcher sanity | PASS / FAIL / BLOCKED / SKIPPED |  |
@@ -157,20 +157,25 @@ Status key:
 
 ### 7. Notion happy path
 
-- Status: `PASS / FAIL / BLOCKED / SKIPPED`
+- Status: `PASS`
 - Command run:
-  - `ynn-notion "<url>" --output-dir <path>`
+  - `ynn-notion "https://youtu.be/KquM_52cAIE" --output-dir ./tmp/rc1-output-a`
 - Local note path:
+  - `./tmp/rc1-output-a/notes/KquM_52cAIE.md`
 - Notion page URL:
+  - `<paste Notion page URL if available>`
+  - Notion page ID from CLI output: `37251ae5-0f88-8127-8d5a-ce720751cd68`
 - Properties checked:
-  - `Name`:
-  - `URL`:
-  - `Tags`:
-  - `Status`:
-  - `Source`:
-  - `Created`:
-- Body blocks present: `yes/no`
+  - `Name`: `yes`
+  - `URL`: `yes`
+  - `Tags`: `yes`
+  - `Status`: `Draft`
+  - `Source`: `YouTube`
+  - `Created`: `yes`
+- Body blocks present: `yes`
 - Issues:
+  - None.
+
 
 ### 8. JSON success
 

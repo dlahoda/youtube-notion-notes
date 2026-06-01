@@ -25,7 +25,7 @@
 | --- | --- | --- | --- |
 | 1 | Install/config smoke | PASS | Editable install succeeded. Installed mise console scripts work when their bin dir is first on PATH; existing ~/.local/bin launchers otherwise shadow them. |
 | 2 | Prompt-only happy path | PASS | Generated transcript and GPT prompt without OpenAI or Notion config; `find` warning was from smoke-check command argument order, not application behavior. |
-| 3 | Local note happy path | PASS / FAIL / BLOCKED / SKIPPED |  |
+| 3 | Local note happy path | PASS | Generated transcript, GPT prompt, and structured markdown note after installing editable OpenAI extra dependency. |
 | 4 | Output root behavior | PASS / FAIL / BLOCKED / SKIPPED |  |
 | 5 | Transcript-file fallback | PASS / FAIL / BLOCKED / SKIPPED |  |
 | 6 | Notion fail-fast | PASS / FAIL / BLOCKED / SKIPPED |  |
@@ -85,15 +85,22 @@ Status key:
 
 ### 3. Local note happy path
 
-- Status: `PASS / FAIL / BLOCKED / SKIPPED`
+- Status: `PASS`
 - Command run:
-  - `ynn-note "<url>" --output-dir <path>`
-  - or `ynn "<url>" --output-dir <path>`
+  - `python -m pip install -e ".[openai]"`
+  - `ynn-note "https://youtu.be/KquM_52cAIE" --output-dir ./tmp/rc1-output-a`
 - Transcript path:
+  - `./tmp/rc1-output-a/transcripts/KquM_52cAIE.txt`
 - Prompt path:
+  - `./tmp/rc1-output-a/prompts/KquM_52cAIE_prompt.md`
 - Note path:
+  - `./tmp/rc1-output-a/notes/KquM_52cAIE.md`
 - Note quality/readability check:
+  - Generated note is readable and structured.
+  - Note contains H1 title, tags, summary, key ideas, practical takeaways, and open questions.
 - Issues:
+  - First attempt skipped markdown note generation because `OPENAI_API_KEY` was set but the optional `openai` package was not installed.
+  - Resolved by installing the OpenAI extra in editable mode with `python -m pip install -e ".[openai]"` and rerunning the stage.
 
 ### 4. Output root behavior
 

@@ -24,7 +24,7 @@
 | # | Scenario | Status | Notes |
 | --- | --- | --- | --- |
 | 1 | Install/config smoke | PASS | Editable install succeeded. Installed mise console scripts work when their bin dir is first on PATH; existing ~/.local/bin launchers otherwise shadow them. |
-| 2 | Prompt-only happy path | PASS / FAIL / BLOCKED / SKIPPED |  |
+| 2 | Prompt-only happy path | PASS | Generated transcript and GPT prompt without OpenAI or Notion config; `find` warning was from smoke-check command argument order, not application behavior. |
 | 3 | Local note happy path | PASS / FAIL / BLOCKED / SKIPPED |  |
 | 4 | Output root behavior | PASS / FAIL / BLOCKED / SKIPPED |  |
 | 5 | Transcript-file fallback | PASS / FAIL / BLOCKED / SKIPPED |  |
@@ -73,12 +73,15 @@ Status key:
 
 ### 2. Prompt-only happy path
 
-- Status: `PASS / FAIL / BLOCKED / SKIPPED`
+- Status: `PASS`
 - Command run:
-  - `ynn-prompt "<url>" --output-dir <path>`
+  - `ynn-prompt "https://youtu.be/KquM_52cAIE" --output-dir ./tmp/rc1-output-a`
 - Transcript path:
+  - `./tmp/rc1-output-a/transcripts/KquM_52cAIE.txt`
 - Prompt path:
-- Issues:
+  - `./tmp/rc1-output-a/prompts/KquM_52cAIE_prompt.md`
+- Issues: none
+
 
 ### 3. Local note happy path
 

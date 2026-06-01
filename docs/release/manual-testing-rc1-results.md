@@ -27,8 +27,8 @@
 | 2 | Prompt-only happy path | PASS | Generated transcript and GPT prompt without OpenAI or Notion config; `find` warning was from smoke-check command argument order, not application behavior. |
 | 3 | Local note happy path | PASS | Generated transcript, GPT prompt, and structured markdown note after installing editable OpenAI extra dependency. |
 | 4 | Output root behavior | PASS | `YNN_OUTPUT_DIR` was used when no explicit output dir was provided; `--output-dir` correctly overrode it for a single run. |
-| 5 | Transcript-file fallback | PASS / FAIL / BLOCKED / SKIPPED |  |
-| 6 | Notion fail-fast | PASS / FAIL / BLOCKED / SKIPPED |  |
+| 5 | Transcript-file fallback | PASS | Local transcript fixture was used; output reported `Transcript selected: transcript file`, saved transcript contained fixture text, and prompt was generated. |
+| 6 | Notion fail-fast | PASS | Missing OpenAI/Notion config produced a clean config error with non-zero exit before creating new output files. |
 | 7 | Notion happy path | PASS / FAIL / BLOCKED / SKIPPED |  |
 | 8 | JSON success | PASS / FAIL / BLOCKED / SKIPPED |  |
 | 9 | JSON failure | PASS / FAIL / BLOCKED / SKIPPED |  |
@@ -81,7 +81,7 @@ Status key:
 - Prompt path:
   - `./tmp/rc1-output-a/prompts/KquM_52cAIE_prompt.md`
 - Issues:
-  - None
+  - None.
 
 
 ### 3. Local note happy path
@@ -121,25 +121,39 @@ Status key:
 
 ### 5. Transcript-file fallback
 
-- Status: `PASS / FAIL / BLOCKED / SKIPPED`
+- Status: `PASS`
 - Command run:
-  - `python ingest.py "<url>" --transcript-file <path> --no-note --output-dir <path>`
+  - `python ingest.py "https://youtu.be/KquM_52cAIE" --transcript-file ./tmp/rc1-manual-transcript.txt --no-note --output-dir ./tmp/rc1-output-a`
 - Transcript fixture path:
+  - `./tmp/rc1-manual-transcript.txt`
 - Saved transcript path:
+  - `./tmp/rc1-output-a/transcripts/KquM_52cAIE.txt`
 - Evidence local fixture text was used:
+  - Human output reported `Transcript selected: transcript file`.
+  - `grep` found `This is a local transcript fixture for rc1.` in `./tmp/rc1-output-a/transcripts/KquM_52cAIE.txt`.
 - Issues:
+  - None.
 
 ### 6. Notion fail-fast
 
-- Status: `PASS / FAIL / BLOCKED / SKIPPED`
+- Status: `PASS`
 - Command run:
-  - `ynn-notion "<url>" --env-file <missing-config-env-file> --output-dir <path>`
-  - or `python ingest.py "<url>" --export notion --env-file <missing-config-env-file> --output-dir <path>`
+  - `ynn-notion "https://youtu.be/KquM_52cAIE" --env-file ./tmp/rc1-missing-config.env --output-dir ./tmp/rc1-output-a`
 - Missing-config env file used:
+  - `./tmp/rc1-missing-config.env`
 - Missing config tested:
+  - `OPENAI_API_KEY`
+  - `NOTION_API_KEY`
+  - `NOTION_DATABASE_ID`
 - Observed error:
+  - `Notion export config error: missing required config: OPENAI_API_KEY, NOTION_API_KEY, NOTION_DATABASE_ID.`
+  - `exit_code=1`
 - Evidence no transcript/OpenAI/Notion work happened:
+  - No traceback was printed.
+  - No transcript selection or output-save messages were printed.
+  - `find ./tmp/rc1-output-a -type f -newer ./tmp/rc1-stage6-before -print` produced no new files.
 - Issues:
+  - None.
 
 ### 7. Notion happy path
 

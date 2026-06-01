@@ -337,6 +337,12 @@ A local transcript file can be used when YouTube transcript fetching is unavaila
 python ingest.py "https://www.youtube.com/watch?v=..." --transcript-file ./manual-transcript.txt
 ```
 
+A custom prompt template file can be passed explicitly:
+
+```bash
+python ingest.py "https://www.youtube.com/watch?v=..." --prompt-template ./my-prompt.md
+```
+
 These daily command names are part of local MVP usability. For `v1.0.0`, editable installs expose them as console script entrypoints:
 
 ```bash
@@ -413,8 +419,9 @@ Prompt template policy:
 - the default prompt template lives at `./youtube_notion_notes/services/resources/comprehensive_note.md`;
 - `./pyproject.toml` includes the markdown template as package data for `youtube_notion_notes.services`;
 - `./youtube_notion_notes/services/note_generator.py` loads the default template with standard-library `importlib.resources`;
-- `build_manual_prompt` still accepts an explicit template path for tests or future use;
-- `./youtube_notion_notes/services/pipeline.py` uses the package-owned default template and no longer passes a cwd-relative `./prompts/comprehensive_note.md` path.
+- the direct CLI accepts `--prompt-template PATH` for human prompt generation workflows;
+- `build_manual_prompt` accepts an explicit template path and reuses the existing prompt template validation;
+- `./youtube_notion_notes/services/pipeline.py` uses the package-owned default template when no custom prompt template path is provided and no longer passes a cwd-relative `./prompts/comprehensive_note.md` path.
 
 ## JSON Input Contract
 
@@ -433,6 +440,8 @@ The JSON payload is an object with only these supported fields:
 - `url`: required YouTube URL string;
 - `transcript_file`: optional UTF-8 local transcript file path string;
 - `export`: optional export target, with the same accepted values as `--export`: `local` or `notion`.
+
+Custom prompt template paths are intentionally a human CLI option only for now. `prompt_template` is not part of the JSON input schema.
 
 Unknown JSON fields are rejected so automation typos do not get silently ignored.
 

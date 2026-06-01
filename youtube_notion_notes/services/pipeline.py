@@ -40,6 +40,7 @@ class PipelineRequest:
     languages: str | None
     output_name: str | None
     no_note: bool
+    prompt_template: str | None = None
     transcript_file: str | None = None
     output_dir: str | None = None
 
@@ -196,6 +197,7 @@ def run_pipeline(request: PipelineRequest, *, human_output: bool) -> tuple[int, 
             video_url=request.url,
             video_id=video_id,
             transcript=transcript_text,
+            template_path=request.prompt_template,
         )
     except PromptTemplateError as exc:
         result["stage"] = "prompt_template"

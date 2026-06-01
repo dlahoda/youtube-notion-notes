@@ -130,6 +130,31 @@ class IngestInputTests(unittest.TestCase):
             human_output=False,
         )
 
+    def test_main_converts_prompt_template_flag_to_pipeline_request(self) -> None:
+        exit_code, stdout, stderr, run_pipeline_mock = self.run_ingest(
+            "--prompt-template",
+            "./my-prompt.md",
+            "--no-note",
+            "--output",
+            "json",
+            include_positional_url=True,
+        )
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(stderr, "")
+        self.assertEqual(json.loads(stdout), {"ok": True})
+        run_pipeline_mock.assert_called_once_with(
+            PipelineRequest(
+                url=VIDEO_URL,
+                export_mode="local",
+                languages=None,
+                output_name=None,
+                no_note=True,
+                prompt_template="./my-prompt.md",
+            ),
+            human_output=False,
+        )
+
     def test_main_loads_env_file_flag_before_running_pipeline(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             env_path = Path(temp_dir) / "custom.env"
@@ -451,6 +476,18 @@ class IngestInputTests(unittest.TestCase):
 
         self.assertEqual(exit_code, 2)
         self.assert_input_error(stdout, stderr, "Invalid --input-json: unsupported field 'output_dir'.")
+        run_pipeline_mock.assert_not_called()
+
+    def test_input_json_with_prompt_template_field_fails_cleanly(self) -> None:
+        exit_code, stdout, stderr, run_pipeline_mock = self.run_ingest(
+            "--input-json",
+            json.dumps({"url": VIDEO_URL, "prompt_template": "./my-prompt.md"}),
+            "--output",
+            "json",
+        )
+
+        self.assertEqual(exit_code, 2)
+        self.assert_input_error(stdout, stderr, "Invalid --input-json: unsupported field 'prompt_template'.")
         run_pipeline_mock.assert_not_called()
 
     def test_input_json_file_with_unknown_field_fails_cleanly_in_json_output(self) -> None:

@@ -31,6 +31,7 @@ class PipelineServiceTests(unittest.TestCase):
         transcript_file_text: str | None = None,
         use_custom_output_dir: bool = False,
         use_env_output_dir: bool = False,
+        prompt_template_path: str | None = None,
         fetch_side_effect: Exception | None = None,
         prompt_side_effect: Exception | None = None,
         notion_config: dict[str, str] | None = None,
@@ -73,6 +74,7 @@ class PipelineServiceTests(unittest.TestCase):
                 languages=None,
                 output_name=None,
                 no_note=no_note,
+                prompt_template=prompt_template_path,
                 transcript_file=str(transcript_file_path) if transcript_file_text is not None else None,
                 output_dir=str(request_output_root) if use_custom_output_dir else None,
             )
@@ -371,6 +373,17 @@ class PipelineServiceTests(unittest.TestCase):
         self.assertEqual(snapshot["prompt_kwargs"]["video_url"], VIDEO_URL)
         self.assertEqual(snapshot["prompt_kwargs"]["video_id"], VIDEO_ID)
         self.assertEqual(snapshot["prompt_kwargs"]["transcript"], manual_text)
+        self.assertIsNone(snapshot["prompt_kwargs"]["template_path"])
+
+    def test_custom_prompt_template_path_is_passed_to_prompt_generation(self) -> None:
+        exit_code, result, _export_mock, snapshot = self.run_pipeline(
+            no_note=True,
+            prompt_template_path="./my-prompt.md",
+        )
+
+        self.assertEqual(exit_code, 0)
+        self.assertTrue(result["ok"])
+        self.assertEqual(snapshot["prompt_kwargs"]["template_path"], "./my-prompt.md")
 
     def test_custom_output_dir_writes_pipeline_files_under_requested_root(self) -> None:
         exit_code, result, export_mock, snapshot = self.run_pipeline(
@@ -483,6 +496,71 @@ class PipelineServiceTests(unittest.TestCase):
             self.assertIn(f"Video URL: {VIDEO_URL}", prompt_text)
             self.assertIn(f"Video ID: {VIDEO_ID}", prompt_text)
             self.assertIn("Manual transcript from temp cwd.", prompt_text)
+
+    def test_missing_custom_prompt_template_returns_prompt_template_stage(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            output_root = temp_path / "out"
+            transcript_file = temp_path / "manual-transcript.txt"
+            missing_template = temp_path / "missing-prompt.md"
+            transcript_file.write_text("Manual transcript.\n", encoding="utf-8")
+
+            request = pipeline.PipelineRequest(
+                url=VIDEO_URL,
+                export_mode="local",
+                languages=None,
+                output_name=None,
+                no_note=True,
+                prompt_template=str(missing_template),
+                transcript_file=str(transcript_file),
+                output_dir=str(output_root),
+            )
+
+            with (
+                patch.dict(os.environ, {"YNN_OUTPUT_DIR": ""}),
+                patch.object(pipeline, "parse_youtube_url", return_value=VIDEO_ID),
+            ):
+                exit_code, result = pipeline.run_pipeline(request, human_output=False)
+
+            self.assertEqual(exit_code, 1)
+            self.assertFalse(result["ok"])
+            self.assertEqual(result["stage"], "prompt_template")
+            self.assertIn("Unable to read prompt template", result["error"])
+            self.assertIsNone(result["transcript_path"])
+            self.assertIsNone(result["prompt_path"])
+
+    def test_invalid_custom_prompt_template_returns_prompt_template_stage(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            output_root = temp_path / "out"
+            transcript_file = temp_path / "manual-transcript.txt"
+            invalid_template = temp_path / "invalid-prompt.md"
+            transcript_file.write_text("Manual transcript.\n", encoding="utf-8")
+            invalid_template.write_text("Video: {video_url}\n", encoding="utf-8")
+
+            request = pipeline.PipelineRequest(
+                url=VIDEO_URL,
+                export_mode="local",
+                languages=None,
+                output_name=None,
+                no_note=True,
+                prompt_template=str(invalid_template),
+                transcript_file=str(transcript_file),
+                output_dir=str(output_root),
+            )
+
+            with (
+                patch.dict(os.environ, {"YNN_OUTPUT_DIR": ""}),
+                patch.object(pipeline, "parse_youtube_url", return_value=VIDEO_ID),
+            ):
+                exit_code, result = pipeline.run_pipeline(request, human_output=False)
+
+            self.assertEqual(exit_code, 1)
+            self.assertFalse(result["ok"])
+            self.assertEqual(result["stage"], "prompt_template")
+            self.assertIn("missing required placeholder", result["error"])
+            self.assertIsNone(result["transcript_path"])
+            self.assertIsNone(result["prompt_path"])
 
 
 if __name__ == "__main__":

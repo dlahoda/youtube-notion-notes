@@ -66,6 +66,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Read transcript text from a UTF-8 file while keeping the positional YouTube URL as source metadata.",
     )
     parser.add_argument(
+        "--prompt-template",
+        default=None,
+        help="Read the manual prompt template from a UTF-8 markdown file.",
+    )
+    parser.add_argument(
         "--output",
         choices=("text", "json"),
         default="text",
@@ -192,6 +197,7 @@ def build_pipeline_request(args: argparse.Namespace) -> PipelineRequest:
         languages=args.languages,
         output_name=args.output_name,
         no_note=args.no_note,
+        prompt_template=args.prompt_template,
         transcript_file=args.transcript_file,
         output_dir=args.output_dir,
     )

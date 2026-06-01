@@ -57,6 +57,7 @@ python ingest.py "https://youtu.be/VIDEO_ID" --languages en,uk
 python ingest.py "https://youtu.be/VIDEO_ID" --output-name my-video
 python ingest.py "https://youtu.be/VIDEO_ID" --output-dir ./tmp-output
 python ingest.py "https://youtu.be/VIDEO_ID" --env-file ./local.env
+python ingest.py "https://youtu.be/VIDEO_ID" --prompt-template ./my-prompt.md
 python ingest.py "https://youtu.be/VIDEO_ID" --export local
 python ingest.py "https://youtu.be/VIDEO_ID" --output json
 ```

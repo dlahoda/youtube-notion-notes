@@ -75,6 +75,24 @@ class YnnCliEntrypointTests(unittest.TestCase):
             ["ynn-command", "https://youtu.be/VIDEO_ID", "--no-note"],
         )
 
+    def test_ynn_prompt_preserves_prompt_template_arg(self) -> None:
+        self.assert_entrypoint_appends_args(
+            "main_prompt",
+            [
+                "ynn-command",
+                "https://youtu.be/VIDEO_ID",
+                "--prompt-template",
+                "./my-prompt.md",
+                "--no-note",
+            ],
+            initial_argv=[
+                "ynn-command",
+                "https://youtu.be/VIDEO_ID",
+                "--prompt-template",
+                "./my-prompt.md",
+            ],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

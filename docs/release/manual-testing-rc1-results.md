@@ -26,7 +26,7 @@
 | 1 | Install/config smoke | PASS | Editable install succeeded. Installed mise console scripts work when their bin dir is first on PATH; existing ~/.local/bin launchers otherwise shadow them. |
 | 2 | Prompt-only happy path | PASS | Generated transcript and GPT prompt without OpenAI or Notion config; `find` warning was from smoke-check command argument order, not application behavior. |
 | 3 | Local note happy path | PASS | Generated transcript, GPT prompt, and structured markdown note after installing editable OpenAI extra dependency. |
-| 4 | Output root behavior | PASS / FAIL / BLOCKED / SKIPPED |  |
+| 4 | Output root behavior | PASS | `YNN_OUTPUT_DIR` was used when no explicit output dir was provided; `--output-dir` correctly overrode it for a single run. |
 | 5 | Transcript-file fallback | PASS / FAIL / BLOCKED / SKIPPED |  |
 | 6 | Notion fail-fast | PASS / FAIL / BLOCKED / SKIPPED |  |
 | 7 | Notion happy path | PASS / FAIL / BLOCKED / SKIPPED |  |
@@ -80,7 +80,8 @@ Status key:
   - `./tmp/rc1-output-a/transcripts/KquM_52cAIE.txt`
 - Prompt path:
   - `./tmp/rc1-output-a/prompts/KquM_52cAIE_prompt.md`
-- Issues: none
+- Issues:
+  - None
 
 
 ### 3. Local note happy path
@@ -104,12 +105,19 @@ Status key:
 
 ### 4. Output root behavior
 
-- Status: `PASS / FAIL / BLOCKED / SKIPPED`
+- Status: `PASS`
 - `YNN_OUTPUT_DIR` path:
+  - `./tmp/rc1-output-b`
 - Explicit `--output-dir` path:
+  - `./tmp/rc1-output-explicit`
 - Files found under `YNN_OUTPUT_DIR`:
+  - `./tmp/rc1-output-b/transcripts/KquM_52cAIE.txt`
+  - `./tmp/rc1-output-b/prompts/KquM_52cAIE_prompt.md`
 - Files found under explicit output dir:
+  - `./tmp/rc1-output-explicit/transcripts/KquM_52cAIE.txt`
+  - `./tmp/rc1-output-explicit/prompts/KquM_52cAIE_prompt.md`
 - Issues:
+  - None.
 
 ### 5. Transcript-file fallback
 
